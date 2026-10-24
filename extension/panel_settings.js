@@ -3,20 +3,19 @@ import Gio from 'gi://Gio';
 import St from 'gi://St';
 import { PopupMenuItem, PopupSwitchMenuItem, PopupSeparatorMenuItem } from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { Button } from 'resource:///org/gnome/shell/ui/panelMenu.js';
-import { get_current_path } from './paths.js';
 
 export class Indicator {
     constructor(ext) {
-        this.button = new Button(0.0, _('Pop Shell Settings'));
-        const path = get_current_path();
+        this.button = new Button(0.0, 'Kelp Settings');
+        const path = ext.path;
         ext.button = this.button;
         ext.button_gio_icon_auto_on = Gio.icon_new_for_string(`${path}/icons/pop-shell-auto-on-symbolic.svg`);
         ext.button_gio_icon_auto_off = Gio.icon_new_for_string(`${path}/icons/pop-shell-auto-off-symbolic.svg`);
-        let button_icon_auto_on = new St.Icon({
+        const button_icon_auto_on = new St.Icon({
             gicon: ext.button_gio_icon_auto_on,
             style_class: 'system-status-icon',
         });
-        let button_icon_auto_off = new St.Icon({
+        const button_icon_auto_off = new St.Icon({
             gicon: ext.button_gio_icon_auto_off,
             style_class: 'system-status-icon',
         });
@@ -27,16 +26,19 @@ export class Indicator {
             this.button.icon = button_icon_auto_off;
         }
         this.button.add_child(this.button.icon);
-        let bm = this.button.menu;
+        const bm = this.button.menu;
         this.toggle_tiled = tiled(ext);
-        this.toggle_active = toggle(_('Show Active Hint'), ext.settings.active_hint(), (toggle) => {
-            ext.settings.set_active_hint(toggle.state);
+        this.toggle_titles = toggle('Show Window Titles', ext.settings.show_title(), (t) => {
+            ext.settings.set_show_title(t.state);
         });
-        this.entry_gaps = number_entry(_('Gaps'), ext.settings.gap_inner(), (value) => {
+        this.toggle_active = toggle('Show Active Hint', ext.settings.active_hint(), (t) => {
+            ext.settings.set_active_hint(t.state);
+        });
+        this.entry_gaps = number_entry('Gaps', ext.settings.gap_inner(), (value) => {
             ext.settings.set_gap_inner(value);
             ext.settings.set_gap_outer(value);
         });
-        this.border_radius = number_entry(_('Active Border Radius'), {
+        this.border_radius = number_entry('Active Border Radius', {
             value: ext.settings.active_hint_border_radius(),
             min: 0,
             max: 30,
@@ -45,10 +47,12 @@ export class Indicator {
         });
         bm.addMenuItem(this.toggle_tiled);
         bm.addMenuItem(menu_separator(''));
+        bm.addMenuItem(this.toggle_titles);
         bm.addMenuItem(this.toggle_active);
         bm.addMenuItem(this.border_radius);
         bm.addMenuItem(this.entry_gaps);
     }
+
     destroy() {
         this.button.destroy();
     }
@@ -80,11 +84,11 @@ function number_entry(label, valueOrOptions, callback) {
     text.set_max_length(2);
     entry.connect('key-release-event', (_, event) => {
         const symbol = event.get_key_symbol();
-        const number = symbol == 65293
+        const number = symbol === 65293
             ? parse_number(text.text)
-            : symbol == 65361
+            : symbol === 65361
                 ? clamp(parse_number(text.text) - 1, min, max)
-                : symbol == 65363
+                : symbol === 65363
                     ? clamp(parse_number(text.text) + 1, min, max)
                     : null;
         if (number !== null) {
@@ -96,15 +100,15 @@ function number_entry(label, valueOrOptions, callback) {
     };
     entry.set_primary_icon(create_icon('value-decrease'));
     entry.connect('primary-icon-clicked', () => {
-        text.set_text(String(clamp(parseInt(text.get_text()) - 1, min, max)));
+        text.set_text(String(clamp(parseInt(text.get_text(), 10) - 1, min, max)));
     });
     entry.set_secondary_icon(create_icon('value-increase'));
     entry.connect('secondary-icon-clicked', () => {
-        text.set_text(String(clamp(parseInt(text.get_text()) + 1, min, max)));
+        text.set_text(String(clamp(parseInt(text.get_text(), 10) + 1, min, max)));
     });
     text.connect('text-changed', () => {
         const input = text.get_text();
-        let parsed = parseInt(input);
+        let parsed = parseInt(input, 10);
         if (isNaN(parsed)) {
             text.set_text(input.substr(0, input.length - 1));
             parsed = 0;
@@ -127,17 +131,17 @@ function parse_number(text) {
 }
 
 function toggle(desc, active, connect) {
-    let toggle = new PopupSwitchMenuItem(desc, active);
-    toggle.label.set_y_align(Clutter.ActorAlign.CENTER);
-    toggle.connect('toggled', (_, state) => {
-        connect(toggle, state);
+    const t = new PopupSwitchMenuItem(desc, active);
+    t.label.set_y_align(Clutter.ActorAlign.CENTER);
+    t.connect('toggled', (_, state) => {
+        connect(t, state);
         return true;
     });
-    return toggle;
+    return t;
 }
 
 function tiled(ext) {
-    let t = toggle(_('Tile Windows'), null != ext.auto_tiler, (_, shouldTile) => {
+    return toggle('Tile Windows', null != ext.auto_tiler, (_, shouldTile) => {
         if (shouldTile) {
             ext.auto_tile_on();
         }
@@ -145,5 +149,4 @@ function tiled(ext) {
             ext.auto_tile_off();
         }
     });
-    return t;
 }

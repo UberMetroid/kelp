@@ -22,9 +22,6 @@ import * as stack from './stack.js';
 import * as add_exception from './dialog_add_exception.js';
 import * as exec from './executor.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
-const display = global.display;
-const wim = global.window_manager;
-const wom = global.workspace_manager;
 const Movement = movement.Movement;
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
@@ -35,7 +32,6 @@ import Mtk from 'gi://Mtk';
 const { GlobalEvent, WindowEvent } = Events;
 const { cursor_rect, is_keyboard_op, is_resize_op, is_move_op } = Lib;
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-const { layoutManager, loadTheme, overview, panel, setThemeStylesheet, screenShield, sessionMode, windowAttentionHandler, } = Main;
 import { ScreenShield } from 'resource:///org/gnome/shell/ui/screenShield.js';
 import { WindowSwitcherPopup, } from 'resource:///org/gnome/shell/ui/altTab.js';
 import { Workspace } from 'resource:///org/gnome/shell/ui/workspace.js';
@@ -43,9 +39,6 @@ import { WorkspaceThumbnail } from 'resource:///org/gnome/shell/ui/workspaceThum
 import { WindowPreview } from 'resource:///org/gnome/shell/ui/windowPreview.js';
 import { PACKAGE_VERSION } from 'resource:///org/gnome/shell/misc/config.js';
 import * as Tags from './tags.js';
-import { get_current_path } from './paths.js';
-const STYLESHEET_PATHS = ['light', 'dark', 'highcontrast'].map(stylesheet_path);
-const STYLESHEETS = STYLESHEET_PATHS.map((path) => Gio.File.new_for_path(path));
 const GNOME_VERSION = PACKAGE_VERSION;
 var Style;
 (function (Style) {
@@ -54,10 +47,15 @@ var Style;
     Style[Style["HighContrast"] = 2] = "HighContrast";
 })(Style || (Style = {}));
 export class Ext extends Ecs.System {
-    constructor() {
+    constructor(extension) {
         super(new Executor.GLibExecutor());
+        this.extension = extension;
+        this.path = extension.path;
+        this.window_tracker = Shell.WindowTracker.get_default();
+        this.stylesheet_paths = ['light', 'dark', 'highcontrast'].map((name) => `${this.path}/${name}.css`);
+        this.stylesheets = this.stylesheet_paths.map((path) => Gio.File.new_for_path(path));
+        this.settings = new Settings.ExtensionSettings(extension.getSettings());
         this.keybindings = new Keybindings.Keybindings(this);
-        this.settings = new Settings.ExtensionSettings();
         this.overlay = new St.BoxLayout({ style_class: 'pop-shell-overlay', visible: false });
         this.animate_windows = true;
         this.button = null;
@@ -68,11 +66,16 @@ export class Ext extends Ecs.System {
         this.column_size = 32;
         this.current_style = Style.Dark;
         this.displays_updating = null;
+        this.migrations_executor = null;
+        this.exception_select_id = null;
+        this.restack_id = null;
+        this.schedule_idle_id = null;
         this.row_size = 32;
         this.displays = [global.display.get_primary_monitor(), new Map()];
         this.dpi = St.ThemeContext.get_for_stage(global.stage).scale_factor;
         this.drag_signal = null;
         this.exception_selecting = false;
+        this.exception_dialog = null;
         this.gap_inner = 0;
         this.gap_inner_half = 0;
         this.gap_inner_prev = 0;
@@ -98,23 +101,24 @@ export class Ext extends Ecs.System {
         this.snapped = this.register_storage();
         this.windows = this.register_storage();
         this.window_signals = this.register_storage();
+        this.actor_signals = this.register_storage();
         this.auto_tiler = null;
         this.focus_selector = new Focus.FocusSelector();
         this.tiler = new Tiling.Tiler(this);
         this.load_settings();
         this.reload_theme();
-        this.register_fn(() => load_theme(this.current_style));
+        this.register_fn(() => this.load_theme(this.current_style));
         this.conf.reload();
         if (this.settings.int) {
-            this.settings.int.connect('changed::gtk-theme', () => {
+            this.connect(this.settings.int, 'changed::gtk-theme', () => {
                 this.register(Events.global(GlobalEvent.GtkThemeChanged));
             });
-            this.settings.int.connect('changed::color-scheme', () => {
+            this.connect(this.settings.int, 'changed::color-scheme', () => {
                 this.register(Events.global(GlobalEvent.GtkThemeChanged));
             });
         }
         if (this.settings.shell) {
-            this.settings.shell.connect('changed::name', () => {
+            this.connect(this.settings.shell, 'changed::name', () => {
                 this.register(Events.global(GlobalEvent.GtkShellChanged));
             });
         }
@@ -222,14 +226,14 @@ export class Ext extends Ecs.System {
         }
     }
     active_monitor() {
-        return display.get_current_monitor();
+        return global.display.get_current_monitor();
     }
     active_window_list() {
-        let workspace = wom.get_active_workspace();
+        let workspace = global.workspace_manager.get_active_workspace();
         return this.tab_list(Meta.TabList.NORMAL_ALL, workspace);
     }
     active_workspace() {
-        return wom.get_active_workspace_index();
+        return global.workspace_manager.get_active_workspace_index();
     }
     actor_of(entity) {
         const window = this.windows.get(entity);
@@ -289,6 +293,10 @@ export class Ext extends Ecs.System {
     }
     exception_add(win) {
         this.exception_selecting = false;
+        if (this.exception_dialog) {
+            this.exception_dialog.close();
+            this.exception_dialog = null;
+        }
         let d = new add_exception.AddExceptionDialog(() => { }, () => {
             let wmclass = win.meta.get_wm_class();
             if (wmclass !== null && wmclass.length === 0) {
@@ -301,15 +309,21 @@ export class Ext extends Ecs.System {
             if (wmclass)
                 this.conf.add_window_exception(wmclass, win.title());
         }, () => {
+            this.exception_dialog = null;
             this.conf.reload();
             this.tiling_config_reapply();
         });
+        this.exception_dialog = d;
         d.open();
     }
     exception_select() {
-        GLib.timeout_add(GLib.PRIORITY_LOW, 500, () => {
+        if (this.exception_select_id !== null) {
+            GLib.source_remove(this.exception_select_id);
+        }
+        this.exception_select_id = GLib.timeout_add(GLib.PRIORITY_LOW, 500, () => {
+            this.exception_select_id = null;
             this.exception_selecting = true;
-            overview.show();
+            Main.overview.show();
             return false;
         });
     }
@@ -325,10 +339,11 @@ export class Ext extends Ecs.System {
                 }
             }
         }
-        const primary = display.get_primary_monitor();
+        const primary = global.display.get_primary_monitor();
         return [primary, this.displays[1].get(primary)];
     }
     find_unused_workspace(monitor) {
+        const wom = global.workspace_manager;
         if (!this.auto_tiler)
             return [0, wom.get_workspace_by_index(0)];
         let id = 0;
@@ -372,7 +387,7 @@ export class Ext extends Ecs.System {
         this.activate_window(this.focus_selector.up(this, null));
     }
     focus_window() {
-        return this.get_window(display.get_focus_window());
+        return this.get_window(global.display.get_focus_window());
     }
     stack_select(select, focus_shift) {
         const switched = this.stack_switch((stack) => {
@@ -420,7 +435,7 @@ export class Ext extends Ecs.System {
     injections_add() {
         const screen_unlock_fn = ScreenShield.prototype['deactivate'];
         this.inject(ScreenShield.prototype, 'deactivate', (args) => {
-            screen_unlock_fn.apply(screenShield, [args]);
+            screen_unlock_fn.apply(Main.screenShield, [args]);
             this.update_display_configuration(true);
         });
     }
@@ -438,7 +453,7 @@ export class Ext extends Ecs.System {
         this.row_size = this.settings.row_size() * this.dpi;
     }
     monitor_work_area(monitor) {
-        const meta = wom.get_active_workspace().get_work_area_for_monitor(monitor);
+        const meta = global.workspace_manager.get_active_workspace().get_work_area_for_monitor(monitor);
         return Rect.Rectangle.from_meta(meta);
     }
     monitor_area(monitor) {
@@ -468,7 +483,7 @@ export class Ext extends Ecs.System {
                     return;
                 }
             }
-            const workspace = wom.get_workspace_by_index(workspace_id);
+            const workspace = global.workspace_manager.get_workspace_by_index(workspace_id);
             if (workspace) {
                 for (const win of workspace.list_windows()) {
                     const window = this.get_window(win);
@@ -496,11 +511,31 @@ export class Ext extends Ecs.System {
             return;
         const stack = window.stack;
         window.destroying = true;
+        const size_req = this.size_requests.get(window.meta);
+        if (size_req) {
+            try {
+                GLib.source_remove(size_req);
+            }
+            catch (_) { }
+            this.size_requests.delete(window.meta);
+        }
         this.window_signals.take_with(win, (signals) => {
             for (const signal of signals) {
-                window.meta.disconnect(signal);
+                try {
+                    window.meta.disconnect(signal);
+                }
+                catch (_) { }
             }
         });
+        this.actor_signals.take_with(win, ([actor, signals]) => {
+            for (const signal of signals) {
+                try {
+                    actor.disconnect(signal);
+                }
+                catch (_) { }
+            }
+        });
+        window.destroy();
         if (this.auto_tiler) {
             const entity = this.auto_tiler.attached.get(win);
             if (entity) {
@@ -546,7 +581,7 @@ export class Ext extends Ecs.System {
             this.prev_focused[1] = win.entity;
         }
         if (null !== this.auto_tiler && null !== win.stack) {
-            ext?.auto_tiler?.forest.stacks.get(win.stack)?.activate(win.entity);
+            this.auto_tiler.forest.stacks.get(win.stack)?.activate(win.entity);
         }
         this.unmaximize_workspace(win);
         this.show_border_on_focused();
@@ -906,6 +941,7 @@ export class Ext extends Ecs.System {
         const win = this.focus_window();
         if (!win)
             return;
+        const wom = global.workspace_manager;
         const workspace_move = (direction) => {
             const ws = win.meta.get_workspace();
             let neighbor = ws.get_neighbor(direction);
@@ -1015,7 +1051,7 @@ export class Ext extends Ecs.System {
                 this.unset_grab_op();
                 this.grab_op = new GrabOp.GrabOp(entity, rect);
                 this.size_signals_block(win);
-                if (overview.visible || !win || is_keyboard_op(op) || is_resize_op(op))
+                if (Main.overview.visible || !win || is_keyboard_op(op) || is_resize_op(op))
                     return;
                 const workspace = this.active_workspace();
                 this.drag_signal = GLib.timeout_add(GLib.PRIORITY_LOW, 200, () => {
@@ -1094,11 +1130,11 @@ export class Ext extends Ecs.System {
     }
     on_gtk_shell_changed() {
         this.reload_theme();
-        load_theme(this.current_style);
+        this.load_theme(this.current_style);
     }
     on_gtk_theme_change() {
         this.reload_theme();
-        load_theme(this.current_style);
+        this.load_theme(this.current_style);
     }
     reload_theme() {
         this.current_style = this.settings.is_dark()
@@ -1106,6 +1142,42 @@ export class Ext extends Ecs.System {
             : this.settings.is_high_contrast()
                 ? Style.HighContrast
                 : Style.Light;
+    }
+    load_theme(style) {
+        let idx = Number(style);
+        try {
+            const theme_context = St.ThemeContext.get_for_stage(global.stage);
+            const existing_theme = theme_context.get_theme();
+            const stylesheet_path = this.stylesheet_paths[idx];
+            if (existing_theme) {
+                for (const s of this.stylesheets) {
+                    existing_theme.unload_stylesheet(s);
+                }
+                existing_theme.load_stylesheet(this.stylesheets[idx]);
+                theme_context.set_theme(existing_theme);
+            }
+            else {
+                Main.setThemeStylesheet(stylesheet_path);
+                Main.loadTheme();
+            }
+            return stylesheet_path;
+        }
+        catch (e) {
+            log.error('failed to load stylesheet: ' + e);
+            return null;
+        }
+    }
+    unload_theme() {
+        try {
+            const theme_context = St.ThemeContext.get_for_stage(global.stage);
+            const existing_theme = theme_context.get_theme();
+            if (existing_theme && this.stylesheets) {
+                for (const s of this.stylesheets) {
+                    existing_theme.unload_stylesheet(s);
+                }
+            }
+        }
+        catch (_) { }
     }
     on_maximize(win) {
         if (win.is_maximized()) {
@@ -1243,7 +1315,7 @@ export class Ext extends Ecs.System {
         let win = this.get_window(window);
         if (win) {
             const entity = win.entity;
-            actor.connect('destroy', () => {
+            const destroy_id = actor.connect('destroy', () => {
                 if (win && win.border) {
                     win.border.destroy();
                     win.border = null;
@@ -1251,6 +1323,8 @@ export class Ext extends Ecs.System {
                 this.on_destroy(entity);
                 return false;
             });
+            const entry = this.actor_signals.get_or(entity, () => [actor, new Array()]);
+            entry[1].push(destroy_id);
             if (win.is_tilable(this)) {
                 this.connect_window(win);
             }
@@ -1348,8 +1422,12 @@ export class Ext extends Ecs.System {
         this.on_workspace_modify((current) => current > number, (prev) => prev - 1);
     }
     restack() {
+        if (this.restack_id !== null) {
+            GLib.source_remove(this.restack_id);
+            this.restack_id = null;
+        }
         let attempts = 0;
-        GLib.timeout_add(GLib.PRIORITY_LOW, 50, () => {
+        this.restack_id = GLib.timeout_add(GLib.PRIORITY_LOW, 50, () => {
             if (this.auto_tiler) {
                 for (const container of this.auto_tiler.forest.stacks.values()) {
                     container.restack();
@@ -1357,7 +1435,11 @@ export class Ext extends Ecs.System {
             }
             let x = attempts;
             attempts += 1;
-            return x < 10;
+            if (x < 10) {
+                return true;
+            }
+            this.restack_id = null;
+            return false;
         });
     }
     set_gap_inner(gap) {
@@ -1380,7 +1462,9 @@ export class Ext extends Ecs.System {
             movement();
             return true;
         });
-        const workspace_manager = wom;
+        const display = global.display;
+        const wim = global.window_manager;
+        const workspace_manager = global.workspace_manager;
         for (const [, ws] of iter_workspaces(workspace_manager)) {
             let index = ws.index();
             this.connect(ws, 'notify::workspace-index', () => {
@@ -1445,21 +1529,21 @@ export class Ext extends Ecs.System {
                 this.register(Events.global(GlobalEvent.MonitorsChanged));
             });
         }
-        this.connect(layoutManager, 'monitors-changed', () => {
+        this.connect(Main.layoutManager, 'monitors-changed', () => {
             this.register(Events.global(GlobalEvent.MonitorsChanged));
         });
-        this.connect(sessionMode, 'updated', () => {
+        this.connect(Main.sessionMode, 'updated', () => {
             if (indicator) {
-                indicator.button.visible = !sessionMode.isLocked;
+                indicator.button.visible = !Main.sessionMode.isLocked;
             }
-            if (sessionMode.isLocked) {
+            if (Main.sessionMode.isLocked) {
                 this.exit_modes();
             }
         });
-        this.connect(overview, 'showing', () => {
+        this.connect(Main.overview, 'showing', () => {
             this.register(Events.global(GlobalEvent.OverviewShown));
         });
-        this.connect(overview, 'hiding', () => {
+        this.connect(Main.overview, 'hiding', () => {
             const window = this.focus_window();
             if (window) {
                 this.on_focused(window);
@@ -1467,7 +1551,7 @@ export class Ext extends Ecs.System {
             this.register(Events.global(GlobalEvent.OverviewHidden));
         });
         this.register_fn(() => {
-            if (screenShield?.locked)
+            if (Main.screenShield?.locked)
                 this.update_display_configuration(false);
             this.connect(display, 'notify::focus-window', () => {
                 if (Main.modalCount !== 0) {
@@ -1541,13 +1625,13 @@ export class Ext extends Ecs.System {
                 this.register_fn(() => this.on_grab_end(win, op));
             });
         }
-        this.connect(overview, 'window-drag-begin', (_, win) => {
+        this.connect(Main.overview, 'window-drag-begin', (_, win) => {
             this.on_grab_start(win, 1);
         });
-        this.connect(overview, 'window-drag-end', (_, win) => {
+        this.connect(Main.overview, 'window-drag-end', (_, win) => {
             this.register_fn(() => this.on_grab_end(win));
         });
-        this.connect(overview, 'window-drag-cancelled', () => {
+        this.connect(Main.overview, 'window-drag-cancelled', () => {
             this.unset_grab_op();
         });
         this.connect(wim, 'switch-workspace', () => {
@@ -1566,7 +1650,7 @@ export class Ext extends Ecs.System {
             this.hide_all_borders();
             this.prev_focused = [null, null];
         });
-        St.ThemeContext.get_for_stage(global.stage).connect('notify::scale-factor', () => this.update_scale());
+        this.connect(St.ThemeContext.get_for_stage(global.stage), 'notify::scale-factor', () => this.update_scale());
         if (this.settings.tile_by_default() && !this.auto_tiler) {
             this.auto_tiler = new auto_tiler.AutoTiler(new Forest.Forest()
                 .connect_on_attach(this.on_tile_attach.bind(this))
@@ -1582,21 +1666,116 @@ export class Ext extends Ecs.System {
     signals_remove() {
         for (const [object, signals] of this.signals) {
             for (const signal of signals) {
-                object.disconnect(signal);
+                try {
+                    object.disconnect(signal);
+                }
+                catch (_) { }
             }
+        }
+        for (const [entity, signals] of this.window_signals.iter()) {
+            const window = this.windows.get(entity);
+            if (window) {
+                for (const signal of signals) {
+                    try {
+                        window.meta.disconnect(signal);
+                    }
+                    catch (_) { }
+                }
+            }
+        }
+        this.window_signals.clear();
+        for (const [, [actor, signals]] of this.actor_signals.iter()) {
+            for (const signal of signals) {
+                try {
+                    actor.disconnect(signal);
+                }
+                catch (_) { }
+            }
+        }
+        this.actor_signals.clear();
+        for (const [, source_id] of this.size_requests) {
+            try {
+                GLib.source_remove(source_id);
+            }
+            catch (_) { }
+        }
+        this.size_requests.clear();
+        if (this.exception_select_id !== null) {
+            try {
+                GLib.source_remove(this.exception_select_id);
+            }
+            catch (_) { }
+            this.exception_select_id = null;
+        }
+        if (this.restack_id !== null) {
+            try {
+                GLib.source_remove(this.restack_id);
+            }
+            catch (_) { }
+            this.restack_id = null;
+        }
+        if (this.schedule_idle_id !== null) {
+            try {
+                GLib.source_remove(this.schedule_idle_id);
+            }
+            catch (_) { }
+            this.schedule_idle_id = null;
+        }
+        if (this.workareas_update !== null) {
+            try {
+                GLib.source_remove(this.workareas_update);
+            }
+            catch (_) { }
+            this.workareas_update = null;
+        }
+        if (this.displays_updating !== null) {
+            try {
+                GLib.source_remove(this.displays_updating);
+            }
+            catch (_) { }
+            this.displays_updating = null;
+        }
+        if (this.migrations_executor !== null) {
+            this.migrations_executor.stop();
+            this.migrations_executor = null;
         }
         if (this.conf_watch) {
             this.conf_watch[0].disconnect(this.conf_watch[1]);
             this.conf_watch = null;
         }
         this.tiler.queue.stop();
+        this.executor.stop();
         this.signals.clear();
     }
+    destroy() {
+        this.injections_remove();
+        this.signals_remove();
+        if (this.exception_dialog) {
+            this.exception_dialog.close();
+            this.exception_dialog = null;
+        }
+        this.exit_modes();
+        this.unset_grab_op();
+        this.hide_all_borders();
+        if (this.auto_tiler) {
+            this.auto_tiler.destroy(this);
+            this.auto_tiler = null;
+        }
+        for (const win of this.windows.values()) {
+            win.destroy();
+        }
+        if (this.overlay) {
+            Main.layoutManager.removeChrome(this.overlay);
+            this.overlay.destroy();
+            this.overlay = null;
+        }
+        this.unload_theme();
+    }
     size_changed_block() {
-        utils.block_signal(wim, this.size_changed_signal);
+        utils.block_signal(global.window_manager, this.size_changed_signal);
     }
     size_changed_unblock() {
-        utils.unblock_signal(wim, this.size_changed_signal);
+        utils.unblock_signal(global.window_manager, this.size_changed_signal);
     }
     size_signals_block(win) {
         this.add_tag(win.entity, Tags.Blocked);
@@ -1614,7 +1793,7 @@ export class Ext extends Ecs.System {
         this.workspace_by_id(id)?.activate(global.get_current_time());
     }
     tab_list(tablist, workspace) {
-        const windows = display.get_tab_list(tablist, workspace);
+        const windows = global.display.get_tab_list(tablist, workspace);
         const matched = new Array();
         for (const window of windows) {
             const win = this.get_window(window);
@@ -1696,9 +1875,13 @@ export class Ext extends Ecs.System {
     }
     schedule_idle(func) {
         if (!this.movements.is_empty()) {
-            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
+            if (this.schedule_idle_id !== null) {
+                GLib.source_remove(this.schedule_idle_id);
+            }
+            this.schedule_idle_id = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
                 if (!this.movements.is_empty())
                     return true;
+                this.schedule_idle_id = null;
                 return func();
             });
         }
@@ -1712,7 +1895,8 @@ export class Ext extends Ecs.System {
     }
     unset_grab_op() {
         if (this.drag_signal !== null) {
-            this.overlay.visible = false;
+            if (this.overlay)
+                this.overlay.visible = false;
             GLib.source_remove(this.drag_signal);
             this.drag_signal = null;
         }
@@ -1726,13 +1910,13 @@ export class Ext extends Ecs.System {
     }
     update_display_configuration_before() { }
     update_display_configuration(workareas_only) {
-        if (!this.auto_tiler || sessionMode.isLocked)
+        if (!this.auto_tiler || Main.sessionMode.isLocked)
             return;
         if (this.ignore_display_update) {
             this.ignore_display_update = false;
             return;
         }
-        if (layoutManager.monitors.length === 0)
+        if (Main.layoutManager.monitors.length === 0)
             return;
         const primary_display = global.display.get_primary_monitor();
         const primary_display_ready = (ext) => {
@@ -1788,7 +1972,11 @@ export class Ext extends Ecs.System {
         const apply_migrations = (assigned_monitors) => {
             if (!migrations)
                 return;
-            new exec.OnceExecutor(migrations).start(500, ([fork, new_monitor, workspace, find_workspace]) => {
+            if (this.migrations_executor !== null) {
+                this.migrations_executor.stop();
+            }
+            this.migrations_executor = new exec.OnceExecutor(migrations);
+            this.migrations_executor.start(500, ([fork, new_monitor, workspace, find_workspace]) => {
                 let new_workspace;
                 if (find_workspace) {
                     if (assigned_monitors.has(new_monitor)) {
@@ -1828,7 +2016,7 @@ export class Ext extends Ecs.System {
             });
         }
         const updated = new Map();
-        for (const monitor of layoutManager.monitors) {
+        for (const monitor of Main.layoutManager.monitors) {
             const mon = monitor;
             const area = new Rect.Rectangle([mon.x, mon.y, mon.width, mon.height]);
             const ws = this.monitor_work_area(mon.index);
@@ -1932,7 +2120,7 @@ export class Ext extends Ecs.System {
                 return null;
             let window_app, name;
             try {
-                window_app = Window.window_tracker.get_window_app(meta);
+                window_app = this.window_tracker.get_window_app(meta);
                 name = window_app.get_name().replace(/&/g, '&amp;');
             }
             catch (e) {
@@ -1959,11 +2147,22 @@ export class Ext extends Ecs.System {
                 });
             };
             if (this.auto_tiler && !win.meta.minimized && win.is_tilable(this)) {
-                let id = actor.connect('first-frame', () => {
+                let first_frame_id = actor.connect('first-frame', () => {
                     this.auto_tiler?.auto_tile(this, win, this.init);
                     grab_focus();
-                    actor.disconnect(id);
+                    try {
+                        actor.disconnect(first_frame_id);
+                    }
+                    catch (_) { }
+                    const entry = this.actor_signals.get(entity);
+                    if (entry) {
+                        const idx = entry[1].indexOf(first_frame_id);
+                        if (idx !== -1)
+                            entry[1].splice(idx, 1);
+                    }
                 });
+                const entry = this.actor_signals.get_or(entity, () => [actor, new Array()]);
+                entry[1].push(first_frame_id);
             }
             else {
                 grab_focus();
@@ -1985,11 +2184,11 @@ export class Ext extends Ecs.System {
         const rect = Mtk ?
             new Mtk.Rectangle({ x: cursor.x, y: cursor.y, width: 1, height: 1 }) :
             new Meta.Rectangle({ x: cursor.x, y: cursor.y, width: 1, height: 1 });
-        const monitor = display.get_monitor_index_for_rect(rect);
+        const monitor = global.display.get_monitor_index_for_rect(rect);
         return [cursor, monitor];
     }
     workspace_by_id(id) {
-        return wom.get_workspace_by_index(id);
+        return global.workspace_manager.get_workspace_by_index(id);
     }
     workspace_id(window = null) {
         let id = window
@@ -2013,38 +2212,26 @@ export class Ext extends Ecs.System {
 }
 let ext = null;
 let indicator = null;
-export default class PopShellExtension extends Extension {
+export default class KelpExtension extends Extension {
     enable() {
-        globalThis.popShellExtension = this;
         log.info('enable');
-        if (!ext) {
-            ext = new Ext();
-            ext.register_fn(() => {
-                if (ext?.auto_tiler)
-                    ext.snap_windows();
-            });
-        }
-        else {
-            ext.conf.reload();
-        }
+        ext = new Ext(this);
+        ext.register_fn(() => {
+            if (ext?.auto_tiler)
+                ext.snap_windows();
+        });
         if (ext.settings.show_skiptaskbar()) {
             _show_skip_taskbar_windows(ext);
         }
         else {
             _hide_skip_taskbar_windows();
         }
-        if (ext.was_locked) {
-            ext.was_locked = false;
-            return;
-        }
         ext.injections_add();
         ext.signals_attach();
         disable_window_attention_handler();
-        layoutManager.addChrome(ext.overlay);
-        if (!indicator) {
-            indicator = new PanelSettings.Indicator(ext);
-            panel.addToStatusArea('pop-shell', indicator.button);
-        }
+        Main.layoutManager.addChrome(ext.overlay);
+        indicator = new PanelSettings.Indicator(ext);
+        Main.panel.addToStatusArea('kelp', indicator.button);
         ext.keybindings.enable(ext.keybindings.global).enable(ext.keybindings.window_focus);
         if (ext.settings.tile_by_default()) {
             ext.auto_tile_on();
@@ -2052,33 +2239,21 @@ export default class PopShellExtension extends Extension {
     }
     disable() {
         log.info('disable');
-        if (ext) {
-            if (sessionMode.isLocked) {
-                ext.was_locked = true;
-                return;
-            }
-            delete globalThis.popShellExtension;
-            ext.injections_remove();
-            ext.signals_remove();
-            ext.exit_modes();
-            ext.hide_all_borders();
-            layoutManager.removeChrome(ext.overlay);
-            ext.keybindings.disable(ext.keybindings.global).disable(ext.keybindings.window_focus);
-            if (ext.auto_tiler) {
-                ext.auto_tiler.destroy(ext);
-                ext.auto_tiler = null;
-            }
-            _hide_skip_taskbar_windows();
-        }
         if (indicator) {
             indicator.destroy();
             indicator = null;
         }
+        if (ext) {
+            ext.keybindings.disable(ext.keybindings.global).disable(ext.keybindings.window_focus);
+            ext.destroy();
+            ext = null;
+        }
+        _hide_skip_taskbar_windows();
         enable_window_attention_handler();
     }
 }
-const handler = windowAttentionHandler;
 function enable_window_attention_handler() {
+    const handler = Main.windowAttentionHandler;
     if (handler && !handler._windowDemandsAttentionId) {
         handler._windowDemandsAttentionId = global.display.connect('window-demands-attention', (display, window) => {
             handler._onWindowDemandsAttention(display, window);
@@ -2086,36 +2261,10 @@ function enable_window_attention_handler() {
     }
 }
 function disable_window_attention_handler() {
+    const handler = Main.windowAttentionHandler;
     if (handler && handler._windowDemandsAttentionId) {
         global.display.disconnect(handler._windowDemandsAttentionId);
         handler._windowDemandsAttentionId = null;
-    }
-}
-function stylesheet_path(name) {
-    return get_current_path() + '/' + name + '.css';
-}
-function load_theme(style) {
-    let pop_stylesheet = Number(style);
-    try {
-        const theme_context = St.ThemeContext.get_for_stage(global.stage);
-        const existing_theme = theme_context.get_theme();
-        const pop_stylesheet_path = STYLESHEET_PATHS[pop_stylesheet];
-        if (existing_theme) {
-            for (const s of STYLESHEETS) {
-                existing_theme.unload_stylesheet(s);
-            }
-            existing_theme.load_stylesheet(STYLESHEETS[pop_stylesheet]);
-            theme_context.set_theme(existing_theme);
-        }
-        else {
-            setThemeStylesheet(pop_stylesheet_path);
-            loadTheme();
-        }
-        return pop_stylesheet_path;
-    }
-    catch (e) {
-        log.error('failed to load stylesheet: ' + e);
-        return null;
     }
 }
 function* iter_workspaces(manager) {

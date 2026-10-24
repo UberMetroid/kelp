@@ -4,7 +4,7 @@ version = "1.0.0"
 edition = "2021"
 authors = ["UberMetroid", "System76 <info@system76.com>"]
 license = "GPL-3.0-only"
-description = "Kelp — Hardened, zero-subprocess Wayland auto-tiling extension for GNOME 50 & 51 (Mutter 18/19) with a zero-dependency Rust installer"
+description = "Kelp — Hardened, zero-subprocess Wayland auto-tiling extension for GNOME 45–51 (EGO compliant) with a zero-dependency Rust installer"
 repository = "https://github.com/UberMetroid/kelp"
 
 [profile.release]
@@ -13,6 +13,10 @@ lto = true
 codegen-units = 1
 strip = true
 panic = "abort"
+
+[lib]
+name = "kelp"
+path = "src/lib.rs"
 
 [[bin]]
 name = "kelp"

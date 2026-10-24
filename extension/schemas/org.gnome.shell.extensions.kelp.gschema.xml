@@ -1,21 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schemalist gettext-domain="pop-shell">
-    <schema id="org.gnome.shell.extensions.pop-shell" path="/org/gnome/shell/extensions/pop-shell/">
+<schemalist gettext-domain="kelp@ubermetroid.github.io">
+    <schema id="org.gnome.shell.extensions.kelp" path="/org/gnome/shell/extensions/kelp/">
         <!-- Appearance Options -->
         <key type="b" name="active-hint">
-            <default>false</default>
+            <default>true</default>
             <summary>Show a hint around the active window</summary>
         </key>
 
         <key type="u" name="active-hint-border-radius">
-            <default>5</default>
+            <default>2</default>
             <range min="0" max="30"/>
             <summary>Border radius for active window hint, in pixels</summary>
-        </key>
-
-        <key type="b" name="fullscreen-launcher">
-            <default>false</default>
-            <summary>Allow showing launcher above fullscreen windows</summary>
         </key>
 
         <key type="u" name="gap-inner">
@@ -29,7 +24,7 @@
         </key>
 
         <key type="b" name="show-title">
-            <default>true</default>
+            <default>false</default>
             <summary>Show title bars on windows with server-side decorations</summary>
         </key>
 
@@ -39,7 +34,7 @@
         </key>
 
         <key type="b" name="mouse-cursor-follows-active-window">
-            <default>true</default>
+            <default>false</default>
             <summary>Move cursor to active window when navigating with keyboard shortcuts or touchpad gestures</summary>
         </key>
 
@@ -70,7 +65,7 @@
         </key>
 
         <key type="b" name="tile-by-default">
-            <default>false</default>
+            <default>true</default>
             <summary>Tile launched windows by default</summary>
         </key>
 
@@ -103,12 +98,6 @@
         <key type="as" name="focus-right">
             <default><![CDATA[['<Super>Right','<Super>KP_Right','<Super>l']]]></default>
             <summary>Focus right window</summary>
-        </key>
-
-        <!-- Launcher -->
-        <key type="as" name="activate-launcher">
-            <default><![CDATA[['<Super>slash']]]></default>
-            <summary>Search key combo</summary>
         </key>
 
         <!-- Window Management Keys -->
@@ -153,7 +142,6 @@
             <summary>Toggles auto-tiling on and off</summary>
         </key>
 
-
         <key type="as" name="tile-move-left">
             <default><![CDATA[['Left','KP_Left','h']]]></default>
             <summary>Move window left</summary>
@@ -175,22 +163,22 @@
         </key>
 
         <key type="as" name="tile-move-left-global">
-            <default><![CDATA[[]]]></default>
+            <default><![CDATA[['<Primary><Super>Left','<Primary><Super>KP_Left','<Primary><Super>h','<Super><Shift>Left','<Super><Shift>KP_Left','<Super><Shift>h']]]></default>
             <summary>Move window left</summary>
         </key>
 
         <key type="as" name="tile-move-down-global">
-            <default><![CDATA[[]]]></default>
+            <default><![CDATA[['<Primary><Super>Down','<Primary><Super>KP_Down','<Primary><Super>j','<Super><Shift>Down','<Super><Shift>KP_Down','<Super><Shift>j']]]></default>
             <summary>Move window down</summary>
         </key>
 
         <key type="as" name="tile-move-up-global">
-            <default><![CDATA[[]]]></default>
+            <default><![CDATA[['<Primary><Super>Up','<Primary><Super>KP_Up','<Primary><Super>k','<Super><Shift>Up','<Super><Shift>KP_Up','<Super><Shift>k']]]></default>
             <summary>Move window up</summary>
         </key>
 
         <key type="as" name="tile-move-right-global">
-            <default><![CDATA[[]]]></default>
+            <default><![CDATA[['<Primary><Super>Right','<Primary><Super>KP_Right','<Primary><Super>l','<Super><Shift>Right','<Super><Shift>KP_Right','<Super><Shift>l']]]></default>
             <summary>Move window right</summary>
         </key>
 
@@ -241,15 +229,14 @@
             <summary>Swap window right</summary>
         </key>
 
-        <!-- Workspace Management -->
-
+        <!-- Workspace & Monitor Management -->
         <key type="as" name="pop-workspace-down">
-            <default><![CDATA[['<Super><Shift>Down','<Super><Shift>KP_Down','<Super><Shift>j']]]></default>
+            <default><![CDATA[['<Super><Shift>Page_Down','<Super><Shift><Alt>Down','<Super><Shift><Alt>j']]]></default>
             <summary>Move window to the lower workspace</summary>
         </key>
 
         <key type="as" name="pop-workspace-up">
-            <default><![CDATA[['<Super><Shift>Up','<Super><Shift>KP_Up','<Super><Shift>k']]]></default>
+            <default><![CDATA[['<Super><Shift>Page_Up','<Super><Shift><Alt>Up','<Super><Shift><Alt>k']]]></default>
             <summary>Move window to the upper workspace</summary>
         </key>
 
@@ -264,23 +251,24 @@
         </key>
 
         <key type="as" name="pop-monitor-left">
-            <default><![CDATA[['<Super><Shift>Left','<Super><Shift>KP_Left','<Super><Shift>h']]]></default>
+            <default><![CDATA[['<Super><Shift><Primary>Left','<Super><Shift><Primary>KP_Left','<Super><Shift><Primary>h']]]></default>
             <summary>Move window to the leftward monitor</summary>
         </key>
 
         <key type="as" name="pop-monitor-right">
-            <default><![CDATA[['<Super><Shift>Right','<Super><Shift>KP_Right','<Super><Shift>l']]]></default>
+            <default><![CDATA[['<Super><Shift><Primary>Right','<Super><Shift><Primary>KP_Right','<Super><Shift><Primary>l']]]></default>
             <summary>Move window to the rightward monitor</summary>
         </key>
 
         <key type="s" name="hint-color-rgba">
-            <default>'rgba(251, 184, 108, 1)'</default>
+            <default>'rgb(255,0,0)'</default>
             <summary>The current active-hint-color in RGBA</summary>
         </key>
+
         <key type="u" name="log-level">
             <default>0</default>
             <summary>
-                Derive some log4j level/order
+                Log level order:
                 0 - OFF
                 1 - ERROR
                 2 - WARN

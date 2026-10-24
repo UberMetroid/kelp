@@ -1,9 +1,11 @@
 {
-    "name": "Pop Shell",
-    "description": "Pop Shell",
-    "version": 2,
-    "uuid": "pop-shell@system76.com",
-    "settings-schema": "org.gnome.shell.extensions.pop-shell",
+    "name": "Kelp",
+    "description": "Hardened, zero-subprocess Wayland binary-tree auto-tiling and window stacking extension for GNOME Shell, with Hyprland-style directional navigation and active window borders.\n\nDerived from System76 Pop Shell (GPL-3.0-only).",
+    "uuid": "kelp@ubermetroid.github.io",
+    "url": "https://github.com/UberMetroid/kelp",
+    "settings-schema": "org.gnome.shell.extensions.kelp",
+    "gettext-domain": "kelp@ubermetroid.github.io",
+    "version-name": "1.0.0",
     "shell-version": [
         "45",
         "46",

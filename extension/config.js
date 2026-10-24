@@ -1,7 +1,19 @@
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
-const CONF_DIR = GLib.get_user_config_dir() + '/pop-shell';
-export var CONF_FILE = CONF_DIR + '/config.json';
+import * as log from './log.js';
+
+function config_dir() {
+    return `${GLib.get_user_config_dir()}/kelp`;
+}
+
+function config_file() {
+    return `${config_dir()}/config.json`;
+}
+
+function legacy_config_file() {
+    return `${GLib.get_user_config_dir()}/pop-shell/config.json`;
+}
+
 export const DEFAULT_FLOAT_RULES = [
     { class: 'Authy Desktop' },
     { class: 'Com.github.amezin.ddterm' },
@@ -40,6 +52,7 @@ export const DEFAULT_FLOAT_RULES = [
     { class: '^.*action=join.*$' },
     { class: 'gjs' },
 ];
+
 export const SKIPTASKBAR_EXCEPTIONS = [
     { class: 'Conky' },
     { class: 'gjs' },
@@ -47,12 +60,14 @@ export const SKIPTASKBAR_EXCEPTIONS = [
     { class: 'Com.github.amezin.ddterm' },
     { class: 'plank' },
 ];
+
 export class Config {
     constructor() {
         this.float = [];
         this.skiptaskbarhidden = [];
         this.log_on_focus = false;
     }
+
     add_app_exception(wmclass) {
         for (const r of this.float) {
             if (r.class === wmclass && r.title === undefined)
@@ -61,6 +76,7 @@ export class Config {
         this.float.push({ class: wmclass });
         this.sync_to_disk();
     }
+
     add_window_exception(wmclass, title) {
         for (const r of this.float) {
             if (r.class === wmclass && r.title === title)
@@ -69,6 +85,7 @@ export class Config {
         this.float.push({ class: wmclass, title });
         this.sync_to_disk();
     }
+
     window_shall_float(wclass, title) {
         for (const rule of this.float.concat(DEFAULT_FLOAT_RULES)) {
             if (rule.class) {
@@ -85,9 +102,10 @@ export class Config {
         }
         return false;
     }
+
     skiptaskbar_shall_hide(meta_window) {
-        let wmclass = meta_window.get_wm_class();
-        let wmtitle = meta_window.get_title();
+        const wmclass = meta_window.get_wm_class();
+        const wmtitle = meta_window.get_title();
         if (!meta_window.is_skip_taskbar())
             return false;
         for (const rule of this.skiptaskbarhidden.concat(SKIPTASKBAR_EXCEPTIONS)) {
@@ -105,17 +123,19 @@ export class Config {
         }
         return false;
     }
+
     reload() {
         const conf = Config.from_config();
         if (conf.tag === 0) {
-            let c = conf.value;
-            this.float = c.float;
-            this.log_on_focus = c.log_on_focus;
+            const c = conf.value;
+            this.float = Array.isArray(c.float) ? c.float : [];
+            this.log_on_focus = Boolean(c.log_on_focus);
         }
         else {
-            log(`error loading conf: ${conf.why}`);
+            log.warn(`error loading conf: ${conf.why}`);
         }
     }
+
     rule_disabled(rule) {
         for (const value of this.float.values()) {
             if (value.disabled && rule.class === value.class && value.title === rule.title) {
@@ -124,9 +144,11 @@ export class Config {
         }
         return false;
     }
+
     to_json() {
         return JSON.stringify(this, set_to_json, 2);
     }
+
     toggle_system_exception(wmclass, wmtitle, disabled) {
         if (disabled) {
             for (const value of DEFAULT_FLOAT_RULES) {
@@ -151,9 +173,10 @@ export class Config {
             swap_remove(this.float, index);
         this.sync_to_disk();
     }
+
     remove_user_exception(wmclass, wmtitle) {
         let index = 0;
-        let found = new Array();
+        const found = new Array();
         for (const value of this.float.values()) {
             if (value.class === wmclass && value.title === wmtitle) {
                 found.push(index);
@@ -166,31 +189,38 @@ export class Config {
             this.sync_to_disk();
         }
     }
+
     static from_json(json) {
         try {
             return JSON.parse(json);
         }
-        catch (error) {
+        catch (_error) {
             return new Config();
         }
     }
+
     static from_config() {
         const stream = Config.read();
         if (stream.tag === 1)
             return stream;
-        let value = Config.from_json(stream.value);
+        const value = Config.from_json(stream.value);
         return { tag: 0, value };
     }
+
     static gio_file() {
         try {
-            const conf = Gio.File.new_for_path(CONF_FILE);
+            const conf = Gio.File.new_for_path(config_file());
             if (!conf.query_exists(null)) {
-                const dir = Gio.File.new_for_path(CONF_DIR);
-                if (!dir.query_exists(null) && !dir.make_directory(null)) {
-                    return { tag: 1, why: 'failed to create pop-shell config directory' };
+                const legacy = Gio.File.new_for_path(legacy_config_file());
+                if (legacy.query_exists(null)) {
+                    return { tag: 0, value: legacy };
+                }
+                const dir = Gio.File.new_for_path(config_dir());
+                if (!dir.query_exists(null) && !dir.make_directory_with_parents(null)) {
+                    return { tag: 1, why: 'failed to create kelp config directory' };
                 }
                 const example = new Config();
-                example.float.push({ class: 'pop-shell-example', title: 'pop-shell-example' });
+                example.float.push({ class: 'steam' });
                 conf.create(Gio.FileCreateFlags.NONE, null).write_all(JSON.stringify(example, undefined, 2), null);
             }
             return { tag: 0, value: conf };
@@ -199,6 +229,7 @@ export class Config {
             return { tag: 1, why: `Gio.File I/O error: ${why}` };
         }
     }
+
     static read() {
         try {
             const file = Config.gio_file();
@@ -208,31 +239,37 @@ export class Config {
             return { tag: 0, value: new TextDecoder().decode(buffer) };
         }
         catch (why) {
-            return { tag: 1, why: `failed to read pop-shell config: ${why}` };
+            return { tag: 1, why: `failed to read kelp config: ${why}` };
         }
     }
+
     static write(data) {
         try {
-            const file = Config.gio_file();
-            if (file.tag === 1)
-                return file;
-            file.value.replace_contents(data, null, false, Gio.FileCreateFlags.NONE, null);
-            return { tag: 0, value: file.value };
+            const dir = Gio.File.new_for_path(config_dir());
+            if (!dir.query_exists(null)) {
+                dir.make_directory_with_parents(null);
+            }
+            const conf = Gio.File.new_for_path(config_file());
+            conf.replace_contents(data, null, false, Gio.FileCreateFlags.NONE, null);
+            return { tag: 0, value: conf };
         }
         catch (why) {
             return { tag: 1, why: `failed to write to config: ${why}` };
         }
     }
+
     sync_to_disk() {
         Config.write(this.to_json());
     }
 }
+
 function set_to_json(_key, value) {
     if (typeof value === 'object' && value instanceof Set) {
         return [...value];
     }
     return value;
 }
+
 function swap_remove(array, index) {
     array[index] = array[array.length - 1];
     return array.pop();

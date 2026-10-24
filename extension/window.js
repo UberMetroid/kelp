@@ -4,14 +4,10 @@ import * as Rect from './rectangle.js';
 import * as Tags from './tags.js';
 import * as utils from './utils.js';
 import * as focus from './focus.js';
-import Gdk from 'gi://Gdk';
 import Meta from 'gi://Meta';
-import Shell from 'gi://Shell';
 import St from 'gi://St';
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-
-export var window_tracker = Shell.WindowTracker.get_default();
 
 export class ShellWindow {
     constructor(entity, window, window_app, ext) {
@@ -23,6 +19,7 @@ export class ShellWindow {
         this.reassignment = false;
         this.smart_gapped = false;
         this.restack_id = null;
+        this.hint_change_id = null;
         this.border = new St.Bin({
             style_class: 'pop-shell-active-hint pop-shell-border-normal',
         });
@@ -47,12 +44,15 @@ export class ShellWindow {
         if (this.meta.get_compositor_private()?.get_stage())
             this.on_style_changed();
     }
+
     activate(move_mouse = true) {
         activate(this.ext, move_mouse, this.meta);
     }
+
     actor_exists() {
         return !this.destroying && this.meta.get_compositor_private() !== null;
     }
+
     bind_window_events() {
         this.ext.window_signals
             .get_or(this.entity, () => new Array())
@@ -68,11 +68,12 @@ export class ShellWindow {
             this.window_raised();
         }));
     }
+
     bind_hint_events() {
         if (!this.border)
             return;
-        let settings = this.ext.settings;
-        let change_id = settings.ext.connect('changed', (_, key) => {
+        const settings = this.ext.settings;
+        this.hint_change_id = settings.ext.connect('changed', (_, key) => {
             if (this.border) {
                 if (key === 'hint-color-rgba') {
                     this.update_hint_colors();
@@ -81,7 +82,10 @@ export class ShellWindow {
             return false;
         });
         this.border.connect('destroy', () => {
-            settings.ext.disconnect(change_id);
+            if (this.hint_change_id !== null) {
+                settings.ext.disconnect(this.hint_change_id);
+                this.hint_change_id = null;
+            }
             if (this.restack_id !== null) {
                 GLib.source_remove(this.restack_id);
                 this.restack_id = null;
@@ -92,28 +96,47 @@ export class ShellWindow {
         });
         this.update_hint_colors();
     }
+
+    destroy() {
+        this.destroying = true;
+        if (this.restack_id !== null) {
+            GLib.source_remove(this.restack_id);
+            this.restack_id = null;
+        }
+        if (this.hint_change_id !== null) {
+            this.ext.settings.ext.disconnect(this.hint_change_id);
+            this.hint_change_id = null;
+        }
+        if (this.border) {
+            const border = this.border;
+            this.border = null;
+            border.destroy();
+        }
+    }
+
     update_hint_colors() {
-        let settings = this.ext.settings;
+        const settings = this.ext.settings;
         const color_value = settings.hint_color_rgba();
         if (this.ext.overlay) {
-            const gdk = new Gdk.RGBA();
-            const overlay_alpha = 0.3;
-            const orig_overlay = 'rgba(53, 132, 228, 0.3)';
-            gdk.parse(color_value);
-            if (utils.is_dark(gdk.to_string())) {
-                gdk.parse(orig_overlay);
-            }
-            gdk.alpha = overlay_alpha;
-            this.ext.overlay.set_style(`background: ${gdk.to_string()}`);
+            const parsed = utils.parse_rgba(color_value);
+            const overlay_str = parsed && !utils.is_dark(color_value)
+                ? `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, 0.3)`
+                : 'rgba(53, 132, 228, 0.3)';
+            this.ext.overlay.set_style(`background: ${overlay_str}`);
         }
         this.update_border_style();
     }
+
     cmdline() {
         return null;
     }
+
     decoration(_ext, _callback) { }
+
     decoration_hide(_ext) { }
+
     decoration_show(_ext) { }
+
     icon(_ext, size) {
         let icon = this.window_app.create_icon_texture(size);
         if (!icon) {
@@ -125,37 +148,47 @@ export class ShellWindow {
         }
         return icon;
     }
+
     ignore_decoration() {
         return true;
     }
+
     is_client_decorated() {
         return this.meta.is_client_decorated?.() ?? true;
     }
+
     is_maximized() {
+        if (typeof this.meta.is_maximized === 'function') {
+            return this.meta.is_maximized();
+        }
         if (typeof this.meta.get_maximized === 'function') {
             return this.meta.get_maximized() !== 0;
         }
         return Boolean(this.meta.maximized_horizontally || this.meta.maximized_vertically);
     }
+
     is_max_screen() {
         return this.is_maximized() || this.ext.settings.gap_inner() === 0 || this.smart_gapped;
     }
+
     is_single_max_screen() {
         const display = this.meta.get_display();
         if (display) {
-            let monitor_count = display.get_n_monitors();
-            return (this.is_maximized() || this.smart_gapped) && monitor_count == 1;
+            const monitor_count = display.get_n_monitors();
+            return (this.is_maximized() || this.smart_gapped) && monitor_count === 1;
         }
         return false;
     }
+
     is_snap_edge() {
         if (typeof this.meta.get_maximized === 'function') {
             return this.meta.get_maximized() === (Meta.MaximizeFlags?.VERTICAL ?? 2);
         }
         return Boolean(this.meta.maximized_vertically && !this.meta.maximized_horizontally);
     }
+
     is_tilable(ext) {
-        let tile_checks = () => {
+        const tile_checks = () => {
             let wm_class = this.meta.get_wm_class();
             if (wm_class !== null && wm_class.trim().length === 0) {
                 wm_class = this.name(ext);
@@ -173,18 +206,21 @@ export class ShellWindow {
             if (wm_class !== null && ext.conf.window_shall_float(wm_class, this.title())) {
                 return ext.contains_tag(this.entity, Tags.ForceTile);
             }
-            return (this.meta.window_type == Meta.WindowType.NORMAL &&
+            return (this.meta.window_type === Meta.WindowType.NORMAL &&
                 !this.is_transient() &&
                 wm_class !== null);
         };
         return !ext.contains_tag(this.entity, Tags.Floating) && tile_checks();
     }
+
     is_transient() {
         return this.meta.get_transient_for() !== null;
     }
+
     may_decorate() {
         return false;
     }
+
     move(ext, rect, on_complete) {
         if (!this.same_workspace() && this.is_maximized()) {
             return;
@@ -213,33 +249,41 @@ export class ShellWindow {
             }
         }
     }
+
     name(ext) {
         return ext.names.get_or(this.entity, () => 'unknown');
     }
+
     on_style_changed() {
         if (!this.border)
             return;
         this.border_size = this.border.get_theme_node().get_border_width(St.Side.TOP);
     }
+
     rect() {
         return Rect.Rectangle.from_meta(this.meta.get_frame_rect());
     }
+
     size_hint() {
         return null;
     }
+
     swap(ext, other) {
-        let ar = this.rect().clone();
-        let br = other.rect().clone();
+        const ar = this.rect().clone();
+        const br = other.rect().clone();
         other.move(ext, ar);
         this.move(ext, br, () => place_pointer_on(this.ext, this.meta));
     }
+
     title() {
         const title = this.meta.get_title();
         return title ? title : this.name(this.ext);
     }
+
     wm_role() {
         return this.meta.get_role();
     }
+
     workspace_id() {
         const workspace = this.meta.get_workspace();
         if (workspace) {
@@ -250,9 +294,11 @@ export class ShellWindow {
             return 0;
         }
     }
+
     xid() {
         return null;
     }
+
     show_border() {
         if (!this.border)
             return;
@@ -260,7 +306,7 @@ export class ShellWindow {
         this.update_border_style();
         if (this.ext.settings.active_hint()) {
             const permitted = this.actor_exists() &&
-                this.ext.focus_window() == this &&
+                this.ext.focus_window() === this &&
                 !this.meta.is_fullscreen() &&
                 (!this.is_single_max_screen() || this.is_snap_edge()) &&
                 !this.meta.minimized;
@@ -269,17 +315,20 @@ export class ShellWindow {
             }
         }
     }
+
     same_workspace() {
         const workspace = this.meta.get_workspace();
         if (workspace) {
-            let workspace_id = workspace.index();
+            const workspace_id = workspace.index();
             return workspace_id === global.workspace_manager.get_active_workspace_index();
         }
         return false;
     }
+
     same_monitor() {
         return this.meta.get_monitor() === global.display.get_current_monitor();
     }
+
     restack() {
         this.update_border_layout();
         if (this.meta.is_fullscreen() || (this.is_single_max_screen() && !this.is_snap_edge()) || this.meta.minimized) {
@@ -296,7 +345,7 @@ export class ShellWindow {
                 win_group.set_child_above_sibling(border, null);
                 if (this.always_top_windows.length > 0) {
                     for (const above_actor of this.always_top_windows) {
-                        if (actor != above_actor) {
+                        if (actor !== above_actor) {
                             if (border.get_parent() === above_actor.get_parent()) {
                                 win_group.set_child_below_sibling(border, above_actor);
                             }
@@ -327,19 +376,22 @@ export class ShellWindow {
             });
         }
     }
+
     get always_top_windows() {
-        let above_windows = new Array();
+        const above_windows = new Array();
         for (const actor of global.get_window_actors()) {
             if (actor && actor.get_meta_window() && actor.get_meta_window().is_above())
                 above_windows.push(actor);
         }
         return above_windows;
     }
+
     hide_border() {
-        let b = this.border;
+        const b = this.border;
         if (b)
             b.hide();
     }
+
     update_border_layout() {
         let { x, y, width, height } = this.meta.get_frame_rect();
         const border = this.border;
@@ -387,6 +439,7 @@ export class ShellWindow {
             }
         }
     }
+
     update_border_style() {
         const { settings } = this.ext;
         const color_value = settings.hint_color_rgba();
@@ -395,6 +448,7 @@ export class ShellWindow {
             this.border.set_style(`border-color: ${color_value}; border-radius: ${radius_value}px;`);
         }
     }
+
     wm_class_changed() {
         if (this.is_tilable(this.ext)) {
             this.ext.connect_window(this);
@@ -403,18 +457,22 @@ export class ShellWindow {
             }
         }
     }
+
     window_changed() {
         this.update_border_layout();
         this.ext.show_border_on_focused();
     }
+
     window_raised() {
         this.restack();
         this.ext.show_border_on_focused();
     }
+
     workspace_changed() {
         this.restack();
     }
 }
+
 export function activate(ext, move_mouse, win) {
     try {
         if (!win.get_compositor_private())
@@ -442,18 +500,20 @@ export function activate(ext, move_mouse, win) {
         log.error(`failed to activate window: ${error}`);
     }
 }
+
 function pointer_in_work_area() {
     const cursor = lib.cursor_rect();
     const indice = global.display.get_current_monitor();
     const mon = global.display.get_workspace_manager().get_active_workspace().get_work_area_for_monitor(indice);
     return mon ? cursor.intersects(mon) : false;
 }
+
 function place_pointer_on(ext, win) {
     const rect = win.get_frame_rect();
     let x = rect.x;
     let y = rect.y;
-    let key = Object.keys(focus.FocusPosition)[ext.settings.mouse_cursor_focus_location()];
-    let pointer_position_ = focus.FocusPosition[key];
+    const key = Object.keys(focus.FocusPosition)[ext.settings.mouse_cursor_focus_location()];
+    const pointer_position_ = focus.FocusPosition[key];
     switch (pointer_position_) {
         case focus.FocusPosition.TopLeft:
             x += 8;
@@ -481,6 +541,7 @@ function place_pointer_on(ext, win) {
     }
     global.stage.get_context().get_backend().get_default_seat().warp_pointer(x, y);
 }
+
 function pointer_already_on_window(meta) {
     const cursor = lib.cursor_rect();
     return cursor.intersects(meta.get_frame_rect());

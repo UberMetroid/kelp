@@ -230,8 +230,12 @@ export class Stack {
                 }
                 return false;
             });
+            tab.hint_signal = change_id;
             button.connect('destroy', () => {
-                settings.ext.disconnect(change_id);
+                if (tab.hint_signal) {
+                    settings.ext.disconnect(tab.hint_signal);
+                    tab.hint_signal = null;
+                }
             });
         }
         this.change_tab_color(tab);
@@ -267,6 +271,10 @@ export class Stack {
                 window.meta.get_compositor_private()?.show();
         }
         c.signals = [];
+        if (c.hint_signal) {
+            this.ext.settings.ext.disconnect(c.hint_signal);
+            c.hint_signal = null;
+        }
         if (c.button_signal) {
             const b = this.buttons.get(c.button);
             if (b) {
@@ -305,6 +313,10 @@ export class Stack {
         }
         if (this.widgets) {
             const tabs = this.widgets.tabs;
+            if (this.tabs_destroy) {
+                tabs.disconnect(this.tabs_destroy);
+                this.tabs_destroy = null;
+            }
             this.widgets = null;
             tabs.destroy();
         }

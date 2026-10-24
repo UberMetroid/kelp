@@ -5,22 +5,14 @@ import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/
 import * as settings from './settings.js';
 import * as log from './log.js';
 import * as focus from './focus.js';
-export default class PopShellPreferences extends ExtensionPreferences {
+export default class KelpPreferences extends ExtensionPreferences {
     getPreferencesWidget() {
-        globalThis.popShellExtension = this;
-        let dialog = settings_dialog_new();
-        if (dialog.show_all) {
-            dialog.show_all();
-        }
-        else {
-            dialog.show();
-        }
-        return dialog;
+        return settings_dialog_new(this.getSettings());
     }
 }
-function settings_dialog_new() {
+function settings_dialog_new(ext_settings) {
     let [app, grid] = settings_dialog_view();
-    let ext = new settings.ExtensionSettings();
+    let ext = new settings.ExtensionSettings(ext_settings);
     app.window_titles.set_active(ext.show_title());
     app.window_titles.connect('state-set', (_widget, state) => {
         ext.set_show_title(state);

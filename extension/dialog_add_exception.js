@@ -6,7 +6,7 @@ export class AddExceptionDialog {
     constructor(cancel, this_app, current_window, on_close) {
         this.dialog = new ModalDialog.ModalDialog({
             styleClass: 'pop-shell-search modal-dialog',
-            destroyOnClose: false,
+            destroyOnClose: true,
             shellReactive: true,
             shouldFadeIn: false,
             shouldFadeOut: false,

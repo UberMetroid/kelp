@@ -1,0 +1,51 @@
+name: CI & EGO Bundle Verification
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verification Ladder & EGO Package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Install GNOME Shell extension tools (glib-compile-schemas, gnome-extensions, unzip)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libglib2.0-bin gnome-shell-common gnome-shell unzip
+
+      - name: Run unit, Page Rule, EGO lint, and installer tests
+        run: cargo test --workspace --all-targets
+
+      - name: Run strict Clippy gate
+        run: cargo clippy --workspace --all-targets -- -D warnings -D clippy::unwrap_used -D clippy::expect_used -D clippy::panic
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Build EGO extension zip bundle
+        run: |
+          ./target/release/kelp --pack dist
+          unzip -l dist/kelp@ubermetroid.github.io.shell-extension.zip
+
+      - name: Upload EGO extension zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kelp-shell-extension-zip
+          path: dist/kelp@ubermetroid.github.io.shell-extension.zip

@@ -1,114 +1,85 @@
-# Kelp (`UberMetroid/kelp`)
+# Kelp (`kelp@ubermetroid.github.io`)
 
-**Kelp** is a hardened, zero-subprocess, low-latency **Wayland auto-tiling extension** for **GNOME 50 & GNOME 51 (Mutter 18 / 19)** on Fedora Linux, bundled with a **zero-dependency pure-Rust installer (`kelp`)** that embeds all extension assets, schemas, floating exceptions, and Hyprland-style keybindings into a single native binary.
+**Kelp** is a hardened, zero-subprocess Wayland auto-tiling extension for **GNOME 45–51** (Mutter 13–19), compliant with the official [GNOME Extensions (`extensions.gnome.org` / EGO) Review Guidelines](https://gjs.guide/extensions/review-guidelines/review-guidelines.html) and packaged inside a single zero-dependency Rust installer & bundler (`kelp`).
 
-Named after the underwater kelp forest to match the extension's core `Forest` binary-tree tiling data structure (`forest.js`).
-
----
-
-## Hardening & Performance Optimizations Over Upstream `pop-shell`
-
-1. **Zero Subprocess Spawning & Dead Module Elimination (~35 KB of legacy JS removed)**
-   - **Deleted legacy modules**: Removed `launcher.js`, `launcher_service.js`, `search.js`, `context.js`, `scheduler.js`, `xprop.js`, `dbus_service.js`, `color_dialog/`, and `floating_exceptions/`.
-   - **Zero `Gio.Subprocess` / `GLib.spawn_*` calls**: Removed `async_process()`, `async_process_ipc()`, and `os_release()` from `utils.js`, external GJS dialog spawners from `panel_settings.js` and `extension.js`, and blocking X11 `xprop` calls from `window.js`.
-   - **Pure Wayland / Mutter window inspection**: `ShellWindow` queries `this.meta.get_role()` and `this.meta.is_client_decorated?.() ?? true` directly without synchronous `/proc/<pid>/cmdline` file reads or external processes.
-   - **Removed unauthenticated D-Bus surface & failed Pop!_OS IPC**: Eliminated the unauthenticated `/com/System76/PopShell` D-Bus service (`dbus_service.js`) and failed D-Bus calls to Pop!_OS's `com.system76.Scheduler` (`scheduler.js`).
-
-2. **Batched Event Execution & Zero Polling Timers (`executor.js`, `window.js`)**
-   - **Batched `GLib.PRIORITY_HIGH_IDLE` Queue Drain**: Replaced TypeScript-transpiled `WeakMap` boilerplate in `executor.js` with native ES2022 private fields (`#event_loop`, `#events`) and updated `GLibExecutor.wake()` to drain the entire event queue in a single main-loop tick instead of processing one event per idle frame.
-   - **Eliminated 600ms & 200–430ms Repeating Timers**: Removed the 5-iteration 600ms `ACTIVE_HINT_SHOW_ID` timer in `show_border()` and the 3-iteration 200–430ms `SCHEDULED_RESTACK` timer in `restack()`, replacing them with immediate event-driven border updates and restacking.
-
-3. **Zero Hot-Path Logging & GSettings FFI Lookups (`log.js`, `extension.js`, `auto_tiler.js`)**
-   - Cached `LOG_ENABLED` and the numeric log level in `log.js` (updated only on `changed::log-level`) so `log.debug()` / `log.info()` never cross the GObject FFI boundary to query `GSettings` during window operations.
-   - Stripped and guarded hot-path template string allocations across `extension.js`, `auto_tiler.js`, and `prefs.js`.
-
-4. **GNOME 50 & GNOME 51 (Mutter 18 / 19) API Compatibility**
-   - Replaced removed `Clutter.Backend.get_default_seat()` with `global.stage.get_context().get_backend().get_default_seat().warp_pointer(x, y)`.
-   - Replaced removed `Meta.MotionDirection` monitor/workspace neighbor lookups with `Meta.DisplayDirection.{LEFT,RIGHT,UP,DOWN}`.
-   - Replaced all legacy GJS `imports.*` globals with standard ESM imports and `new TextDecoder().decode(...)`.
-   - Added `this.meta.get_maximized()` checks and modern `St.BoxLayout({ orientation: Clutter.Orientation.* })` / `.add_child(...)` calls.
-   - Added `org.gnome.desktop.interface` `color-scheme === 'prefer-dark'` detection and crisp `rgb(255,0,0)` active hint border styling.
+Derived from System76's Pop Shell auto-tiling engine, Kelp strips out all legacy subprocesses (`xprop`, `/proc` readers, external GTK3 color/exception app spawners, launcher services, and D-Bus daemons) and modernizes every GJS module for modern Wayland GNOME Shell sessions.
 
 ---
 
-## One-Command Installation
+## Key Features & Hardening
 
-No shell scripts required. The `kelp` Rust binary embeds the entire hardened extension tree, compiled GSettings schemas, float rules, and `gsettings` configuration:
+1. **100% EGO (`extensions.gnome.org`) Compliant**:
+   - Independent extension identity (`kelp@ubermetroid.github.io`) and GSettings schema (`org.gnome.shell.extensions.kelp` at `/org/gnome/shell/extensions/kelp/`).
+   - Strict process-boundary isolation: GNOME Shell modules never import `gi://Gdk`, `gi://Gtk`, or `gi://Adw`; `prefs.js` uses `ExtensionPreferences` and `this.getSettings()`.
+   - Zero import-time GObject/Shell mutations before `enable()` and full signal, timer, executor, widget, and stylesheet teardown in `disable()`.
+   - Built-in `--pack` flag (`kelp --pack [OUT_DIR]`) that runs `gnome-extensions pack` to produce an upload-ready `kelp@ubermetroid.github.io.shell-extension.zip` archive.
+2. **GNOME 45–51 / Mutter Wayland Compatibility**:
+   - Uses `Clutter.Orientation` on `St.BoxLayout` (replacing removed `vertical` boolean property).
+   - Uses `global.stage.get_context().get_backend().get_default_seat().warp_pointer()` for Wayland-safe cursor focus warping.
+   - Uses `Meta.DisplayDirection` and supports both `Meta.Window.is_maximized()` (GNOME 49/50+) and `Meta.Window.get_maximized()`.
+   - Native ES2022 private class fields (`#event_loop`, `#events`, `#executor`) and batched `GLib.PRIORITY_HIGH_IDLE` event draining.
+   - Event-driven `notify::minimized` and `restacked` signals (zero background polling timers).
+3. **Hyprland-Style Keybindings & Defaults**:
+   - Auto-tiles windows by default (`tile-by-default = true`) with a `2px` red active-window border (`rgb(255,0,0)`), `2px` inner/outer gaps, and hidden titlebars (`show-title = false`).
+   - Direct directional window movement (`<Super><Shift>Arrows/HJKL` and `<Primary><Super>Arrows/HJKL`) without entering a modal grab mode.
+   - Workspaces `1–10` mapped to `<Super>1..0` (switch) and `<Super><Shift>1..0` (move window).
+
+---
+
+## Installation & Usage
+
+### Build & Install from Source
 
 ```bash
-git clone git@github.com:UberMetroid/kelp.git ~/.local/src/kelp
-cd ~/.local/src/kelp
-cargo run --release
-```
+cargo build --release
+install -Dm755 target/release/kelp ~/.local/bin/kelp
 
-Or install the binary to `~/.local/bin/kelp` (or `~/.cargo/bin/kelp`) and run it anytime:
-
-```bash
-cargo install --path .
+# Install extension to ~/.local/share/gnome-shell/extensions/kelp@ubermetroid.github.io,
+# write ~/.config/kelp/config.json, apply Hyprland-style gsettings, and enable the extension:
 kelp
 ```
 
-### Installer Flags
+### Generate an `extensions.gnome.org` (EGO) Upload Bundle
 
-| Flag | Description |
-| :--- | :--- |
-| `--user` | **(Default)** Cleanly installs the extension to `~/.local/share/gnome-shell/extensions/pop-shell@system76.com` with compiled schemas, writes `~/.config/pop-shell/config.json`, applies all `gsettings`, and enables the extension. |
-| `--system` | Installs the extension system-wide to `/usr/share/gnome-shell/extensions/pop-shell@system76.com`, `/usr/share/glib-2.0/schemas/`, and `/usr/share/gnome-control-center/keybindings/` (elevates via `run0` if not root), then applies user `gsettings`. |
-| `--target-dir <DIR>` | Extracts the hardened extension tree and compiled schemas to `<DIR>`. |
-| `--skip-gsettings` | Installs files only without executing `gsettings` or `gnome-extensions`. |
-| `--dry-run` | Prints every file write and `gsettings` command without modifying the system. |
+```bash
+kelp --pack .
+# Produces: ./kelp@ubermetroid.github.io.shell-extension.zip
+```
 
----
+### CLI Options
 
-## Hyprland-Style Keybindings & Tiling Configuration
+```text
+USAGE:
+    kelp [OPTIONS]
 
-`kelp` configures GNOME 50/51 for a keyboard-driven, Hyprland-inspired workflow:
-
-- **Auto-tiling enabled by default** (`tile-by-default = true`)
-- **Window gaps**: `2px` inner, `2px` outer (`smart-gaps = false`)
-- **Active window border**: `3px` solid `#FF0000` (`rgb(255,0,0)`), `2px` border radius
-- **Server-side titlebars hidden** (`show-title = false`)
-- **Focus mode**: Click-to-focus (`focus-mode = 'click'`), cursor warping disabled (`mouse-cursor-follows-active-window = false`)
-- **Mutter conflicts disabled**: `auto-maximize = false`, `edge-tiling = false`, `toggle-tiled-left/right = []`
-
-### Keybindings Reference
-
-| Action | Shortcut (Arrows) | Shortcut (Vim / HJKL) |
-| :--- | :--- | :--- |
-| **Focus Window** (Left / Down / Up / Right) | `Super + Left / Down / Up / Right` | `Super + H / J / K / L` |
-| **Move / Swap Tiled Window** (Direct Global) | `Super + Shift + Left / Down / Up / Right`<br>`Ctrl + Super + Left / Down / Up / Right` | `Super + Shift + H / J / K / L`<br>`Ctrl + Super + H / J / K / L` |
-| **Switch to Workspace 1–9, 10** | `Super + 1..9`, `Super + 0` | `Super + 1..9`, `Super + 0` |
-| **Move Window to Workspace 1–9, 10** | `Super + Shift + 1..9`, `Super + Shift + 0` | `Super + Shift + 1..9`, `Super + Shift + 0` |
-| **Switch Workspace Relative** (Left / Right / Up / Down) | `Super + Alt + Left / Right / Up / Down` | `Super + Alt + H / L / K / J` |
-| **Move Window to Workspace** (Left / Right) | `Super + Alt + Shift + Left / Right` | `Super + Alt + Shift + H / L` |
-| **Move Window to Workspace** (Up / Down) | `Super + Shift + Alt + Up / Down`<br>`Super + Shift + Page_Up / Page_Down` | `Super + Shift + Alt + K / J` |
-| **Move Window to Monitor** (Left / Down / Up / Right) | `Ctrl + Super + Shift + Left / Down / Up / Right` | `Ctrl + Super + Shift + H / J / K / L` |
-| **Toggle Floating / Tiled** | `Super + G` | `Super + G` |
-| **Toggle Split Orientation** (Horizontal / Vertical) | `Super + O` | `Super + O` |
-| **Toggle Stacking Mode** | `Super + S` | `Super + S` |
-| **Toggle Auto-Tiling** | `Super + Y` | `Super + Y` |
-| **Enter Adjustment / Resize Mode** | `Super + Enter` (`Shift + Arrows/HJKL` to resize, `Enter`/`Esc` to exit) | `Super + Enter` |
-| **GNOME Quick Settings** (remapped off `Super+S`) | `Ctrl + Super + S` | `Ctrl + Super + S` |
+OPTIONS:
+    --user              Install extension into ~/.local/share/gnome-shell/extensions/kelp@ubermetroid.github.io (default)
+    --system            Install extension system-wide in /usr/share/gnome-shell/extensions/kelp@ubermetroid.github.io (uses run0 if not root)
+    --pack [OUT_DIR]    Build an EGO-ready kelp@ubermetroid.github.io.shell-extension.zip bundle in OUT_DIR (default: .)
+    --target-dir <DIR>  Install extension files into a custom directory
+    --skip-gsettings    Install files only; do not run gsettings or gnome-extensions
+    --dry-run           Print actions without modifying the system
+    -h, --help          Print this help message
+```
 
 ---
 
-## Floating Exceptions (`~/.config/pop-shell/config.json`)
+## Repository Structure
 
-Installed automatically by `kelp`:
-
-- `steam`
-- `caligula`
-- `btm`
-- `macchina`
-- `log_on_focus: false`
+```text
+kelp/
+├── AGENTS.md           # House Laws, Page Rule (16–256 lines), and EGO invariants
+├── Cargo.toml          # Zero external dependencies
+├── config/             # Default floating window exceptions (config.json)
+├── extension/          # EGO-compliant GNOME Shell Extension (kelp@ubermetroid.github.io)
+├── keybindings/        # GNOME Settings keyboard shortcut XML definitions
+├── schemas/            # GSettings schema (org.gnome.shell.extensions.kelp.gschema.xml)
+├── src/                # Modular Rust installer & EGO packager (7 focused pages)
+└── tests/              # Page Rule, EGO static lint, and installer/packager integration tests
+```
 
 ---
 
-## License & Attribution
+## License
 
-**License**: [GNU General Public License v3.0 only (GPL-3.0-only)](./LICENSE)
-
-**Attribution & Notice of Modification**:
-- Original work: Copyright © System76, Inc. (`https://github.com/pop-os/shell`), distributed under the GNU General Public License v3.0.
-- Modified work (`kelp`): Copyright © 2026 UberMetroid (`https://github.com/UberMetroid/kelp`).
-- Per GPL-3.0 § 5, this repository is a modified derivative work of System76's `pop-shell` refactored into a hardened, Wayland-native GNOME 50/51+ auto-tiling core with all legacy subprocess spawners, X11 `xprop` helpers, `pop-launcher` integration, `system76-scheduler` IPC, and unauthenticated D-Bus services removed, packaged with a standalone Rust installer.
+GPL-3.0-only (see [LICENSE](LICENSE)). Original Pop Shell copyright System76; Kelp hardening and EGO port copyright UberMetroid.
