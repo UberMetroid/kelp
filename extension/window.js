@@ -1,11 +1,8 @@
 import * as lib from './lib.js';
 import * as log from './log.js';
-import * as once_cell from './once_cell.js';
 import * as Rect from './rectangle.js';
 import * as Tags from './tags.js';
 import * as utils from './utils.js';
-import * as xprop from './xprop.js';
-import * as scheduler from './scheduler.js';
 import * as focus from './focus.js';
 import Gdk from 'gi://Gdk';
 import Meta from 'gi://Meta';
@@ -13,27 +10,9 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-const { OnceCell } = once_cell;
+
 export var window_tracker = Shell.WindowTracker.get_default();
-let SCHEDULED_RESTACK = null;
-let ACTIVE_HINT_SHOW_ID = null;
-const WM_TITLE_BLACKLIST = [
-    'Firefox',
-    'Nightly',
-    'Tor Browser',
-];
-var RESTACK_STATE;
-(function (RESTACK_STATE) {
-    RESTACK_STATE[RESTACK_STATE["RAISED"] = 0] = "RAISED";
-    RESTACK_STATE[RESTACK_STATE["WORKSPACE_CHANGED"] = 1] = "WORKSPACE_CHANGED";
-    RESTACK_STATE[RESTACK_STATE["NORMAL"] = 2] = "NORMAL";
-})(RESTACK_STATE || (RESTACK_STATE = {}));
-var RESTACK_SPEED;
-(function (RESTACK_SPEED) {
-    RESTACK_SPEED[RESTACK_SPEED["RAISED"] = 430] = "RAISED";
-    RESTACK_SPEED[RESTACK_SPEED["WORKSPACE_CHANGED"] = 300] = "WORKSPACE_CHANGED";
-    RESTACK_SPEED[RESTACK_SPEED["NORMAL"] = 200] = "NORMAL";
-})(RESTACK_SPEED || (RESTACK_SPEED = {}));
+
 export class ShellWindow {
     constructor(entity, window, window_app, ext) {
         this.stack = null;
@@ -43,16 +22,12 @@ export class ShellWindow {
         this.destroying = false;
         this.reassignment = false;
         this.smart_gapped = false;
+        this.restack_id = null;
         this.border = new St.Bin({
             style_class: 'pop-shell-active-hint pop-shell-border-normal',
         });
         this.prev_rect = null;
         this.was_hidden = false;
-        this.extra = {
-            normal_hints: new OnceCell(),
-            wm_role_: new OnceCell(),
-            xid_: new OnceCell(),
-        };
         this.border_size = 0;
         this.window_app = window_app;
         this.entity = entity;
@@ -61,16 +36,6 @@ export class ShellWindow {
         this.known_workspace = this.workspace_id();
         if (this.meta.is_fullscreen()) {
             ext.add_tag(entity, Tags.Floating);
-        }
-        if (this.may_decorate()) {
-            if (!this.is_client_decorated()) {
-                if (ext.settings.show_title()) {
-                    this.decoration_show(ext);
-                }
-                else {
-                    this.decoration_hide(ext);
-                }
-            }
         }
         this.bind_window_events();
         this.bind_hint_events();
@@ -117,6 +82,10 @@ export class ShellWindow {
         });
         this.border.connect('destroy', () => {
             settings.ext.disconnect(change_id);
+            if (this.restack_id !== null) {
+                GLib.source_remove(this.restack_id);
+                this.restack_id = null;
+            }
         });
         this.border.connect('style-changed', () => {
             this.on_style_changed();
@@ -140,39 +109,11 @@ export class ShellWindow {
         this.update_border_style();
     }
     cmdline() {
-        let pid = this.meta.get_pid(), out = null;
-        if (-1 === pid)
-            return out;
-        const path = '/proc/' + pid + '/cmdline';
-        if (!utils.exists(path))
-            return out;
-        const result = utils.read_to_string(path);
-        if (result.kind == 1) {
-            out = result.value.trim();
-        }
-        else {
-            log.error(`failed to fetch cmdline: ${result.value.format()}`);
-        }
-        return out;
+        return null;
     }
-    decoration(_ext, callback) {
-        if (this.may_decorate()) {
-            const xid = this.xid();
-            if (xid)
-                callback(xid);
-        }
-    }
-    decoration_hide(ext) {
-        if (this.ignore_decoration())
-            return;
-        this.was_hidden = true;
-        this.decoration(ext, (xid) => xprop.set_hint(xid, xprop.MOTIF_HINTS, xprop.HIDE_FLAGS));
-    }
-    decoration_show(ext) {
-        if (!this.was_hidden)
-            return;
-        this.decoration(ext, (xid) => xprop.set_hint(xid, xprop.MOTIF_HINTS, xprop.SHOW_FLAGS));
-    }
+    decoration(_ext, _callback) { }
+    decoration_hide(_ext) { }
+    decoration_show(_ext) { }
     icon(_ext, size) {
         let icon = this.window_app.create_icon_texture(size);
         if (!icon) {
@@ -185,17 +126,10 @@ export class ShellWindow {
         return icon;
     }
     ignore_decoration() {
-        const name = this.meta.get_wm_class();
-        if (name === null)
-            return true;
-        return WM_TITLE_BLACKLIST.findIndex((n) => name.startsWith(n)) !== -1;
+        return true;
     }
     is_client_decorated() {
-        const xid = this.xid();
-        const extents = xid ? xprop.get_frame_extents(xid) : false;
-        if (!extents)
-            return false;
-        return true;
+        return this.meta.is_client_decorated?.() ?? true;
     }
     is_maximized() {
         if (typeof this.meta.get_maximized === 'function') {
@@ -249,8 +183,7 @@ export class ShellWindow {
         return this.meta.get_transient_for() !== null;
     }
     may_decorate() {
-        const xid = this.xid();
-        return xid ? xprop.may_decorate(xid) : false;
+        return false;
     }
     move(ext, rect, on_complete) {
         if (!this.same_workspace() && this.is_maximized()) {
@@ -292,10 +225,7 @@ export class ShellWindow {
         return Rect.Rectangle.from_meta(this.meta.get_frame_rect());
     }
     size_hint() {
-        return this.extra.normal_hints.get_or_init(() => {
-            const xid = this.xid();
-            return xid ? xprop.get_size_hints(xid) : null;
-        });
+        return null;
     }
     swap(ext, other) {
         let ar = this.rect().clone();
@@ -308,10 +238,7 @@ export class ShellWindow {
         return title ? title : this.name(this.ext);
     }
     wm_role() {
-        return this.extra.wm_role_.get_or_init(() => {
-            const xid = this.xid();
-            return xid ? xprop.get_window_role(xid) : null;
-        });
+        return this.meta.get_role();
     }
     workspace_id() {
         const workspace = this.meta.get_workspace();
@@ -324,11 +251,7 @@ export class ShellWindow {
         }
     }
     xid() {
-        return this.extra.xid_.get_or_init(() => {
-            if (utils.is_wayland())
-                return null;
-            return xprop.get_xid(this.meta);
-        });
+        return null;
     }
     show_border() {
         if (!this.border)
@@ -336,30 +259,13 @@ export class ShellWindow {
         this.restack();
         this.update_border_style();
         if (this.ext.settings.active_hint()) {
-            let border = this.border;
-            const permitted = () => {
-                return (this.actor_exists() &&
-                    this.ext.focus_window() == this &&
-                    !this.meta.is_fullscreen() &&
-                    (!this.is_single_max_screen() || this.is_snap_edge()) &&
-                    !this.meta.minimized);
-            };
-            if (permitted()) {
-                if (this.meta.appears_focused) {
-                    border.show();
-                    let applications = 0;
-                    if (ACTIVE_HINT_SHOW_ID !== null)
-                        GLib.source_remove(ACTIVE_HINT_SHOW_ID);
-                    ACTIVE_HINT_SHOW_ID = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 600, () => {
-                        if ((applications > 4 && !this.same_workspace()) || !permitted()) {
-                            ACTIVE_HINT_SHOW_ID = null;
-                            return GLib.SOURCE_REMOVE;
-                        }
-                        applications += 1;
-                        border.show();
-                        return GLib.SOURCE_CONTINUE;
-                    });
-                }
+            const permitted = this.actor_exists() &&
+                this.ext.focus_window() == this &&
+                !this.meta.is_fullscreen() &&
+                (!this.is_single_max_screen() || this.is_snap_edge()) &&
+                !this.meta.minimized;
+            if (permitted && this.meta.appears_focused) {
+                this.border.show();
             }
         }
     }
@@ -374,34 +280,14 @@ export class ShellWindow {
     same_monitor() {
         return this.meta.get_monitor() === global.display.get_current_monitor();
     }
-    restack(updateState = RESTACK_STATE.NORMAL) {
+    restack() {
         this.update_border_layout();
         if (this.meta.is_fullscreen() || (this.is_single_max_screen() && !this.is_snap_edge()) || this.meta.minimized) {
             this.hide_border();
         }
-        let restackSpeed = RESTACK_SPEED.NORMAL;
-        switch (updateState) {
-            case RESTACK_STATE.NORMAL:
-                restackSpeed = RESTACK_SPEED.NORMAL;
-                break;
-            case RESTACK_STATE.RAISED:
-                restackSpeed = RESTACK_SPEED.RAISED;
-                break;
-            case RESTACK_STATE.WORKSPACE_CHANGED:
-                restackSpeed = RESTACK_SPEED.WORKSPACE_CHANGED;
-                break;
-        }
-        let restacks = 0;
-        const action = () => {
-            const count = restacks;
-            restacks += 1;
-            if (!this.actor_exists() && count === 0)
-                return true;
-            if (count === 3) {
-                if (SCHEDULED_RESTACK !== null)
-                    GLib.source_remove(SCHEDULED_RESTACK);
-                SCHEDULED_RESTACK = null;
-            }
+        const apply_restack = () => {
+            if (!this.actor_exists())
+                return;
             const border = this.border;
             const actor = this.meta.get_compositor_private();
             const win_group = global.window_group;
@@ -431,11 +317,15 @@ export class ShellWindow {
                     win_group.set_child_below_sibling(border, window_actor);
                 }
             }
-            return true;
         };
-        if (SCHEDULED_RESTACK !== null)
-            GLib.source_remove(SCHEDULED_RESTACK);
-        SCHEDULED_RESTACK = GLib.timeout_add(GLib.PRIORITY_LOW, restackSpeed, action);
+        apply_restack();
+        if (!this.actor_exists() && this.restack_id === null) {
+            this.restack_id = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                this.restack_id = null;
+                apply_restack();
+                return GLib.SOURCE_REMOVE;
+            });
+        }
     }
     get always_top_windows() {
         let above_windows = new Array();
@@ -518,11 +408,11 @@ export class ShellWindow {
         this.ext.show_border_on_focused();
     }
     window_raised() {
-        this.restack(RESTACK_STATE.RAISED);
+        this.restack();
         this.ext.show_border_on_focused();
     }
     workspace_changed() {
-        this.restack(RESTACK_STATE.WORKSPACE_CHANGED);
+        this.restack();
     }
 }
 export function activate(ext, move_mouse, win) {
@@ -536,7 +426,6 @@ export function activate(ext, move_mouse, win) {
         const workspace = win.get_workspace();
         if (!workspace)
             return;
-        scheduler.setForeground(win);
         win.unminimize();
         workspace.activate_with_focus(win, global.get_current_time());
         win.raise();

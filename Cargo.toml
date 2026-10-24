@@ -1,11 +1,11 @@
 [package]
-name = "pop-shell-gnome50"
+name = "kelp"
 version = "1.0.0"
 edition = "2021"
-authors = ["UberMetroid"]
+authors = ["UberMetroid", "System76 <info@system76.com>"]
 license = "GPL-3.0-only"
-description = "GNOME 50 & 51 (Mutter 18/19) patched Pop Shell auto-tiler with Hyprland-style keybindings and zero-dependency Rust installer"
-repository = "https://github.com/UberMetroid/pop-shell-gnome50"
+description = "Kelp — Hardened, zero-subprocess Wayland auto-tiling extension for GNOME 50 & 51 (Mutter 18/19) with a zero-dependency Rust installer"
+repository = "https://github.com/UberMetroid/kelp"
 
 [profile.release]
 opt-level = 3
@@ -15,5 +15,5 @@ strip = true
 panic = "abort"
 
 [[bin]]
-name = "pop-shell-installer"
+name = "kelp"
 path = "src/main.rs"

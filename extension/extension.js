@@ -13,7 +13,6 @@ import * as Rect from './rectangle.js';
 import * as Settings from './settings.js';
 import * as Tiling from './tiling.js';
 import * as Window from './window.js';
-import * as launcher from './launcher.js';
 import * as auto_tiler from './auto_tiler.js';
 import * as node from './node.js';
 import * as utils from './utils.js';
@@ -22,8 +21,6 @@ import * as movement from './movement.js';
 import * as stack from './stack.js';
 import * as add_exception from './dialog_add_exception.js';
 import * as exec from './executor.js';
-import * as dbus_service from './dbus_service.js';
-import * as scheduler from './scheduler.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 const display = global.display;
 const wim = global.window_manager;
@@ -62,8 +59,6 @@ export class Ext extends Ecs.System {
         this.keybindings = new Keybindings.Keybindings(this);
         this.settings = new Settings.ExtensionSettings();
         this.overlay = new St.BoxLayout({ style_class: 'pop-shell-overlay', visible: false });
-        this.window_search = new launcher.Launcher(this);
-        this.dbus = new dbus_service.Service();
         this.animate_windows = true;
         this.button = null;
         this.button_gio_icon_auto_on = null;
@@ -123,31 +118,6 @@ export class Ext extends Ecs.System {
                 this.register(Events.global(GlobalEvent.GtkShellChanged));
             });
         }
-        this.dbus.FocusUp = () => this.focus_up();
-        this.dbus.FocusDown = () => this.focus_down();
-        this.dbus.FocusLeft = () => this.focus_left();
-        this.dbus.FocusRight = () => this.focus_right();
-        this.dbus.Launcher = () => this.window_search.open(this);
-        this.dbus.WindowFocus = (window) => {
-            const target_window = this.windows.get(window);
-            if (target_window) {
-                target_window.activate();
-                this.on_focused(target_window);
-            }
-            this.window_search.close();
-        };
-        this.dbus.WindowList = () => {
-            const wins = new Array();
-            for (const window of this.tab_list(Meta.TabList.NORMAL, null)) {
-                const string = window.window_app.get_id();
-                wins.push([window.entity, window.title(), window.name(this), string ? string : '']);
-            }
-            return wins;
-        };
-        this.dbus.WindowQuit = (win) => {
-            this.windows.get(win)?.meta.delete(global.get_current_time());
-            this.window_search.close();
-        };
     }
     register_fn(callback, name) {
         this.register({ tag: 1, callback, name });
@@ -319,58 +289,22 @@ export class Ext extends Ecs.System {
     }
     exception_add(win) {
         this.exception_selecting = false;
-        let d = new add_exception.AddExceptionDialog(() => this.exception_dialog(), () => {
+        let d = new add_exception.AddExceptionDialog(() => { }, () => {
             let wmclass = win.meta.get_wm_class();
             if (wmclass !== null && wmclass.length === 0) {
                 wmclass = win.name(this);
             }
             if (wmclass)
                 this.conf.add_app_exception(wmclass);
-            this.exception_dialog();
         }, () => {
             let wmclass = win.meta.get_wm_class();
             if (wmclass)
                 this.conf.add_window_exception(wmclass, win.title());
-            this.exception_dialog();
         }, () => {
             this.conf.reload();
             this.tiling_config_reapply();
         });
         d.open();
-    }
-    exception_dialog() {
-        let path = get_current_path() + '/floating_exceptions/main.js';
-        const event_handler = (event) => {
-            switch (event) {
-                case 'MODIFIED':
-                    this.register_fn(() => {
-                        this.conf.reload();
-                        this.tiling_config_reapply();
-                    });
-                    break;
-                case 'SELECT':
-                    this.register_fn(() => this.exception_select());
-                    return false;
-            }
-            return true;
-        };
-        const ipc = utils.async_process_ipc(['gjs', '--module', path]);
-        if (ipc) {
-            const generator = (stdout, res) => {
-                try {
-                    const [bytes] = stdout.read_line_finish(res);
-                    if (bytes) {
-                        if (event_handler(new TextDecoder().decode(bytes).trim())) {
-                            ipc.stdout.read_line_async(0, ipc.cancellable, generator);
-                        }
-                    }
-                }
-                catch (why) {
-                    log.error(`failed to read response from floating exceptions dialog: ${why}`);
-                }
-            };
-            ipc.stdout.read_line_async(0, ipc.cancellable, generator);
-        }
     }
     exception_select() {
         GLib.timeout_add(GLib.PRIORITY_LOW, 500, () => {
@@ -381,8 +315,6 @@ export class Ext extends Ecs.System {
     }
     exit_modes() {
         this.tiler.exit(this);
-        this.window_search.reset();
-        this.window_search.close();
         this.overlay.visible = false;
     }
     find_monitor_to_retach(width, height) {
@@ -605,7 +537,6 @@ export class Ext extends Ecs.System {
     }
     on_focused(win) {
         this.workspace_active.set(this.active_workspace(), win.entity);
-        scheduler.setForeground(win.meta);
         this.size_signals_unblock(win);
         if (this.exception_selecting) {
             this.exception_add(win);
@@ -639,15 +570,13 @@ export class Ext extends Ecs.System {
                 }
             }
         }
-        if (this.conf.log_on_focus) {
+        if (log.LOG_ENABLED && this.conf.log_on_focus) {
             let msg = `focused Window(${win.entity}) {\n` +
                 `  class: "${win.meta.get_wm_class()}",\n` +
-                `  cmdline: ${win.cmdline()},\n` +
                 `  monitor: ${win.meta.get_monitor()},\n` +
                 `  name: ${win.name(this)},\n` +
                 `  rect: ${win.rect().fmt()},\n` +
                 `  workspace: ${win.workspace_id()},\n` +
-                `  xid: ${win.xid()},\n` +
                 `  stack: ${win.stack},\n`;
             if (this.auto_tiler) {
                 msg += `  fork: (${this.auto_tiler.attached.get(win.entity)}),\n`;
@@ -1505,6 +1434,10 @@ export class Ext extends Ecs.System {
                     else {
                         _hide_skip_taskbar_windows();
                     }
+                    break;
+                case 'log-level':
+                    log.set_log_level(this.settings.log_level());
+                    break;
             }
         });
         if (this.settings.mutter) {
@@ -1679,9 +1612,6 @@ export class Ext extends Ecs.System {
     }
     switch_to_workspace(id) {
         this.workspace_by_id(id)?.activate(global.get_current_time());
-    }
-    stop_launcher_services() {
-        this.window_search.stop_services(this);
     }
     tab_list(tablist, workspace) {
         const windows = display.get_tab_list(tablist, workspace);
@@ -2131,9 +2061,7 @@ export default class PopShellExtension extends Extension {
             ext.injections_remove();
             ext.signals_remove();
             ext.exit_modes();
-            ext.stop_launcher_services();
             ext.hide_all_borders();
-            ext.window_search.remove_injections();
             layoutManager.removeChrome(ext.overlay);
             ext.keybindings.disable(ext.keybindings.global).disable(ext.keybindings.window_focus);
             if (ext.auto_tiler) {
@@ -2231,7 +2159,6 @@ function _show_skip_taskbar_windows(ext) {
     else {
         if (!default_getcaption_windowpreview) {
             default_getcaption_windowpreview = WindowPreview.prototype._getCaption;
-            log.debug(`override workspace._getCaption`);
             WindowPreview.prototype._getCaption = function () {
                 if (this.metaWindow.title)
                     return this.metaWindow.title;

@@ -1,6 +1,5 @@
 import * as result from './result.js';
 import * as error from './error.js';
-import * as log from './log.js';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
@@ -68,58 +67,6 @@ export function is_dark(color) {
     let L = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
     return L <= 0.179;
 }
-export function async_process(argv, input = null, cancellable = null) {
-    let flags = Gio.SubprocessFlags.STDOUT_PIPE;
-    if (input !== null)
-        flags |= Gio.SubprocessFlags.STDIN_PIPE;
-    let proc = new Gio.Subprocess({ argv, flags });
-    proc.init(cancellable);
-    proc.wait_async(null, (source, res) => {
-        source.wait_finish(res);
-        if (cancellable !== null) {
-            cancellable.cancel();
-        }
-    });
-    return new Promise((resolve, reject) => {
-        proc.communicate_utf8_async(input, cancellable, (proc, res) => {
-            try {
-                let bytes = proc.communicate_utf8_finish(res)[1];
-                resolve(bytes.toString());
-            }
-            catch (e) {
-                reject(e);
-            }
-        });
-    });
-}
-export function async_process_ipc(argv) {
-    const { SubprocessLauncher, SubprocessFlags } = Gio;
-    const launcher = new SubprocessLauncher({
-        flags: SubprocessFlags.STDIN_PIPE | SubprocessFlags.STDOUT_PIPE,
-    });
-    let child;
-    let cancellable = new Gio.Cancellable();
-    try {
-        child = launcher.spawnv(argv);
-    }
-    catch (why) {
-        log.error(`failed to spawn ${argv}: ${why}`);
-        return null;
-    }
-    let stdin = new Gio.DataOutputStream({
-        base_stream: child.get_stdin_pipe(),
-        close_base_stream: true,
-    });
-    let stdout = new Gio.DataInputStream({
-        base_stream: child.get_stdout_pipe(),
-        close_base_stream: true,
-    });
-    child.wait_async(null, (source, res) => {
-        source.wait_finish(res);
-        cancellable.cancel();
-    });
-    return { child, stdin, stdout, cancellable };
-}
 export function map_eq(map1, map2) {
     if (map1.size !== map2.size) {
         return false;
@@ -132,16 +79,4 @@ export function map_eq(map1, map2) {
         }
     }
     return true;
-}
-export function os_release() {
-    const [ok, bytes] = GLib.file_get_contents('/etc/os-release');
-    if (!ok)
-        return null;
-    const contents = new TextDecoder().decode(bytes);
-    for (const line of contents.split('\n')) {
-        if (line.startsWith('VERSION_ID')) {
-            return line.split('"')[1];
-        }
-    }
-    return null;
 }

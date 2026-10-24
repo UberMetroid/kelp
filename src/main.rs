@@ -8,14 +8,8 @@ const EXTENSION_UUID: &str = "pop-shell@system76.com";
 const EMBEDDED_EXTENSION_FILES: &[(&str, &[u8])] = &[
     ("arena.js", include_bytes!("../extension/arena.js")),
     ("auto_tiler.js", include_bytes!("../extension/auto_tiler.js")),
-    (
-        "color_dialog/main.js",
-        include_bytes!("../extension/color_dialog/main.js"),
-    ),
     ("config.js", include_bytes!("../extension/config.js")),
-    ("context.js", include_bytes!("../extension/context.js")),
     ("dark.css", include_bytes!("../extension/dark.css")),
-    ("dbus_service.js", include_bytes!("../extension/dbus_service.js")),
     (
         "dialog_add_exception.js",
         include_bytes!("../extension/dialog_add_exception.js"),
@@ -25,18 +19,6 @@ const EMBEDDED_EXTENSION_FILES: &[(&str, &[u8])] = &[
     ("events.js", include_bytes!("../extension/events.js")),
     ("executor.js", include_bytes!("../extension/executor.js")),
     ("extension.js", include_bytes!("../extension/extension.js")),
-    (
-        "floating_exceptions/config.js",
-        include_bytes!("../extension/floating_exceptions/config.js"),
-    ),
-    (
-        "floating_exceptions/main.js",
-        include_bytes!("../extension/floating_exceptions/main.js"),
-    ),
-    (
-        "floating_exceptions/utils.js",
-        include_bytes!("../extension/floating_exceptions/utils.js"),
-    ),
     ("focus.js", include_bytes!("../extension/focus.js")),
     ("forest.js", include_bytes!("../extension/forest.js")),
     ("fork.js", include_bytes!("../extension/fork.js")),
@@ -55,11 +37,6 @@ const EMBEDDED_EXTENSION_FILES: &[(&str, &[u8])] = &[
         include_bytes!("../extension/icons/pop-shell-auto-on-symbolic.svg"),
     ),
     ("keybindings.js", include_bytes!("../extension/keybindings.js")),
-    ("launcher.js", include_bytes!("../extension/launcher.js")),
-    (
-        "launcher_service.js",
-        include_bytes!("../extension/launcher_service.js"),
-    ),
     ("lib.js", include_bytes!("../extension/lib.js")),
     ("light.css", include_bytes!("../extension/light.css")),
     ("log.js", include_bytes!("../extension/log.js")),
@@ -75,7 +52,6 @@ const EMBEDDED_EXTENSION_FILES: &[(&str, &[u8])] = &[
     ("prefs.js", include_bytes!("../extension/prefs.js")),
     ("rectangle.js", include_bytes!("../extension/rectangle.js")),
     ("result.js", include_bytes!("../extension/result.js")),
-    ("scheduler.js", include_bytes!("../extension/scheduler.js")),
     (
         "schemas/gschemas.compiled",
         include_bytes!("../extension/schemas/gschemas.compiled"),
@@ -84,7 +60,6 @@ const EMBEDDED_EXTENSION_FILES: &[(&str, &[u8])] = &[
         "schemas/org.gnome.shell.extensions.pop-shell.gschema.xml",
         include_bytes!("../extension/schemas/org.gnome.shell.extensions.pop-shell.gschema.xml"),
     ),
-    ("search.js", include_bytes!("../extension/search.js")),
     ("settings.js", include_bytes!("../extension/settings.js")),
     ("shell.js", include_bytes!("../extension/shell.js")),
     (
@@ -96,7 +71,6 @@ const EMBEDDED_EXTENSION_FILES: &[(&str, &[u8])] = &[
     ("tiling.js", include_bytes!("../extension/tiling.js")),
     ("utils.js", include_bytes!("../extension/utils.js")),
     ("window.js", include_bytes!("../extension/window.js")),
-    ("xprop.js", include_bytes!("../extension/xprop.js")),
 ];
 
 const EMBEDDED_SCHEMA_XML: &[u8] =
@@ -206,7 +180,7 @@ pub fn gsettings_commands(schema_dir: Option<&Path>) -> Vec<Vec<String>> {
         false,
     );
 
-    // Pop Shell core & appearance settings
+    // Kelp / Pop Shell core & appearance settings
     let pop = "org.gnome.shell.extensions.pop-shell";
     add(pop, "mouse-cursor-follows-active-window", "false", true);
     add(pop, "tile-by-default", "true", true);
@@ -348,14 +322,42 @@ pub fn gsettings_commands(schema_dir: Option<&Path>) -> Vec<Vec<String>> {
     cmds
 }
 
+const REMOVED_LEGACY_FILES: &[&str] = &[
+    "launcher.js",
+    "launcher_service.js",
+    "search.js",
+    "context.js",
+    "scheduler.js",
+    "xprop.js",
+    "dbus_service.js",
+];
+
+const REMOVED_LEGACY_DIRS: &[&str] = &["color_dialog", "floating_exceptions"];
+
 pub fn install_extension_tree(dest_dir: &Path, dry_run: bool) -> Result<(), String> {
     if dry_run {
         println!(
-            "[dry-run] Would write {} extension files to {}",
+            "[dry-run] Would write {} hardened extension files to {}",
             EMBEDDED_EXTENSION_FILES.len(),
             dest_dir.display()
         );
         return Ok(());
+    }
+
+    // Remove any stale legacy modules or subdirectories in existing target dir
+    if dest_dir.exists() {
+        for stale_file in REMOVED_LEGACY_FILES {
+            let p = dest_dir.join(stale_file);
+            if p.exists() {
+                let _ = fs::remove_file(p);
+            }
+        }
+        for stale_dir in REMOVED_LEGACY_DIRS {
+            let p = dest_dir.join(stale_dir);
+            if p.exists() {
+                let _ = fs::remove_dir_all(p);
+            }
+        }
     }
 
     for (rel_path, bytes) in EMBEDDED_EXTENSION_FILES {
@@ -445,7 +447,7 @@ fn install_system_wide(dry_run: bool) -> Result<(), String> {
         Ok(())
     } else {
         // Stage into a temporary directory and invoke run0 to copy into /usr/share
-        let staging_dir = env::temp_dir().join(format!("pop-shell-gnome50-stage-{}", std::process::id()));
+        let staging_dir = env::temp_dir().join(format!("kelp-stage-{}", std::process::id()));
         let stage_ext = staging_dir.join("extension");
         let stage_schema = staging_dir.join("org.gnome.shell.extensions.pop-shell.gschema.xml");
         let stage_kb = staging_dir.join("keybindings");
@@ -462,7 +464,7 @@ fn install_system_wide(dry_run: bool) -> Result<(), String> {
 
         println!("==> Elevating via run0 to install into /usr/share...");
         let mut script = format!(
-            "mkdir -p '{ext}' && cp -r '{stage_ext}/.' '{ext}'",
+            "rm -rf '{ext}' && mkdir -p '{ext}' && cp -r '{stage_ext}/.' '{ext}'",
             ext = sys_ext_dir.display(),
             stage_ext = stage_ext.display()
         );
@@ -495,11 +497,11 @@ fn install_system_wide(dry_run: bool) -> Result<(), String> {
 
 fn print_help() {
     println!(
-        "pop-shell-installer 1.0.0
-GNOME 50 & 51 (Mutter 18 / 19) patched Pop Shell auto-tiler + Hyprland-style configuration installer
+        "kelp 1.0.0
+Hardened, zero-subprocess Wayland auto-tiler for GNOME 50 & 51 (Mutter 18 / 19) + Hyprland-style configuration installer
 
 USAGE:
-    pop-shell-installer [OPTIONS]
+    kelp [OPTIONS]
 
 OPTIONS:
     --user              Install extension into ~/.local/share/gnome-shell/extensions (default)
@@ -524,13 +526,13 @@ fn run() -> Result<(), String> {
 
     let schema_dir = if let Some(ref custom_dir) = opts.target_dir {
         println!(
-            "==> Installing Pop Shell (GNOME 50/51 patched) to {}...",
+            "==> Installing Kelp (hardened GNOME 50/51 auto-tiler) to {}...",
             custom_dir.display()
         );
         install_extension_tree(custom_dir, opts.dry_run)?;
         Some(custom_dir.join("schemas"))
     } else if opts.system {
-        println!("==> Installing Pop Shell (GNOME 50/51 patched) system-wide...");
+        println!("==> Installing Kelp (hardened GNOME 50/51 auto-tiler) system-wide...");
         install_system_wide(opts.dry_run)?;
         None
     } else {
@@ -538,7 +540,7 @@ fn run() -> Result<(), String> {
             .join(".local/share/gnome-shell/extensions")
             .join(EXTENSION_UUID);
         println!(
-            "==> Installing Pop Shell (GNOME 50/51 patched) to {}...",
+            "==> Installing Kelp (hardened GNOME 50/51 auto-tiler) to {}...",
             user_ext_dir.display()
         );
         install_extension_tree(&user_ext_dir, opts.dry_run)?;
@@ -549,7 +551,7 @@ fn run() -> Result<(), String> {
     println!("==> Wrote float exceptions & config to {}", cfg_path.display());
 
     if !opts.skip_gsettings {
-        println!("==> Applying Hyprland-style GNOME & Pop Shell gsettings...");
+        println!("==> Applying Hyprland-style GNOME & Kelp gsettings...");
         let cmds = gsettings_commands(schema_dir.as_deref());
         for cmd in cmds {
             if opts.dry_run {
@@ -575,7 +577,7 @@ fn run() -> Result<(), String> {
         }
     }
 
-    println!("==> Done! Pop Shell for GNOME 50/51 is installed and configured.");
+    println!("==> Done! Kelp for GNOME 50/51 is installed and configured.");
     Ok(())
 }
 
@@ -611,13 +613,13 @@ mod tests {
             "--dry-run".to_string(),
             "--skip-gsettings".to_string(),
             "--target-dir".to_string(),
-            "/tmp/test-pop".to_string(),
+            "/tmp/test-kelp".to_string(),
         ];
         let opts = parse_args(args).unwrap();
         assert!(opts.system);
         assert!(opts.dry_run);
         assert!(opts.skip_gsettings);
-        assert_eq!(opts.target_dir, Some(PathBuf::from("/tmp/test-pop")));
+        assert_eq!(opts.target_dir, Some(PathBuf::from("/tmp/test-kelp")));
     }
 
     #[test]
@@ -628,7 +630,7 @@ mod tests {
     }
 
     #[test]
-    fn test_embedded_extension_patches_present() {
+    fn test_embedded_extension_hardening_and_patches() {
         // Verify metadata.json supports GNOME 50 and GNOME 51
         let (_, metadata_bytes) = EMBEDDED_EXTENSION_FILES
             .iter()
@@ -638,7 +640,37 @@ mod tests {
         assert!(metadata_str.contains("\"50\""));
         assert!(metadata_str.contains("\"51\""));
 
-        // Verify window.js uses get_default_seat().warp_pointer, get_maximized() forward-compat, and calls actor_exists()
+        // Verify dead modules are NOT embedded
+        for removed in [
+            "launcher.js",
+            "launcher_service.js",
+            "search.js",
+            "context.js",
+            "scheduler.js",
+            "xprop.js",
+            "dbus_service.js",
+            "color_dialog/main.js",
+            "floating_exceptions/main.js",
+        ] {
+            assert!(
+                !EMBEDDED_EXTENSION_FILES.iter().any(|(p, _)| *p == removed),
+                "Dead module {removed} must not be embedded"
+            );
+        }
+
+        // Verify executor.js uses ES2022 private fields and batched PRIORITY_HIGH_IDLE drain
+        let (_, executor_bytes) = EMBEDDED_EXTENSION_FILES
+            .iter()
+            .find(|(p, _)| *p == "executor.js")
+            .expect("executor.js must be embedded");
+        let executor_str = std::str::from_utf8(executor_bytes).unwrap();
+        assert!(executor_str.contains("#event_loop"));
+        assert!(executor_str.contains("#events"));
+        assert!(executor_str.contains("GLib.PRIORITY_HIGH_IDLE"));
+        assert!(executor_str.contains("while (this.#events.length > 0)"));
+        assert!(!executor_str.contains("__classPrivateFieldGet"));
+
+        // Verify window.js uses get_default_seat().warp_pointer, get_maximized(), and has zero polling timers
         let (_, window_bytes) = EMBEDDED_EXTENSION_FILES
             .iter()
             .find(|(p, _)| *p == "window.js")
@@ -647,7 +679,18 @@ mod tests {
         assert!(window_str.contains("get_default_seat().warp_pointer"));
         assert!(!window_str.contains("Clutter.Backend"));
         assert!(window_str.contains("this.meta.get_maximized"));
-        assert!(!window_str.contains("!this.actor_exists "));
+        assert!(!window_str.contains("ACTIVE_HINT_SHOW_ID"));
+        assert!(!window_str.contains("SCHEDULED_RESTACK"));
+        assert!(!window_str.contains("/proc/"));
+
+        // Verify log.js caches LOG_ENABLED without per-call getSettings() FFI lookup
+        let (_, log_bytes) = EMBEDDED_EXTENSION_FILES
+            .iter()
+            .find(|(p, _)| *p == "log.js")
+            .expect("log.js must be embedded");
+        let log_str = std::str::from_utf8(log_bytes).unwrap();
+        assert!(log_str.contains("export let LOG_ENABLED = false;"));
+        assert!(!log_str.contains("getSettings()"));
 
         // Verify tiling.js uses Meta.DisplayDirection instead of Meta.MotionDirection
         let (_, tiling_bytes) = EMBEDDED_EXTENSION_FILES
@@ -665,22 +708,26 @@ mod tests {
         let settings_str = std::str::from_utf8(settings_bytes).unwrap();
         assert!(settings_str.contains("prefer-dark"));
 
-        // Verify launcher_service.js closes both stdin and stdout
-        let (_, ls_bytes) = EMBEDDED_EXTENSION_FILES
-            .iter()
-            .find(|(p, _)| *p == "launcher_service.js")
-            .expect("launcher_service.js must be embedded");
-        let ls_str = std::str::from_utf8(ls_bytes).unwrap();
-        assert!(ls_str.contains("close_stream(service.stdout)"));
-
-        // Verify zero legacy GJS `imports.` usage and zero deprecated St.BoxLayout vertical/horizontal props across all embedded JS files
+        // Verify zero subprocess / legacy imports / dead module references across all embedded JS files
         for (path, bytes) in EMBEDDED_EXTENSION_FILES {
             if path.ends_with(".js") {
                 let content = std::str::from_utf8(bytes).unwrap();
-                assert!(
-                    !content.contains("imports."),
-                    "File {path} still contains legacy GJS `imports.` reference"
-                );
+                for forbidden in [
+                    "imports.",
+                    "spawn",
+                    "Subprocess",
+                    "xprop",
+                    "scheduler",
+                    "launcher",
+                    "dbus_service",
+                    "color_dialog",
+                    "floating_exceptions",
+                ] {
+                    assert!(
+                        !content.contains(forbidden),
+                        "File {path} still contains forbidden reference `{forbidden}`"
+                    );
+                }
                 assert!(
                     !content.contains("vertical: true")
                         && !content.contains("vertical: false")
@@ -697,30 +744,52 @@ mod tests {
         let cmds = gsettings_commands(Some(Path::new("/tmp/schemas")));
         let joined: Vec<String> = cmds.iter().map(|c| c.join(" ")).collect();
 
-        assert!(joined.iter().any(|c| c.contains("org.gnome.mutter auto-maximize false")));
-        assert!(joined.iter().any(|c| c.contains("org.gnome.mutter edge-tiling false")));
-        assert!(joined.iter().any(|c| c.contains("org.gnome.desktop.wm.preferences focus-mode 'click'")));
-        assert!(joined.iter().any(|c| c.contains("hint-color-rgba 'rgb(255,0,0)'")));
-        assert!(joined.iter().any(|c| c.contains("active-hint-border-radius 2")));
+        assert!(joined
+            .iter()
+            .any(|c| c.contains("org.gnome.mutter auto-maximize false")));
+        assert!(joined
+            .iter()
+            .any(|c| c.contains("org.gnome.mutter edge-tiling false")));
+        assert!(joined
+            .iter()
+            .any(|c| c.contains("org.gnome.desktop.wm.preferences focus-mode 'click'")));
+        assert!(joined
+            .iter()
+            .any(|c| c.contains("hint-color-rgba 'rgb(255,0,0)'")));
+        assert!(joined
+            .iter()
+            .any(|c| c.contains("active-hint-border-radius 2")));
         assert!(joined.iter().any(|c| c.contains("tile-move-left-global")));
-        assert!(joined.iter().any(|c| c.contains("switch-to-workspace-10 ['<Super>0']")));
-        assert!(joined.iter().any(|c| c.contains("move-to-workspace-10 ['<Super><Shift>0']")));
-        assert!(joined.iter().any(|c| c.contains("toggle-quick-settings ['<Super><Control>s']")));
+        assert!(joined
+            .iter()
+            .any(|c| c.contains("switch-to-workspace-10 ['<Super>0']")));
+        assert!(joined
+            .iter()
+            .any(|c| c.contains("move-to-workspace-10 ['<Super><Shift>0']")));
+        assert!(joined
+            .iter()
+            .any(|c| c.contains("toggle-quick-settings ['<Super><Control>s']")));
     }
 
     #[test]
-    fn test_install_extension_tree_to_tempdir() {
+    fn test_install_extension_tree_to_tempdir_cleans_stale_files() {
         let nanos = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let temp_dir = env::temp_dir().join(format!("pop-shell-test-{nanos}"));
+        let temp_dir = env::temp_dir().join(format!("kelp-test-{nanos}"));
+        fs::create_dir_all(temp_dir.join("color_dialog")).unwrap();
+        fs::write(temp_dir.join("launcher.js"), b"stale").unwrap();
+        fs::write(temp_dir.join("color_dialog/main.js"), b"stale").unwrap();
+
         install_extension_tree(&temp_dir, false).unwrap();
 
         assert!(temp_dir.join("extension.js").exists());
         assert!(temp_dir.join("window.js").exists());
         assert!(temp_dir.join("schemas/gschemas.compiled").exists());
         assert!(temp_dir.join("icons/pop-shell-auto-on-symbolic.svg").exists());
+        assert!(!temp_dir.join("launcher.js").exists());
+        assert!(!temp_dir.join("color_dialog").exists());
 
         fs::remove_dir_all(&temp_dir).unwrap();
     }

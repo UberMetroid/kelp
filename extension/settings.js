@@ -1,5 +1,6 @@
 import Gio from 'gi://Gio';
 import Gdk from 'gi://Gdk';
+import * as log from './log.js';
 import { get_current_path } from './paths.js';
 const DARK = ['dark', 'adapta', 'plata', 'dracula'];
 function settings_new_id(schema_id) {
@@ -29,7 +30,6 @@ const ACTIVE_HINT_BORDER_RADIUS = 'active-hint-border-radius';
 const STACKING_WITH_MOUSE = 'stacking-with-mouse';
 const COLUMN_SIZE = 'column-size';
 const EDGE_TILING = 'edge-tiling';
-const FULLSCREEN_LAUNCHER = 'fullscreen-launcher';
 const GAP_INNER = 'gap-inner';
 const GAP_OUTER = 'gap-outer';
 const ROW_SIZE = 'row-size';
@@ -50,6 +50,7 @@ export class ExtensionSettings {
         this.int = settings_new_id('org.gnome.desktop.interface');
         this.mutter = settings_new_id('org.gnome.mutter');
         this.shell = settings_new_id('org.gnome.shell.extensions.user-theme');
+        log.set_log_level(this.log_level());
     }
     active_hint() {
         return this.ext.get_boolean(ACTIVE_HINT);
@@ -65,9 +66,6 @@ export class ExtensionSettings {
     }
     dynamic_workspaces() {
         return this.mutter ? this.mutter.get_boolean('dynamic-workspaces') : false;
-    }
-    fullscreen_launcher() {
-        return this.ext.get_boolean(FULLSCREEN_LAUNCHER);
     }
     gap_inner() {
         return this.ext.get_uint(GAP_INNER);
@@ -148,9 +146,6 @@ export class ExtensionSettings {
     set_edge_tiling(enable) {
         this.mutter?.set_boolean(EDGE_TILING, enable);
     }
-    set_fullscreen_launcher(enable) {
-        this.ext.set_boolean(FULLSCREEN_LAUNCHER, enable);
-    }
     set_gap_inner(gap) {
         this.ext.set_uint(GAP_INNER, gap);
     }
@@ -183,6 +178,7 @@ export class ExtensionSettings {
     }
     set_log_level(set) {
         this.ext.set_uint(LOG_LEVEL, set);
+        log.set_log_level(set);
     }
     set_show_skiptaskbar(set) {
         this.ext.set_boolean(SHOW_SKIPTASKBAR, set);

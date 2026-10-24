@@ -1,64 +1,60 @@
-# pop-shell-gnome50
+# Kelp (`UberMetroid/kelp`)
 
-Patched **System76 Pop Shell (`pop-shell@system76.com`)** auto-tiling extension for **GNOME 50 & GNOME 51 (Mutter 18 / 19)** on Fedora Linux, bundled with a **zero-dependency pure-Rust installer (`pop-shell-installer`)** that embeds all extension assets, schemas, floating exceptions, and Hyprland-style keybindings into a single native binary.
+**Kelp** is a hardened, zero-subprocess, low-latency **Wayland auto-tiling extension** for **GNOME 50 & GNOME 51 (Mutter 18 / 19)** on Fedora Linux, bundled with a **zero-dependency pure-Rust installer (`kelp`)** that embeds all extension assets, schemas, floating exceptions, and Hyprland-style keybindings into a single native binary.
+
+Named after the underwater kelp forest to match the extension's core `Forest` binary-tree tiling data structure (`forest.js`).
 
 ---
 
-## What Was Fixed for GNOME 50 & GNOME 51 (Mutter 18 / 19)
+## Hardening & Performance Optimizations Over Upstream `pop-shell`
 
-Upstream `pop-shell` fails or throws runtime exceptions on GNOME 50 and GNOME 51 due to removed Clutter, St, Meta, and legacy GJS `imports` APIs. This repository bakes in the following fixes directly:
+1. **Zero Subprocess Spawning & Dead Module Elimination (~35 KB of legacy JS removed)**
+   - **Deleted legacy modules**: Removed `launcher.js`, `launcher_service.js`, `search.js`, `context.js`, `scheduler.js`, `xprop.js`, `dbus_service.js`, `color_dialog/`, and `floating_exceptions/`.
+   - **Zero `Gio.Subprocess` / `GLib.spawn_*` calls**: Removed `async_process()`, `async_process_ipc()`, and `os_release()` from `utils.js`, external GJS dialog spawners from `panel_settings.js` and `extension.js`, and blocking X11 `xprop` calls from `window.js`.
+   - **Pure Wayland / Mutter window inspection**: `ShellWindow` queries `this.meta.get_role()` and `this.meta.is_client_decorated?.() ?? true` directly without synchronous `/proc/<pid>/cmdline` file reads or external processes.
+   - **Removed unauthenticated D-Bus surface & failed Pop!_OS IPC**: Eliminated the unauthenticated `/com/System76/PopShell` D-Bus service (`dbus_service.js`) and failed D-Bus calls to Pop!_OS's `com.system76.Scheduler` (`scheduler.js`).
 
-1. **Removed `Clutter.Backend.get_default_seat()` (`window.js`)**
-   - In GNOME 50+ / Clutter 18+, `Clutter.get_default_backend().get_default_seat()` was removed, breaking pointer warping and throwing GJS exceptions during window activation.
-   - Replaced with `global.stage.get_context().get_backend().get_default_seat().warp_pointer(x, y)`.
-   - Wrapped `ShellWindow.activate()` in a defensive `try / catch` block checking `win.get_compositor_private()` and `destroying` state before raising or focusing windows.
-   - Guarded `this.on_style_changed()` in `ShellWindow` constructor with `if (this.meta.get_compositor_private()?.get_stage())` so unparented actors do not trigger theme node warnings on creation.
+2. **Batched Event Execution & Zero Polling Timers (`executor.js`, `window.js`)**
+   - **Batched `GLib.PRIORITY_HIGH_IDLE` Queue Drain**: Replaced TypeScript-transpiled `WeakMap` boilerplate in `executor.js` with native ES2022 private fields (`#event_loop`, `#events`) and updated `GLibExecutor.wake()` to drain the entire event queue in a single main-loop tick instead of processing one event per idle frame.
+   - **Eliminated 600ms & 200–430ms Repeating Timers**: Removed the 5-iteration 600ms `ACTIVE_HINT_SHOW_ID` timer in `show_border()` and the 3-iteration 200–430ms `SCHEDULED_RESTACK` timer in `restack()`, replacing them with immediate event-driven border updates and restacking.
 
-2. **Replaced `Meta.MotionDirection` with `Meta.DisplayDirection` (`tiling.js`, `extension.js`)**
-   - `global.display.get_monitor_neighbor_index()` and `Meta.MotionDirection` usage in monitor/directional lookup broke in Mutter 18+.
-   - Replaced directional monitor resolution in `tiling.js` (`locate_monitor` and `move_window_or_monitor`) and `extension.js` (`move_workspace`, `move_monitor`) with `Meta.DisplayDirection.{LEFT,RIGHT,UP,DOWN}` and geometry-based work-area distance checks.
+3. **Zero Hot-Path Logging & GSettings FFI Lookups (`log.js`, `extension.js`, `auto_tiler.js`)**
+   - Cached `LOG_ENABLED` and the numeric log level in `log.js` (updated only on `changed::log-level`) so `log.debug()` / `log.info()` never cross the GObject FFI boundary to query `GSettings` during window operations.
+   - Stripped and guarded hot-path template string allocations across `extension.js`, `auto_tiler.js`, and `prefs.js`.
 
-3. **Eliminated All Legacy GJS `imports.*` Globals & Subprocess Stream Leak (`extension.js`, `config.js`, `utils.js`, `xprop.js`, `launcher.js`, `launcher_service.js`, `floating_exceptions/*`)**
-   - Replaced every `imports.byteArray.toString(...)` call with standard Web/GJS `new TextDecoder().decode(...)` and removed `imports.searchPath` manipulation for strict ESM compliance in GJS (GNOME 50 & 51).
-   - Fixed `LauncherService.exit()` in `launcher_service.js` closing `service.stdin` twice instead of closing both `service.stdin` and `service.stdout`.
-
-4. **Forward-Compatible `Meta.Window` Maximize, `ModalDialog`, & `St.BoxLayout` APIs (`window.js`, `panel_settings.js`, `search.js`, `shortcut_overlay.js`)**
-   - Added `this.meta.get_maximized()` checks in `is_maximized()` and `is_snap_edge()` (with `Meta.MaximizeFlags?.VERTICAL ?? 2` fallback) alongside `maximized_horizontally` / `maximized_vertically` for Mutter 18/19 compatibility, removed deprecated `Meta.MaximizeFlags` arguments from `maximize()` / `unmaximize()`, and fixed `!this.actor_exists()` invocation in `ShellWindow.restack()`.
-   - Replaced all deprecated `St.BoxLayout({ vertical: ... })` and `St.BoxLayout({ horizontal: ... })` properties with `orientation: Clutter.Orientation.VERTICAL / HORIZONTAL`, replaced `.add(...)` with `.add_child(...)`, and guarded `this.dialog.show_all()` with `this.dialog.show()` in `search.js`.
-
-5. **Fixed Active Hint Border Bleed & GNOME 42+ Dark Mode Detection (`settings.js`, `dark.css`, `light.css`, `highcontrast.css`)**
-   - `settings.js`: Checked `org.gnome.desktop.interface` `color-scheme === 'prefer-dark'` so GNOME 50/51's standard dark mode is detected without requiring a legacy `*dark*` GTK3 theme string.
-   - `dark.css`, `light.css`, `highcontrast.css`: Zeroed the inner `box-shadow` alpha (`inset 0 0 0 1px rgba(..., 0)`) so the `2px` radius `rgb(255,0,0)` active window border renders crisp without an inner dark/gray halo.
-
-6. **GNOME 50 & 51 Version Declaration (`metadata.json`)**
-   - Declared `"50"` and `"51"` in `shell-version` (`["45", "46", "47", "48", "49", "50", "51"]`).
+4. **GNOME 50 & GNOME 51 (Mutter 18 / 19) API Compatibility**
+   - Replaced removed `Clutter.Backend.get_default_seat()` with `global.stage.get_context().get_backend().get_default_seat().warp_pointer(x, y)`.
+   - Replaced removed `Meta.MotionDirection` monitor/workspace neighbor lookups with `Meta.DisplayDirection.{LEFT,RIGHT,UP,DOWN}`.
+   - Replaced all legacy GJS `imports.*` globals with standard ESM imports and `new TextDecoder().decode(...)`.
+   - Added `this.meta.get_maximized()` checks and modern `St.BoxLayout({ orientation: Clutter.Orientation.* })` / `.add_child(...)` calls.
+   - Added `org.gnome.desktop.interface` `color-scheme === 'prefer-dark'` detection and crisp `rgb(255,0,0)` active hint border styling.
 
 ---
 
 ## One-Command Installation
 
-No shell scripts required. The Rust binary embeds the entire patched extension tree, compiled GSettings schemas, float rules, and `gsettings` configuration:
+No shell scripts required. The `kelp` Rust binary embeds the entire hardened extension tree, compiled GSettings schemas, float rules, and `gsettings` configuration:
 
 ```bash
-git clone git@github.com:UberMetroid/pop-shell-gnome50.git ~/.local/src/pop-shell-gnome50
-cd ~/.local/src/pop-shell-gnome50
+git clone git@github.com:UberMetroid/kelp.git ~/.local/src/kelp
+cd ~/.local/src/kelp
 cargo run --release
 ```
 
-Or install the binary globally to `~/.cargo/bin` and run it anytime:
+Or install the binary to `~/.local/bin/kelp` (or `~/.cargo/bin/kelp`) and run it anytime:
 
 ```bash
 cargo install --path .
-pop-shell-installer
+kelp
 ```
 
 ### Installer Flags
 
 | Flag | Description |
 | :--- | :--- |
-| `--user` | **(Default)** Installs extension to `~/.local/share/gnome-shell/extensions/pop-shell@system76.com` with compiled schemas, writes `~/.config/pop-shell/config.json`, applies all `gsettings`, and enables the extension. |
-| `--system` | Installs/patches `/usr/share/gnome-shell/extensions/pop-shell@system76.com`, `/usr/share/glib-2.0/schemas/`, and `/usr/share/gnome-control-center/keybindings/` (elevates via `run0` if not root), then applies user `gsettings`. |
-| `--target-dir <DIR>` | Extracts the patched extension tree and compiled schemas to `<DIR>`. |
+| `--user` | **(Default)** Cleanly installs the extension to `~/.local/share/gnome-shell/extensions/pop-shell@system76.com` with compiled schemas, writes `~/.config/pop-shell/config.json`, applies all `gsettings`, and enables the extension. |
+| `--system` | Installs the extension system-wide to `/usr/share/gnome-shell/extensions/pop-shell@system76.com`, `/usr/share/glib-2.0/schemas/`, and `/usr/share/gnome-control-center/keybindings/` (elevates via `run0` if not root), then applies user `gsettings`. |
+| `--target-dir <DIR>` | Extracts the hardened extension tree and compiled schemas to `<DIR>`. |
 | `--skip-gsettings` | Installs files only without executing `gsettings` or `gnome-extensions`. |
 | `--dry-run` | Prints every file write and `gsettings` command without modifying the system. |
 
@@ -66,7 +62,7 @@ pop-shell-installer
 
 ## Hyprland-Style Keybindings & Tiling Configuration
 
-The installer configures GNOME 50/51 and Pop Shell for a keyboard-driven, Hyprland-inspired workflow:
+`kelp` configures GNOME 50/51 for a keyboard-driven, Hyprland-inspired workflow:
 
 - **Auto-tiling enabled by default** (`tile-by-default = true`)
 - **Window gaps**: `2px` inner, `2px` outer (`smart-gaps = false`)
@@ -91,7 +87,6 @@ The installer configures GNOME 50/51 and Pop Shell for a keyboard-driven, Hyprla
 | **Toggle Split Orientation** (Horizontal / Vertical) | `Super + O` | `Super + O` |
 | **Toggle Stacking Mode** | `Super + S` | `Super + S` |
 | **Toggle Auto-Tiling** | `Super + Y` | `Super + Y` |
-| **Pop Shell Launcher / Window Search** | `Super + /` | `Super + /` |
 | **Enter Adjustment / Resize Mode** | `Super + Enter` (`Shift + Arrows/HJKL` to resize, `Enter`/`Esc` to exit) | `Super + Enter` |
 | **GNOME Quick Settings** (remapped off `Super+S`) | `Ctrl + Super + S` | `Ctrl + Super + S` |
 
@@ -99,7 +94,7 @@ The installer configures GNOME 50/51 and Pop Shell for a keyboard-driven, Hyprla
 
 ## Floating Exceptions (`~/.config/pop-shell/config.json`)
 
-Installed automatically by `pop-shell-installer`:
+Installed automatically by `kelp`:
 
 - `steam`
 - `caligula`
@@ -109,6 +104,11 @@ Installed automatically by `pop-shell-installer`:
 
 ---
 
-## License
+## License & Attribution
 
-GPL-3.0-only (upstream System76 Pop Shell license).
+**License**: [GNU General Public License v3.0 only (GPL-3.0-only)](./LICENSE)
+
+**Attribution & Notice of Modification**:
+- Original work: Copyright © System76, Inc. (`https://github.com/pop-os/shell`), distributed under the GNU General Public License v3.0.
+- Modified work (`kelp`): Copyright © 2026 UberMetroid (`https://github.com/UberMetroid/kelp`).
+- Per GPL-3.0 § 5, this repository is a modified derivative work of System76's `pop-shell` refactored into a hardened, Wayland-native GNOME 50/51+ auto-tiling core with all legacy subprocess spawners, X11 `xprop` helpers, `pop-launcher` integration, `system76-scheduler` IPC, and unauthenticated D-Bus services removed, packaged with a standalone Rust installer.

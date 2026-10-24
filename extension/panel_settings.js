@@ -1,12 +1,10 @@
-import * as Utils from './utils.js';
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import St from 'gi://St';
-import { PopupBaseMenuItem, PopupMenuItem, PopupSwitchMenuItem, PopupSeparatorMenuItem, } from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import { PopupMenuItem, PopupSwitchMenuItem, PopupSeparatorMenuItem } from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { Button } from 'resource:///org/gnome/shell/ui/panelMenu.js';
-import GLib from 'gi://GLib';
-import { spawn } from 'resource:///org/gnome/shell/misc/util.js';
 import { get_current_path } from './paths.js';
+
 export class Indicator {
     constructor(ext) {
         this.button = new Button(0.0, _('Pop Shell Settings'));
@@ -46,104 +44,24 @@ export class Indicator {
             ext.settings.set_active_hint_border_radius(value);
         });
         bm.addMenuItem(this.toggle_tiled);
-        bm.addMenuItem(floating_window_exceptions(ext, bm));
         bm.addMenuItem(menu_separator(''));
-        bm.addMenuItem(shortcuts(bm));
-        bm.addMenuItem(settings_button(bm));
-        bm.addMenuItem(menu_separator(''));
-        if (!Utils.is_wayland()) {
-            this.toggle_titles = show_title(ext);
-            bm.addMenuItem(this.toggle_titles);
-        }
         bm.addMenuItem(this.toggle_active);
         bm.addMenuItem(this.border_radius);
-        bm.addMenuItem(color_selector(ext, bm));
         bm.addMenuItem(this.entry_gaps);
     }
     destroy() {
         this.button.destroy();
     }
 }
+
 function menu_separator(text) {
     return new PopupSeparatorMenuItem(text);
 }
-function settings_button(menu) {
-    let item = new PopupMenuItem(_('View All'));
-    item.connect('activate', () => {
-        let path = GLib.find_program_in_path('pop-shell-shortcuts');
-        if (path) {
-            spawn([path]);
-        }
-        else {
-            spawn(['xdg-open', 'https://support.system76.com/articles/pop-keyboard-shortcuts/']);
-        }
-        menu.close();
-    });
-    item.label.get_clutter_text().set_margin_left(12);
-    return item;
-}
-function floating_window_exceptions(ext, menu) {
-    let label = new St.Label({ text: 'Floating Window Exceptions' });
-    label.set_x_expand(true);
-    let icon = new St.Icon({ icon_name: 'go-next-symbolic', icon_size: 16 });
-    let widget = new St.BoxLayout({ orientation: Clutter.Orientation.HORIZONTAL });
-    widget.add_child(label);
-    widget.add_child(icon);
-    widget.set_x_expand(true);
-    let base = new PopupBaseMenuItem();
-    base.add_child(widget);
-    base.connect('activate', () => {
-        ext.exception_dialog();
-        GLib.timeout_add(GLib.PRIORITY_LOW, 300, () => {
-            menu.close();
-            return false;
-        });
-    });
-    return base;
-}
-function shortcuts(menu) {
-    let layout_manager = new Clutter.GridLayout({ orientation: Clutter.Orientation.HORIZONTAL });
-    let widget = new St.Widget({ layout_manager, x_expand: true });
-    let item = new PopupBaseMenuItem();
-    item.add_child(widget);
-    item.connect('activate', () => {
-        let path = GLib.find_program_in_path('pop-shell-shortcuts');
-        if (path) {
-            spawn([path]);
-        }
-        else {
-            spawn(['xdg-open', 'https://support.system76.com/articles/pop-keyboard-shortcuts/']);
-        }
-        menu.close();
-    });
-    function create_label(text) {
-        return new St.Label({ text });
-    }
-    function create_shortcut_label(text) {
-        let label = create_label(text);
-        label.set_x_align(Clutter.ActorAlign.END);
-        return label;
-    }
-    layout_manager.set_row_spacing(12);
-    layout_manager.set_column_spacing(30);
-    layout_manager.attach(create_label(_('Shortcuts')), 0, 0, 2, 1);
-    let launcher_shortcut = _('Super + /');
-    [
-        [_('Launcher'), launcher_shortcut],
-        [_('Navigate Windows'), _('Super + Arrow Keys')],
-        [_('Toggle Tiling'), _('Super + Y')],
-    ].forEach((section, idx) => {
-        let key = create_label(section[0]);
-        key.get_clutter_text().set_margin_left(12);
-        let val = create_shortcut_label(section[1]);
-        layout_manager.attach(key, 0, idx + 1, 1, 1);
-        layout_manager.attach(val, 1, idx + 1, 1, 1);
-    });
-    return item;
-}
+
 function clamp(input, min = 0, max = 128) {
     return Math.min(Math.max(min, input), max);
 }
+
 function number_entry(label, valueOrOptions, callback) {
     let value = valueOrOptions, min, max;
     if (typeof valueOrOptions !== 'number')
@@ -199,6 +117,7 @@ function number_entry(label, valueOrOptions, callback) {
     item.add_child(entry);
     return item;
 }
+
 function parse_number(text) {
     let number = parseInt(text, 10);
     if (isNaN(number)) {
@@ -206,12 +125,7 @@ function parse_number(text) {
     }
     return number;
 }
-function show_title(ext) {
-    const t = toggle(_('Show Window Titles'), ext.settings.show_title(), (toggle) => {
-        ext.settings.set_show_title(toggle.state);
-    });
-    return t;
-}
+
 function toggle(desc, active, connect) {
     let toggle = new PopupSwitchMenuItem(desc, active);
     toggle.label.set_y_align(Clutter.ActorAlign.CENTER);
@@ -221,6 +135,7 @@ function toggle(desc, active, connect) {
     });
     return toggle;
 }
+
 function tiled(ext) {
     let t = toggle(_('Tile Windows'), null != ext.auto_tiler, (_, shouldTile) => {
         if (shouldTile) {
@@ -231,35 +146,4 @@ function tiled(ext) {
         }
     });
     return t;
-}
-function color_selector(ext, menu) {
-    let color_selector_item = new PopupMenuItem('Active Hint Color');
-    let color_button = new St.Button();
-    let settings = ext.settings;
-    let selected_color = settings.hint_color_rgba();
-    color_button.label = '           ';
-    color_button.set_style(`background-color: ${selected_color}; border: 2px solid lightgray; border-radius: 2px`);
-    settings.ext.connect('changed', (_, key) => {
-        if (key === 'hint-color-rgba') {
-            let color_value = settings.hint_color_rgba();
-            color_button.set_style(`background-color: ${color_value}; border: 2px solid lightgray; border-radius: 2px`);
-        }
-    });
-    color_button.set_x_align(Clutter.ActorAlign.END);
-    color_button.set_x_expand(false);
-    color_selector_item.label.get_clutter_text().set_x_expand(true);
-    color_selector_item.label.set_y_align(Clutter.ActorAlign.CENTER);
-    color_selector_item.add_child(color_button);
-    color_button.connect('button-press-event', () => {
-        let path = get_current_path() + '/color_dialog/main.js';
-        let resp = GLib.spawn_command_line_async(`gjs --module ${path}`);
-        if (!resp) {
-            return null;
-        }
-        GLib.timeout_add(GLib.PRIORITY_LOW, 300, () => {
-            menu.close();
-            return false;
-        });
-    });
-    return color_selector_item;
 }

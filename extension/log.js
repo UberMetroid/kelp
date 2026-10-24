@@ -6,27 +6,40 @@ export var LOG_LEVELS;
     LOG_LEVELS[LOG_LEVELS["INFO"] = 3] = "INFO";
     LOG_LEVELS[LOG_LEVELS["DEBUG"] = 4] = "DEBUG";
 })(LOG_LEVELS || (LOG_LEVELS = {}));
+
+export let LOG_ENABLED = false;
+let cached_level = LOG_LEVELS.OFF;
+
+export function set_log_level(level) {
+    cached_level = Number(level) || 0;
+    LOG_ENABLED = cached_level > LOG_LEVELS.OFF;
+}
+
 export function log_level() {
-    let settings = globalThis.popShellExtension.getSettings();
-    let log_level = settings.get_uint('log-level');
-    return log_level;
+    return cached_level;
 }
+
 export function log(text) {
-    globalThis.log('pop-shell: ' + text);
+    if (LOG_ENABLED)
+        globalThis.log('pop-shell: ' + text);
 }
+
 export function error(text) {
-    if (log_level() > LOG_LEVELS.OFF)
-        log('[ERROR] ' + text);
+    if (LOG_ENABLED && cached_level > LOG_LEVELS.OFF)
+        globalThis.log('pop-shell: [ERROR] ' + text);
 }
+
 export function warn(text) {
-    if (log_level() > LOG_LEVELS.ERROR)
-        log('[WARN] ' + text);
+    if (LOG_ENABLED && cached_level > LOG_LEVELS.ERROR)
+        globalThis.log('pop-shell: [WARN] ' + text);
 }
+
 export function info(text) {
-    if (log_level() > LOG_LEVELS.WARN)
-        log('[INFO] ' + text);
+    if (LOG_ENABLED && cached_level > LOG_LEVELS.WARN)
+        globalThis.log('pop-shell: [INFO] ' + text);
 }
+
 export function debug(text) {
-    if (log_level() > LOG_LEVELS.INFO)
-        log('[DEBUG] ' + text);
+    if (LOG_ENABLED && cached_level > LOG_LEVELS.INFO)
+        globalThis.log('pop-shell: [DEBUG] ' + text);
 }
