@@ -1034,7 +1034,7 @@ export class Ext extends Ecs.System {
             if (neighbor && neighbor.index() !== ws.index()) {
                 move_to_neighbor(neighbor);
             }
-            else if (direction === Meta.MotionDirection.DOWN && !last_window()) {
+            else if (direction === (Meta.MotionDirection?.DOWN ?? Meta.DisplayDirection.DOWN) && !last_window()) {
                 if (this.settings.dynamic_workspaces()) {
                     neighbor = wom.append_new_workspace(false, global.get_current_time());
                 }
@@ -1042,7 +1042,7 @@ export class Ext extends Ecs.System {
                     return;
                 }
             }
-            else if (direction === Meta.MotionDirection.UP && ws.index() === 0) {
+            else if (direction === (Meta.MotionDirection?.UP ?? Meta.DisplayDirection.UP) && ws.index() === 0) {
                 if (this.settings.dynamic_workspaces()) {
                     wom.append_new_workspace(false, global.get_current_time());
                     this.on_workspace_modify(() => true, (current) => current + 1, true);
@@ -1065,10 +1065,10 @@ export class Ext extends Ecs.System {
         };
         switch (direction) {
             case Meta.DisplayDirection.DOWN:
-                workspace_move(Meta.MotionDirection.DOWN);
+                workspace_move(Meta.MotionDirection?.DOWN ?? Meta.DisplayDirection.DOWN);
                 break;
             case Meta.DisplayDirection.UP:
-                workspace_move(Meta.MotionDirection.UP);
+                workspace_move(Meta.MotionDirection?.UP ?? Meta.DisplayDirection.UP);
                 break;
         }
         if (this.auto_tiler)

@@ -18,12 +18,13 @@ Upstream `pop-shell` fails or throws runtime exceptions on GNOME 50 and GNOME 51
    - `global.display.get_monitor_neighbor_index()` and `Meta.MotionDirection` usage in monitor/directional lookup broke in Mutter 18+.
    - Replaced directional monitor resolution in `tiling.js` (`locate_monitor` and `move_window_or_monitor`) and `extension.js` (`move_workspace`, `move_monitor`) with `Meta.DisplayDirection.{LEFT,RIGHT,UP,DOWN}` and geometry-based work-area distance checks.
 
-3. **Eliminated All Legacy GJS `imports.*` Globals (`extension.js`, `config.js`, `utils.js`, `xprop.js`, `launcher.js`, `launcher_service.js`, `floating_exceptions/*`)**
+3. **Eliminated All Legacy GJS `imports.*` Globals & Subprocess Stream Leak (`extension.js`, `config.js`, `utils.js`, `xprop.js`, `launcher.js`, `launcher_service.js`, `floating_exceptions/*`)**
    - Replaced every `imports.byteArray.toString(...)` call with standard Web/GJS `new TextDecoder().decode(...)` and removed `imports.searchPath` manipulation for strict ESM compliance in GJS (GNOME 50 & 51).
+   - Fixed `LauncherService.exit()` in `launcher_service.js` closing `service.stdin` twice instead of closing both `service.stdin` and `service.stdout`.
 
-4. **Forward-Compatible `Meta.Window` Maximize & `St.BoxLayout` APIs (`window.js`, `panel_settings.js`, `search.js`, `shortcut_overlay.js`)**
-   - Added `this.meta.get_maximized()` checks in `is_maximized()` and `is_snap_edge()` alongside `maximized_horizontally` / `maximized_vertically` for Mutter 18/19 compatibility, and removed deprecated `Meta.MaximizeFlags` arguments from `maximize()` / `unmaximize()`.
-   - Replaced deprecated `St.BoxLayout({ vertical: ... })` with `St.BoxLayout({ orientation: Clutter.Orientation.VERTICAL / HORIZONTAL })` and `.add(...)` with `.add_child(...)`.
+4. **Forward-Compatible `Meta.Window` Maximize, `ModalDialog`, & `St.BoxLayout` APIs (`window.js`, `panel_settings.js`, `search.js`, `shortcut_overlay.js`)**
+   - Added `this.meta.get_maximized()` checks in `is_maximized()` and `is_snap_edge()` (with `Meta.MaximizeFlags?.VERTICAL ?? 2` fallback) alongside `maximized_horizontally` / `maximized_vertically` for Mutter 18/19 compatibility, removed deprecated `Meta.MaximizeFlags` arguments from `maximize()` / `unmaximize()`, and fixed `!this.actor_exists()` invocation in `ShellWindow.restack()`.
+   - Replaced all deprecated `St.BoxLayout({ vertical: ... })` and `St.BoxLayout({ horizontal: ... })` properties with `orientation: Clutter.Orientation.VERTICAL / HORIZONTAL`, replaced `.add(...)` with `.add_child(...)`, and guarded `this.dialog.show_all()` with `this.dialog.show()` in `search.js`.
 
 5. **Fixed Active Hint Border Bleed & GNOME 42+ Dark Mode Detection (`settings.js`, `dark.css`, `light.css`, `highcontrast.css`)**
    - `settings.js`: Checked `org.gnome.desktop.interface` `color-scheme === 'prefer-dark'` so GNOME 50/51's standard dark mode is detected without requiring a legacy `*dark*` GTK3 theme string.

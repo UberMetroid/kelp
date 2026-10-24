@@ -1,3 +1,4 @@
+import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 import * as Lib from './lib.js';
@@ -39,7 +40,7 @@ export var ShortcutOverlay = GObject.registerClass(class ShortcutOverlay extends
         });
         let columns_layout = new St.BoxLayout({
             styleClass: 'pop-shell-shortcuts-columns',
-            horizontal: true,
+            orientation: Clutter.Orientation.HORIZONTAL,
         });
         for (const column of columns) {
             let column_layout = new St.BoxLayout({
@@ -59,7 +60,7 @@ export var ShortcutOverlay = GObject.registerClass(class ShortcutOverlay extends
     gen_combination(combination) {
         let layout = new St.BoxLayout({
             styleClass: 'pop-shell-binding',
-            horizontal: true,
+            orientation: Clutter.Orientation.HORIZONTAL,
         });
         for (const key of combination) {
             layout.add_child(new St.Label({ text: key }));
@@ -68,7 +69,7 @@ export var ShortcutOverlay = GObject.registerClass(class ShortcutOverlay extends
     }
     gen_section(section) {
         let layout = new St.BoxLayout({
-            styleclass: 'pop-shell-section',
+            styleClass: 'pop-shell-section',
         });
         layout.add_child(new St.Label({
             styleClass: 'pop-shell-section-header',
@@ -83,7 +84,7 @@ export var ShortcutOverlay = GObject.registerClass(class ShortcutOverlay extends
     gen_shortcut(shortcut) {
         let layout = new St.BoxLayout({
             styleClass: 'pop-shell-shortcut',
-            horizontal: true,
+            orientation: Clutter.Orientation.HORIZONTAL,
         });
         layout.add_child(new St.Label({
             text: shortcut.description,

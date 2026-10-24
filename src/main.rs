@@ -461,31 +461,34 @@ fn install_system_wide(dry_run: bool) -> Result<(), String> {
         }
 
         println!("==> Elevating via run0 to install into /usr/share...");
+        let mut script = format!(
+            "mkdir -p '{ext}' && cp -r '{stage_ext}/.' '{ext}'",
+            ext = sys_ext_dir.display(),
+            stage_ext = stage_ext.display()
+        );
+        if sys_schema_dir.exists() {
+            script.push_str(&format!(
+                " && cp '{stage_schema}' '{sys_schema}/org.gnome.shell.extensions.pop-shell.gschema.xml' && glib-compile-schemas '{sys_schema}'",
+                stage_schema = stage_schema.display(),
+                sys_schema = sys_schema_dir.display()
+            ));
+        }
+        if sys_keybindings_dir.exists() {
+            script.push_str(&format!(
+                " && cp -r '{stage_kb}/.' '{sys_kb}'",
+                stage_kb = stage_kb.display(),
+                sys_kb = sys_keybindings_dir.display()
+            ));
+        }
+
         let status = Command::new("run0")
-            .arg("cp")
-            .arg("-r")
-            .arg(format!("{}/.", stage_ext.display()))
-            .arg(&sys_ext_dir)
+            .args(["sh", "-c", &script])
             .status()
             .map_err(|e| format!("Failed to execute run0: {e}"))?;
-        if !status.success() {
-            let _ = fs::remove_dir_all(&staging_dir);
-            return Err("run0 failed to copy extension files".to_string());
-        }
-
-        if sys_schema_dir.exists() {
-            let _ = Command::new("run0")
-                .arg("cp")
-                .arg(&stage_schema)
-                .arg(sys_schema_dir.join("org.gnome.shell.extensions.pop-shell.gschema.xml"))
-                .status();
-            let _ = Command::new("run0")
-                .arg("glib-compile-schemas")
-                .arg(sys_schema_dir)
-                .status();
-        }
-
         let _ = fs::remove_dir_all(&staging_dir);
+        if !status.success() {
+            return Err("run0 failed to install system-wide extension files".to_string());
+        }
         Ok(())
     }
 }
@@ -493,7 +496,7 @@ fn install_system_wide(dry_run: bool) -> Result<(), String> {
 fn print_help() {
     println!(
         "pop-shell-installer 1.0.0
-GNOME 50 / Mutter 18 patched Pop Shell auto-tiler + Hyprland-style configuration installer
+GNOME 50 & 51 (Mutter 18 / 19) patched Pop Shell auto-tiler + Hyprland-style configuration installer
 
 USAGE:
     pop-shell-installer [OPTIONS]
@@ -520,11 +523,14 @@ fn run() -> Result<(), String> {
         .map_err(|_| "HOME environment variable is not set".to_string())?;
 
     let schema_dir = if let Some(ref custom_dir) = opts.target_dir {
-        println!("==> Installing Pop Shell (GNOME 50 patched) to {}...", custom_dir.display());
+        println!(
+            "==> Installing Pop Shell (GNOME 50/51 patched) to {}...",
+            custom_dir.display()
+        );
         install_extension_tree(custom_dir, opts.dry_run)?;
         Some(custom_dir.join("schemas"))
     } else if opts.system {
-        println!("==> Installing Pop Shell (GNOME 50 patched) system-wide...");
+        println!("==> Installing Pop Shell (GNOME 50/51 patched) system-wide...");
         install_system_wide(opts.dry_run)?;
         None
     } else {
@@ -532,7 +538,7 @@ fn run() -> Result<(), String> {
             .join(".local/share/gnome-shell/extensions")
             .join(EXTENSION_UUID);
         println!(
-            "==> Installing Pop Shell (GNOME 50 patched) to {}...",
+            "==> Installing Pop Shell (GNOME 50/51 patched) to {}...",
             user_ext_dir.display()
         );
         install_extension_tree(&user_ext_dir, opts.dry_run)?;
@@ -569,7 +575,7 @@ fn run() -> Result<(), String> {
         }
     }
 
-    println!("==> Done! Pop Shell for GNOME 50 is installed and configured.");
+    println!("==> Done! Pop Shell for GNOME 50/51 is installed and configured.");
     Ok(())
 }
 
@@ -632,7 +638,7 @@ mod tests {
         assert!(metadata_str.contains("\"50\""));
         assert!(metadata_str.contains("\"51\""));
 
-        // Verify window.js uses get_default_seat().warp_pointer and get_maximized() forward-compat
+        // Verify window.js uses get_default_seat().warp_pointer, get_maximized() forward-compat, and calls actor_exists()
         let (_, window_bytes) = EMBEDDED_EXTENSION_FILES
             .iter()
             .find(|(p, _)| *p == "window.js")
@@ -641,6 +647,7 @@ mod tests {
         assert!(window_str.contains("get_default_seat().warp_pointer"));
         assert!(!window_str.contains("Clutter.Backend"));
         assert!(window_str.contains("this.meta.get_maximized"));
+        assert!(!window_str.contains("!this.actor_exists "));
 
         // Verify tiling.js uses Meta.DisplayDirection instead of Meta.MotionDirection
         let (_, tiling_bytes) = EMBEDDED_EXTENSION_FILES
@@ -658,13 +665,28 @@ mod tests {
         let settings_str = std::str::from_utf8(settings_bytes).unwrap();
         assert!(settings_str.contains("prefer-dark"));
 
-        // Verify zero legacy GJS `imports.` usage across all embedded JS files (GNOME 50/51 strict ESM)
+        // Verify launcher_service.js closes both stdin and stdout
+        let (_, ls_bytes) = EMBEDDED_EXTENSION_FILES
+            .iter()
+            .find(|(p, _)| *p == "launcher_service.js")
+            .expect("launcher_service.js must be embedded");
+        let ls_str = std::str::from_utf8(ls_bytes).unwrap();
+        assert!(ls_str.contains("close_stream(service.stdout)"));
+
+        // Verify zero legacy GJS `imports.` usage and zero deprecated St.BoxLayout vertical/horizontal props across all embedded JS files
         for (path, bytes) in EMBEDDED_EXTENSION_FILES {
             if path.ends_with(".js") {
                 let content = std::str::from_utf8(bytes).unwrap();
                 assert!(
                     !content.contains("imports."),
                     "File {path} still contains legacy GJS `imports.` reference"
+                );
+                assert!(
+                    !content.contains("vertical: true")
+                        && !content.contains("vertical: false")
+                        && !content.contains("horizontal: true")
+                        && !content.contains("horizontal: false"),
+                    "File {path} still contains deprecated St.BoxLayout vertical/horizontal property"
                 );
             }
         }

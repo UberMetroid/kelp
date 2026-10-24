@@ -216,7 +216,7 @@ export class ShellWindow {
     }
     is_snap_edge() {
         if (typeof this.meta.get_maximized === 'function') {
-            return this.meta.get_maximized() === Meta.MaximizeFlags.VERTICAL;
+            return this.meta.get_maximized() === (Meta.MaximizeFlags?.VERTICAL ?? 2);
         }
         return Boolean(this.meta.maximized_vertically && !this.meta.maximized_horizontally);
     }
@@ -395,7 +395,7 @@ export class ShellWindow {
         const action = () => {
             const count = restacks;
             restacks += 1;
-            if (!this.actor_exists && count === 0)
+            if (!this.actor_exists() && count === 0)
                 return true;
             if (count === 3) {
                 if (SCHEDULED_RESTACK !== null)

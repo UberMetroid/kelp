@@ -50,7 +50,7 @@ export class LauncherService {
                 }
             };
             close_stream(service.stdin);
-            close_stream(service.stdin);
+            close_stream(service.stdout);
             return false;
         });
     }

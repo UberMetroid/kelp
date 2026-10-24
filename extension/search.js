@@ -257,7 +257,12 @@ export class Search {
         this.text.set_text(null);
     }
     show() {
-        this.dialog.show_all();
+        if (typeof this.dialog.show_all === 'function') {
+            this.dialog.show_all();
+        }
+        else {
+            this.dialog.show();
+        }
         this.clear();
         this.entry.grab_key_focus();
     }
