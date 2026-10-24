@@ -1,0 +1,19 @@
+[package]
+name = "pop-shell-gnome50"
+version = "1.0.0"
+edition = "2021"
+authors = ["UberMetroid"]
+license = "GPL-3.0-only"
+description = "GNOME 50 & 51 (Mutter 18/19) patched Pop Shell auto-tiler with Hyprland-style keybindings and zero-dependency Rust installer"
+repository = "https://github.com/UberMetroid/pop-shell-gnome50"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+
+[[bin]]
+name = "pop-shell-installer"
+path = "src/main.rs"
