@@ -98,6 +98,45 @@ export function restore_edge_tiling(ext) {
     }
 }
 
+export function clear_seahorse_peeks(ext) {
+    if (!ext.seahorse_peeks) return;
+    for (const pair of ext.seahorse_peeks.values()) {
+        pair.left?.destroy?.();
+        pair.right?.destroy?.();
+    }
+    ext.seahorse_peeks.clear();
+}
+
+export function sync_seahorse_peeks(ext, strip_id, rects) {
+    if (!global.window_group) return;
+    if (!ext.seahorse_peeks) ext.seahorse_peeks = new Map();
+    const key = `${strip_id[0]}:${strip_id[1]}`;
+    const active = strip_id[1] === ext.active_workspace() || ext.should_ignore_workspace(strip_id[0]);
+    if (!rects || !active || (!rects.left && !rects.right)) {
+        const old = ext.seahorse_peeks.get(key);
+        if (old) { old.left?.destroy?.(); old.right?.destroy?.(); ext.seahorse_peeks.delete(key); }
+        return;
+    }
+    let pair = ext.seahorse_peeks.get(key);
+    if (!pair) { pair = { left: null, right: null }; ext.seahorse_peeks.set(key, pair); }
+    for (const [side, delta] of [['left', -1], ['right', 1]]) {
+        const r = rects[side];
+        if (!r) {
+            if (pair[side]) { pair[side].destroy(); pair[side] = null; }
+            continue;
+        }
+        if (!pair[side]) {
+            const btn = new St.Button({ style_class: 'kelp-seahorse-peek', reactive: true, can_focus: false });
+            btn.connect('clicked', () => ext.auto_tiler?.focus_step?.(ext, delta));
+            global.window_group.add_child(btn);
+            pair[side] = btn;
+        }
+        pair[side].set_position(r.x, r.y);
+        pair[side].set_size(r.width, r.height);
+        pair[side].show();
+    }
+}
+
 export function unload_theme(ext) {
     if (!ext.current_style) return;
     try {

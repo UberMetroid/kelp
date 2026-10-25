@@ -123,7 +123,8 @@ export function on_grab_end(ext, meta_win, op) {
     }
 
     if (ext.auto_tiler.is_seahorse) {
-        ext.auto_tiler.reflow(ext, win.entity);
+        if (win.prev_rect && ext.auto_tiler.on_resize) ext.auto_tiler.on_resize(ext, win);
+        else ext.auto_tiler.reflow(ext, win.entity);
         win.prev_rect = null;
         return;
     }

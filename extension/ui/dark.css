@@ -57,3 +57,9 @@
 .kelp-exceptions-list {
     spacing: 6px;
 }
+
+.kelp-seahorse-peek {
+    background-color: rgba(106, 215, 225, 0.22);
+    border: 2px solid rgba(106, 215, 225, 0.75);
+    border-radius: 2px;
+}

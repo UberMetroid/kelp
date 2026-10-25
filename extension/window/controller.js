@@ -25,7 +25,7 @@ import { ExceptionDialog } from '../ui/exception_dialog.js';
 import { ShellWindow } from './shell_window.js';
 import { Keybindings } from './keybindings.js';
 import { move_window_to_monitor, move_window_to_workspace } from './overview_tray.js';
-import { load_theme, monitor_work_area, restore_edge_tiling, set_edge_tiling, unload_theme, update_scale } from './controller_display.js';
+import { clear_seahorse_peeks, load_theme, monitor_work_area, restore_edge_tiling, set_edge_tiling, sync_seahorse_peeks, unload_theme, update_scale } from './controller_display.js';
 import { active_window_list, active_workspace, cursor_status, focus_down, focus_left, focus_right, focus_selector, focus_up, on_focused, previously_focused, should_ignore_workspace, tab_list, windows_at_pointer, workspace_id } from './controller_workspace.js';
 import { attach_controller_signals, cancel_drag_signal } from './controller_signals.js';
 
@@ -71,9 +71,7 @@ export class Ext extends Ecs.World {
     }
 
     _create_auto_tiler() {
-        const f = new Forest()
-            .connect_on_attach((p, c) => this.auto_tiler?.attached.insert(c, p))
-            .connect_on_detach((c) => this.auto_tiler?.attached.remove(c));
+        const f = new Forest().connect_on_attach((p, c) => this.auto_tiler?.attached.insert(c, p)).connect_on_detach((c) => this.auto_tiler?.attached.remove(c));
         return new OctopusTiler(f, this.register_storage());
     }
     _create_tiler_for_mode(mode) {
@@ -234,6 +232,8 @@ export class Ext extends Ecs.World {
     }
     exception_drawer() { this.exception_dialog.open(); }
     unload_theme() { unload_theme(this); }
+    sync_seahorse_peeks(id, rects) { sync_seahorse_peeks(this, id, rects); }
+    clear_seahorse_peeks() { clear_seahorse_peeks(this); }
     exit_modes() { this.tiler.exit(this); this.exception_dialog.close(); if (this.overlay) this.overlay.visible = false; }
 
     destroy() {
@@ -246,6 +246,7 @@ export class Ext extends Ecs.World {
         for (const [obj, sig] of this.signals) { try { obj.disconnect(sig); } catch (_e) { /* finalized */ } }
         this.signals = [];
         this._destroy_auto_tiler();
+        this.clear_seahorse_peeks();
         restore_edge_tiling(this);
         for (const [ent, win] of this.windows.iter()) { win.destroy(); this.delete_entity(ent); }
         if (this.indicator) { this.indicator.destroy(); this.indicator = null; }

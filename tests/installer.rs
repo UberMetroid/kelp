@@ -28,7 +28,7 @@ use kelp::{
     install_schema_files, pack_extension_bundle, parse_cli_args, validate_config_json,
     write_staging_tree, CliAction, DEFAULT_CONFIG_JSON, EXTENSION_FILES, EXTENSION_UUID,
     GSETTINGS_OVERRIDES, ICON_FILES, KEYBINDING_FILES, LEGACY_FLAT_FILES, MAX_CONFIG_BYTES,
-    SCHEMA_FILENAME, SCHEMA_ID,
+    SCHEMA_FILENAME, SCHEMA_ID, WM_CONFLICTS,
 };
 
 fn temp_test_dir(tag: &str) -> Result<PathBuf, String> {
@@ -178,65 +178,65 @@ fn staging_and_ego_bundle_pack_include_modular_subdirectories() -> Result<(), St
     let root = temp_test_dir("pack")?;
     let stage = root.join("stage");
     write_staging_tree(&stage)?;
-
     if !stage.join("schemas").join(SCHEMA_FILENAME).is_file() {
         return Err("staged schema XML missing".to_string());
     }
     if stage.join("schemas").join("gschemas.compiled").exists() {
         return Err("EGO staging tree must not contain binary gschemas.compiled".to_string());
     }
-
-    let out_dir = root.join("out");
-    let bundle = pack_extension_bundle(&out_dir)?;
+    let bundle = pack_extension_bundle(&root.join("out"))?;
     if !bundle.is_file() {
         return Err(format!("bundle {} not created", bundle.display()));
     }
-
     let _ = fs::remove_dir_all(&root);
     Ok(())
 }
 
 #[test]
 fn gsettings_overrides_include_desktop_shortcuts_and_gap_defaults() -> Result<(), String> {
-    let required = [
-        (
-            "org.gnome.desktop.wm.keybindings",
-            "close",
-            "['<Super>q', '<Alt>F4']",
-        ),
-        (
-            "org.gnome.desktop.wm.keybindings",
-            "toggle-maximized",
-            "['<Super>m']",
-        ),
-        (
-            "org.gnome.settings-daemon.plugins.media-keys",
-            "www",
-            "['<Super>b']",
-        ),
-        (
-            "org.gnome.settings-daemon.plugins.media-keys",
-            "home",
-            "['<Super>f']",
-        ),
-        (
-            "org.gnome.settings-daemon.plugins.media-keys",
-            "email",
-            "['<Super>e']",
-        ),
-        (
-            "org.gnome.settings-daemon.plugins.media-keys",
-            "screensaver",
-            "['<Super>Escape']",
-        ),
+    let wm = "org.gnome.desktop.wm.keybindings";
+    let media = "org.gnome.settings-daemon.plugins.media-keys";
+    for &(dir, key, val) in &[
+        ("Left", "h", "left"),
+        ("Right", "l", "right"),
+        ("Up", "k", "up"),
+        ("Down", "j", "down"),
+    ] {
+        let sw = (
+            wm,
+            format!("switch-to-workspace-{val}"),
+            format!("['<Super><Alt>{dir}', '<Super><Alt>{key}']"),
+        );
+        let mv = (
+            wm,
+            format!("move-to-workspace-{val}"),
+            format!("['<Super><Alt><Shift>{dir}', '<Super><Alt><Shift>{key}']"),
+        );
+        if !GSETTINGS_OVERRIDES.contains(&(sw.0, sw.1.as_str(), sw.2.as_str()))
+            || !GSETTINGS_OVERRIDES.contains(&(mv.0, mv.1.as_str(), mv.2.as_str()))
+        {
+            return Err(format!("missing workspace binding for {val}"));
+        }
+    }
+    for expected in [
+        (wm, "close", "['<Super>q', '<Alt>F4']"),
+        (wm, "toggle-maximized", "['<Super>m']"),
+        (media, "www", "['<Super>b']"),
+        (media, "home", "['<Super>f']"),
+        (media, "email", "['<Super>e']"),
+        (media, "screensaver", "['<Super>Escape']"),
         (SCHEMA_ID, "active-hint-border-radius", "2"),
         (SCHEMA_ID, "gap-inner", "6"),
         (SCHEMA_ID, "gap-outer", "6"),
-    ];
-    for expected in required {
+    ] {
         if !GSETTINGS_OVERRIDES.contains(&expected) {
             return Err(format!("GSETTINGS_OVERRIDES missing {expected:?}"));
         }
+    }
+    if !WM_CONFLICTS.contains(&("org.gnome.shell.keybindings", "shift-overview-up"))
+        || WM_CONFLICTS.contains(&(wm, "switch-to-workspace-left"))
+    {
+        return Err("WM_CONFLICTS workspace/overview invariant failed".to_string());
     }
     Ok(())
 }

@@ -86,10 +86,7 @@ export class ModalTiler {
             changed.x < min_x || changed.x + changed.width > max_x ||
             changed.y < min_y || changed.y + changed.height > max_y
         ) return this;
-        overlay.x = changed.x;
-        overlay.y = changed.y;
-        overlay.width = changed.width;
-        overlay.height = changed.height;
+        Object.assign(overlay, { x: changed.x, y: changed.y, width: changed.width, height: changed.height });
         return this;
     }
 
@@ -159,7 +156,14 @@ export class ModalTiler {
         try {
             if (ext.auto_tiler?.is_seahorse && !ext.contains_tag(this.window, Ecs.Floating)) {
                 const win = ext.windows.get(this.window);
-                if (win) { ext.auto_tiler.toggle_orientation(ext, win); this.overlay_watch(ext, win); }
+                if (win) {
+                    if (direction === Direction.Left || direction === Direction.Right) {
+                        ext.auto_tiler.resize_column(ext, direction === Direction.Left ? -1 : 1, win);
+                    } else {
+                        ext.auto_tiler.toggle_orientation(ext, win);
+                    }
+                    this.overlay_watch(ext, win);
+                }
             } else if (ext.auto_tiler && !ext.contains_tag(this.window, Ecs.Floating)) {
                 resize_auto(this, ext, direction);
             } else {

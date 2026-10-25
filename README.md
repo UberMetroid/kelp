@@ -17,7 +17,7 @@ Left-clicking the top-bar icon (or pressing `Super + Y`) cycles through all 3 mo
 | Top-Bar Icon | Animal Mode | Layout Style | Left-Click / Scroll Action |
 | :---: | :--- | :--- | :--- |
 | <img src="extension/icons/kelp-octopus-symbolic.svg" width="32" height="32" alt="Octopus 2D Grid Icon" /> | **Octopus — 2D Grid** *(Default)* | Hyprland-style 2D Binary Space Partitioning (`OctopusTiler` + `Forest` in `engine/octopus/`) with tabbed stacks (`Super + S`). | Left-click switches to **Seahorse** |
-| <img src="extension/icons/kelp-seahorse-symbolic.svg" width="32" height="32" alt="Seahorse Scrolling Strip Icon" /> | **Seahorse — Scrolling Strip** | Niri-style horizontal scrolling strip of full-height columns (`SeahorseTiler` in `engine/seahorse/`), showing up to 2 side-by-side columns (`Super + O` for 100% full-width) with off-viewport actors hidden so windows never bleed across monitors. | Left-click switches to **Otter** · Mouse wheel scrolls columns |
+| <img src="extension/icons/kelp-seahorse-symbolic.svg" width="32" height="32" alt="Seahorse Scrolling Strip Icon" /> | **Seahorse — Scrolling Strip** | Niri/PaperWM-style horizontal scrolling strip of full-height columns (`SeahorseTiler` in `engine/seahorse/`), showing up to 2 side-by-side columns (`Super + O` for 100% full-width, `Super + Enter` -> `Shift + Left/Right` or mouse drag to resize column widths) with clickable `8px` screen-edge peek slivers when off-screen neighbor columns exist. | Left-click switches to **Otter** · Mouse wheel scrolls columns |
 | <img src="extension/icons/kelp-otter-symbolic.svg" width="32" height="32" alt="Otter Floating Icon" /> | **Otter — Floating** | Standard GNOME / Windows free-floating mode (`engine/otter/otter_tiler.js`) with gently cascaded windows, monitor edge-tiling, and `Ctrl/Shift + Super + Left/Right/Up/Down` 50% edge-snap. | Left-click switches to **Octopus** |
 
 ---
@@ -35,7 +35,7 @@ Left-clicking the top-bar icon (or pressing `Super + Y`) cycles through all 3 mo
 
 ## Install in 10 Seconds
 
-Download the latest release (`v1.5.0`) from [**GitHub Releases**](https://github.com/UberMetroid/kelp/releases/latest) and choose either method:
+Download the latest release (`v1.6.0`) from [**GitHub Releases**](https://github.com/UberMetroid/kelp/releases/latest) and choose either method:
 
 ### Option 1: Standard GNOME Extension `.zip` (No compiler needed)
 
@@ -82,8 +82,9 @@ kelp
 | `Super + G` | Toggle floating mode for the focused window |
 | `Super + Y` | Cycle Kelp tiling mode (**Octopus -> Seahorse -> Otter**) |
 | `Super + Enter` | Enter interactive adjustment mode (`Arrows/HJKL` to move, `Shift + Arrows/HJKL` to resize, `Enter` to apply, `Esc` to cancel) |
+| `Super + Alt + Arrow / H / J / K / L` | Switch to workspace Left / Down / Up / Right |
+| `Super + Alt + Shift + Arrow / H / J / K / L` or `Super + Shift + Page_Up / Page_Down` | Move window to another workspace |
 | `Ctrl + Super + Shift + Arrow / H / J / K / L` | Move window to another monitor |
-| `Super + Shift + Page_Up / Page_Down` | Move window to another workspace |
 
 ---
 
