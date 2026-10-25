@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   verify:
-    name: Verification Ladder & EGO Package
+    name: Verification Ladder & Official EGO Review Gate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -22,16 +22,19 @@ jobs:
         with:
           components: rustfmt, clippy
 
-      - name: Install GNOME Shell extension tools (glib-compile-schemas, gnome-extensions, unzip)
+      - name: Install GNOME Shell & EGO validation tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y libglib2.0-bin gnome-shell-common gnome-shell unzip
+          sudo apt-get install -y libglib2.0-bin gnome-shell-common gnome-shell gjs libxml2-utils jq unzip
 
-      - name: Run unit, Page Rule, EGO lint, and installer tests
+      - name: Run unit, Page Rule, EGO lint, and gjs -m runtime smoke tests
         run: cargo test --workspace --all-targets
 
       - name: Run strict Clippy gate
-        run: cargo clippy --workspace --all-targets -- -D warnings -D clippy::unwrap_used -D clippy::expect_used -D clippy::panic
+        run: |
+          cargo clippy --workspace --all-targets -- -D warnings -W clippy::pedantic \
+            -D clippy::unwrap_used -D clippy::expect_used -D clippy::panic \
+            -D clippy::todo -D clippy::unimplemented -D clippy::dbg_macro
 
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -43,6 +46,40 @@ jobs:
         run: |
           ./target/release/kelp --pack dist
           unzip -l dist/kelp@ubermetroid.github.io.shell-extension.zip
+
+      - name: Official EGO Review Gate (Schema, Metadata, Zip Audit, & gnome-extensions install)
+        run: |
+          set -euo pipefail
+          ZIP="dist/kelp@ubermetroid.github.io.shell-extension.zip"
+
+          echo "==> 1. Validating GSettings XML with xmllint and glib-compile-schemas --strict..."
+          xmllint --noout extension/schemas/org.gnome.shell.extensions.kelp.gschema.xml
+          glib-compile-schemas --strict --dry-run extension/schemas
+
+          echo "==> 2. Validating metadata.json required EGO fields..."
+          jq -e '.uuid == "kelp@ubermetroid.github.io" and .name == "Kelp" and (.["shell-version"] | length >= 1) and .["settings-schema"] == "org.gnome.shell.extensions.kelp"' extension/metadata.json >/dev/null
+
+          echo "==> 3. Auditing .shell-extension.zip for EGO forbidden files..."
+          CONTENTS="$(unzip -Z1 "$ZIP")"
+          echo "$CONTENTS" | grep -qx "extension.js"
+          echo "$CONTENTS" | grep -qx "prefs.js"
+          echo "$CONTENTS" | grep -qx "metadata.json"
+          echo "$CONTENTS" | grep -qx "schemas/org.gnome.shell.extensions.kelp.gschema.xml"
+          if echo "$CONTENTS" | grep -E '(gschemas\.compiled|\.git|\.po$|\.pot$|\.rs$|Cargo\.|node_modules|package\.json)'; then
+            echo "ERROR: Forbidden file found inside EGO zip archive!"
+            exit 1
+          fi
+
+          echo "==> 4. Scanning JS modules for EGO review-guideline violations..."
+          if grep -rnE '(ByteArray\.toString|imports\.mainloop|imports\.lang|ExtensionUtils|spawn_command_line_sync|spawn_sync|\beval\s*\(|new Function\s*\()' extension/; then
+            echo "ERROR: Forbidden EGO pattern found in extension/"
+            exit 1
+          fi
+
+          echo "==> 5. Testing installation via official gnome-extensions CLI..."
+          gnome-extensions install --force "$ZIP"
+          test -f "$HOME/.local/share/gnome-shell/extensions/kelp@ubermetroid.github.io/extension.js"
+          test -f "$HOME/.local/share/gnome-shell/extensions/kelp@ubermetroid.github.io/metadata.json"
 
       - name: Upload EGO extension zip artifact
         uses: actions/upload-artifact@v4
