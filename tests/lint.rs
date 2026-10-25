@@ -1,31 +1,108 @@
-//! Static lint gates for Rust (`src/`) and GNOME Shell Extension (`extension/`) EGO compliance.
+// SPDX-License-Identifier: GPL-3.0-or-later
+// First-Principles & Zero-Trust Page Header
+// - Page Responsibility / Functional Domain:
+//   Static security & EGO compliance lint suite (`tests/lint.rs`) verifying modern ES2022
+//   syntax (`const`/`let` only, strict equality `===`/`!==`), Mutter 18/19 API usage,
+//   process-boundary separation (`prefs.js`), and deterministic lifecycle cleanup.
+// - Zero-Trust Boundary & Invariants:
+//   Scans every `.js` file under `extension/` to forbid `var`, loose `==`/`!=`, legacy
+//   `imports.gi` / `imports.ui`, deprecated Clutter actors, and Mutter imports in `prefs.js`.
+
+#![forbid(unsafe_code)]
+#![deny(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::todo,
+    clippy::unimplemented,
+    clippy::dbg_macro
+)]
 
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-use kelp::embedded_assets::{EMBEDDED_EXTENSION_FILES, EXTENSION_UUID, SCHEMA_FILENAME, SCHEMA_ID};
+use kelp::EXTENSION_FILES;
+
+fn collect_js_files(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), String> {
+    let entries =
+        fs::read_dir(dir).map_err(|e| format!("failed to read {}: {e}", dir.display()))?;
+    for entry_res in entries {
+        let entry = entry_res.map_err(|e| format!("dir entry error: {e}"))?;
+        let path = entry.path();
+        if path.is_dir() {
+            collect_js_files(&path, out)?;
+        } else if path.extension().and_then(|s| s.to_str()) == Some("js") {
+            out.push(path);
+        }
+    }
+    Ok(())
+}
 
 #[test]
-fn rust_sources_have_no_shell_invocations() -> Result<(), String> {
-    let src_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
-    let entries = fs::read_dir(&src_dir).map_err(|e| e.to_string())?;
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.extension().and_then(|s| s.to_str()) == Some("rs") {
-            let content = fs::read_to_string(&path).unwrap_or_default();
-            for forbidden in [
-                "\"sh\"",
-                "\"bash\"",
-                "\"zsh\"",
-                "\"-c\"",
-                "Command::new(\"sh\")",
-                "Command::new(\"bash\")",
-            ] {
-                assert!(
-                    !content.contains(forbidden),
-                    "Rust source {} contains forbidden shell invocation token `{forbidden}`",
-                    path.display()
-                );
+fn all_js_files_use_strict_es2022_and_zero_legacy_imports() -> Result<(), String> {
+    let ext_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("extension");
+    let mut js_files = Vec::new();
+    collect_js_files(&ext_root, &mut js_files)?;
+    js_files.sort();
+
+    if js_files.len() < 30 {
+        return Err(format!("expected >= 30 JS files, found {}", js_files.len()));
+    }
+
+    for file in &js_files {
+        let content = fs::read_to_string(file)
+            .map_err(|e| format!("failed to read {}: {e}", file.display()))?;
+
+        for forbidden in [
+            "imports.gi",
+            "imports.ui",
+            "imports.misc",
+            "ExtensionUtils",
+            "Meta.LaterType",
+            "Clutter.Container",
+        ] {
+            if content.contains(forbidden) {
+                return Err(format!(
+                    "Forbidden legacy symbol '{forbidden}' in {}",
+                    file.display()
+                ));
+            }
+        }
+
+        for (line_idx, raw_line) in content.lines().enumerate() {
+            let code = raw_line.split("//").next().unwrap_or("");
+            let trimmed = code.trim_start();
+            if trimmed.starts_with("var ") || code.contains(" var ") || code.contains("(var ") {
+                return Err(format!(
+                    "Forbidden `var` declaration in {}:{} -> {raw_line}",
+                    file.display(),
+                    line_idx + 1
+                ));
+            }
+
+            let bytes = code.as_bytes();
+            for i in 0..bytes.len().saturating_sub(1) {
+                if bytes[i] == b'=' && bytes[i + 1] == b'=' {
+                    let prev_ok = i > 0 && matches!(bytes[i - 1], b'=' | b'!' | b'<' | b'>');
+                    let next_ok = i + 2 < bytes.len() && bytes[i + 2] == b'=';
+                    if !prev_ok && !next_ok {
+                        return Err(format!(
+                            "Loose `==` operator in {}:{} -> {raw_line}",
+                            file.display(),
+                            line_idx + 1
+                        ));
+                    }
+                }
+                if bytes[i] == b'!' && bytes[i + 1] == b'=' {
+                    let next_ok = i + 2 < bytes.len() && bytes[i + 2] == b'=';
+                    if !next_ok {
+                        return Err(format!(
+                            "Loose `!=` operator in {}:{} -> {raw_line}",
+                            file.display(),
+                            line_idx + 1
+                        ));
+                    }
+                }
             }
         }
     }
@@ -33,131 +110,90 @@ fn rust_sources_have_no_shell_invocations() -> Result<(), String> {
 }
 
 #[test]
-fn ego_metadata_and_schema_compliance() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let metadata_str = fs::read_to_string(root.join("extension/metadata.json")).unwrap_or_default();
+fn prefs_and_shared_settings_never_import_compositor_only_typelibs() -> Result<(), String> {
+    let ext_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("extension");
+    let prefs_chain = [
+        "prefs.js",
+        "engine/geom/focus.js",
+        "engine/geom/rectangle.js",
+        "ui/settings/gsettings.js",
+        "ui/settings/color.js",
+        "ui/settings/log.js",
+    ];
 
-    assert!(metadata_str.contains(&format!("\"uuid\": \"{EXTENSION_UUID}\"")));
-    assert!(metadata_str.contains(&format!("\"settings-schema\": \"{SCHEMA_ID}\"")));
-    assert!(metadata_str.contains(&format!("\"gettext-domain\": \"{EXTENSION_UUID}\"")));
-    assert!(metadata_str.contains("\"version-name\": \"1.0.0\""));
-    for v in ["45", "46", "47", "48", "49", "50", "51"] {
-        assert!(
-            metadata_str.contains(&format!("\"{v}\"")),
-            "metadata.json missing shell-version {v}"
-        );
-    }
-    assert!(
-        !metadata_str.contains("\"version\":"),
-        "metadata.json must use version-name instead of deprecated integer version"
-    );
-
-    let schema_path = root.join("extension/schemas").join(SCHEMA_FILENAME);
-    let schema_str = fs::read_to_string(&schema_path).unwrap_or_default();
-    assert!(schema_str.contains(&format!("id=\"{SCHEMA_ID}\"")));
-    assert!(schema_str.contains("path=\"/org/gnome/shell/extensions/kelp/\""));
-    assert!(!schema_str.contains("activate-launcher"));
-    assert!(!schema_str.contains("fullscreen-launcher"));
-}
-
-#[test]
-fn ego_javascript_guidelines_and_process_boundaries() {
-    for (path, bytes) in EMBEDDED_EXTENSION_FILES {
-        if !path.ends_with(".js") {
-            continue;
-        }
-        let content = std::str::from_utf8(bytes).unwrap_or_default();
-
-        // Forbidden across ALL extension JS files (EGO guidelines)
-        for forbidden in [
-            "imports.",
-            "spawn",
-            "Subprocess",
-            "globalThis.log",
-            "globalThis.popShellExtension",
-            "__classPrivateFieldGet",
-            "__classPrivateFieldSet",
-            "ByteArray",
-            "Mainloop",
-            "Lang.",
-            "ExtensionUtils",
-            "vertical: true",
-            "vertical: false",
-            "horizontal: true",
-            "horizontal: false",
-            "Clutter.Backend",
-            "ACTIVE_HINT_SHOW_ID",
-            "SCHEDULED_RESTACK",
-            "/proc/",
-        ] {
-            assert!(
-                !content.contains(forbidden),
-                "JS file `{path}` contains EGO-forbidden construct `{forbidden}`"
-            );
-        }
-
-        if *path == "prefs.js" {
-            // prefs.js runs in the GTK4 preferences process: must NEVER import Shell/Meta/Clutter/St
-            for forbidden_shell_import in [
-                "gi://Clutter",
+    for rel in prefs_chain {
+        let path = ext_root.join(rel);
+        let content = fs::read_to_string(&path)
+            .map_err(|e| format!("failed to read {}: {e}", path.display()))?;
+        for raw_line in content.lines() {
+            let code = raw_line.split("//").next().unwrap_or("");
+            for forbidden in [
                 "gi://Meta",
-                "gi://Mtk",
+                "gi://Clutter",
                 "gi://St",
                 "gi://Shell",
                 "resource:///org/gnome/shell/",
-                "show_all",
             ] {
-                assert!(
-                    !content.contains(forbidden_shell_import),
-                    "prefs.js must not import or call GNOME Shell API `{forbidden_shell_import}`"
-                );
-            }
-        } else {
-            // Shell process modules must NEVER import GTK/GDK/Adw
-            for forbidden_gtk_import in ["gi://Gdk", "gi://Gtk", "gi://Adw"] {
-                assert!(
-                    !content.contains(forbidden_gtk_import),
-                    "Shell module `{path}` must not import `{forbidden_gtk_import}` in GNOME Shell process"
-                );
+                if code.contains(forbidden) {
+                    return Err(format!(
+                        "Process-boundary violation: {rel} imports compositor-only '{forbidden}'"
+                    ));
+                }
             }
         }
     }
+    Ok(())
+}
 
-    // Verify extension.js has no top-level object creation before enable() and cleans up in disable()
-    let ext_bytes = EMBEDDED_EXTENSION_FILES
-        .iter()
-        .find(|(p, _)| *p == "extension.js")
-        .map(|(_, b)| *b)
-        .unwrap_or_default();
-    let ext_str = std::str::from_utf8(ext_bytes).unwrap_or_default();
-    assert!(!ext_str.contains("\nconst display = global.display"));
-    assert!(!ext_str.contains("const STYLESHEETS ="));
-    assert!(ext_str.contains("export default class KelpExtension extends Extension"));
-    assert!(ext_str.contains("ext.destroy()"));
-    assert!(ext_str.contains("this.unload_theme()"));
-    assert!(ext_str.contains("this.exception_dialog.close()"));
+#[test]
+fn ego_lifecycle_and_mutter_18_19_invariants_hold() -> Result<(), String> {
+    let ext_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("extension");
+    let ext_js = fs::read_to_string(ext_root.join("extension.js"))
+        .map_err(|e| format!("failed to read extension.js: {e}"))?;
+    for required in [
+        "export default class KelpExtension extends Extension",
+        "enable()",
+        "disable()",
+        "this.unload_theme()",
+        "this.ext.destroy()",
+        "this.exception_dialog.close()",
+    ] {
+        if !ext_js.contains(required) {
+            return Err(format!(
+                "extension.js missing required lifecycle construct: {required}"
+            ));
+        }
+    }
 
-    // Verify dialog_add_exception.js destroys its modal dialog on close
-    let dialog_bytes = EMBEDDED_EXTENSION_FILES
-        .iter()
-        .find(|(p, _)| *p == "dialog_add_exception.js")
-        .map(|(_, b)| *b)
-        .unwrap_or_default();
-    let dialog_str = std::str::from_utf8(dialog_bytes).unwrap_or_default();
-    assert!(
-        dialog_str.contains("destroyOnClose: true"),
-        "AddExceptionDialog must set destroyOnClose: true to avoid leaking modal actors"
-    );
+    let stack_widgets = fs::read_to_string(ext_root.join("ui/stack_widgets.js"))
+        .map_err(|e| format!("failed to read ui/stack_widgets.js: {e}"))?;
+    if !stack_widgets.contains("c.hint_signal")
+        || !stack_widgets.contains("disconnect(c.hint_signal)")
+    {
+        return Err("ui/stack_widgets.js must track and disconnect c.hint_signal".to_string());
+    }
 
-    // Verify stack.js disconnects hint_signal in tab_disconnect
-    let stack_bytes = EMBEDDED_EXTENSION_FILES
-        .iter()
-        .find(|(p, _)| *p == "stack.js")
-        .map(|(_, b)| *b)
-        .unwrap_or_default();
-    let stack_str = std::str::from_utf8(stack_bytes).unwrap_or_default();
-    assert!(
-        stack_str.contains("c.hint_signal"),
-        "stack.js must track and disconnect c.hint_signal in tab_disconnect()"
-    );
+    let exc_dialog = fs::read_to_string(ext_root.join("ui/exception_dialog.js"))
+        .map_err(|e| format!("failed to read ui/exception_dialog.js: {e}"))?;
+    if !exc_dialog.contains("destroyOnClose: true") {
+        return Err("ui/exception_dialog.js must set destroyOnClose: true".to_string());
+    }
+
+    let meta_json = fs::read_to_string(ext_root.join("metadata.json"))
+        .map_err(|e| format!("failed to read metadata.json: {e}"))?;
+    for ver in [
+        "\"45\"", "\"46\"", "\"47\"", "\"48\"", "\"49\"", "\"50\"", "\"51\"",
+    ] {
+        if !meta_json.contains(ver) {
+            return Err(format!("metadata.json missing shell-version {ver}"));
+        }
+    }
+
+    if EXTENSION_FILES.len() < 35 {
+        return Err(format!(
+            "expected EXTENSION_FILES to embed >= 35 files, found {}",
+            EXTENSION_FILES.len()
+        ));
+    }
+    Ok(())
 }

@@ -1,105 +1,212 @@
-/// Official GNOME Extensions (EGO) UUID for Kelp.
+// SPDX-License-Identifier: GPL-3.0-or-later
+// First-Principles & Zero-Trust Page Header
+// - Page Responsibility / Functional Domain:
+//   Compile-time embedded asset manifest (`EXTENSION_FILES`, `ICON_FILES`, `SCHEMA_XML`,
+//   `KEYBINDING_FILES`) baking every extension JS/CSS/SVG/XML file into the `kelp` binary.
+// - Zero-Trust Boundary & Invariants:
+//   Every relative path in `EXTENSION_FILES` and `ICON_FILES` is a static compile-time literal
+//   with zero `..` traversal components, guaranteeing deterministic extraction into the user's
+//   local GNOME Shell extension directory.
+
+use crate::default_rules::{
+    KEYBINDING_LAUNCHERS_XML, KEYBINDING_NAVIGATION_XML, KEYBINDING_TILING_XML,
+};
+
 pub const EXTENSION_UUID: &str = "kelp@ubermetroid.github.io";
-
-/// Legacy Pop Shell UUID disabled/cleaned during migration.
-pub const LEGACY_UUID: &str = "pop-shell@system76.com";
-
-/// Official GSettings schema ID for Kelp.
 pub const SCHEMA_ID: &str = "org.gnome.shell.extensions.kelp";
-
-/// Official GSettings schema filename for Kelp.
 pub const SCHEMA_FILENAME: &str = "org.gnome.shell.extensions.kelp.gschema.xml";
 
-/// All embedded files that constitute the `kelp@ubermetroid.github.io` extension tree.
-pub const EMBEDDED_EXTENSION_FILES: &[(&str, &[u8])] = &[
-    ("arena.js", include_bytes!("../extension/arena.js")),
+pub const SCHEMA_XML: &str =
+    include_str!("../extension/schemas/org.gnome.shell.extensions.kelp.gschema.xml");
+
+/// Top-level subdirectories inside the extension bundle that must be passed as
+/// `--extra-source=<dir>` to `gnome-extensions pack`.
+pub const EXTENSION_SUBDIRS: &[&str] = &["engine", "window", "ui", "icons"];
+
+/// Legacy flat filenames from older installations that must be purged on upgrade so stale
+/// flat modules never shadow the modularized `engine/`, `window/`, and `ui/` pages.
+pub const LEGACY_FLAT_FILES: &[&str] = &[
+    "arena.js",
+    "auto_tiler.js",
+    "color_dialog.js",
+    "config.js",
+    "context.js",
+    "dark.css",
+    "dialog_add_exception.js",
+    "dialog_launcher.js",
+    "ecs.js",
+    "error.js",
+    "events.js",
+    "executor.js",
+    "floating_exceptions.js",
+    "focus.js",
+    "forest.js",
+    "fork.js",
+    "geom.js",
+    "highcontrast.css",
+    "keybindings.js",
+    "launcher_service.js",
+    "lib.js",
+    "light.css",
+    "log.js",
+    "movement.js",
+    "node.js",
+    "panel_settings.js",
+    "rectangle.js",
+    "settings.js",
+    "stack.js",
+    "tiler.js",
+    "utils.js",
+    "window.js",
+    "xprop.js",
+];
+
+pub const EXTENSION_FILES: &[(&str, &str)] = &[
+    ("extension.js", include_str!("../extension/extension.js")),
+    ("metadata.json", include_str!("../extension/metadata.json")),
+    ("prefs.js", include_str!("../extension/prefs.js")),
     (
-        "auto_tiler.js",
-        include_bytes!("../extension/auto_tiler.js"),
+        "engine/ecs/arena.js",
+        include_str!("../extension/engine/ecs/arena.js"),
     ),
-    ("config.js", include_bytes!("../extension/config.js")),
-    ("dark.css", include_bytes!("../extension/dark.css")),
     (
-        "dialog_add_exception.js",
-        include_bytes!("../extension/dialog_add_exception.js"),
+        "engine/ecs/events.js",
+        include_str!("../extension/engine/ecs/events.js"),
     ),
-    ("ecs.js", include_bytes!("../extension/ecs.js")),
-    ("error.js", include_bytes!("../extension/error.js")),
-    ("events.js", include_bytes!("../extension/events.js")),
-    ("executor.js", include_bytes!("../extension/executor.js")),
-    ("extension.js", include_bytes!("../extension/extension.js")),
-    ("focus.js", include_bytes!("../extension/focus.js")),
-    ("forest.js", include_bytes!("../extension/forest.js")),
-    ("fork.js", include_bytes!("../extension/fork.js")),
-    ("geom.js", include_bytes!("../extension/geom.js")),
-    ("grab_op.js", include_bytes!("../extension/grab_op.js")),
     (
-        "highcontrast.css",
-        include_bytes!("../extension/highcontrast.css"),
+        "engine/ecs/executor.js",
+        include_str!("../extension/engine/ecs/executor.js"),
+    ),
+    (
+        "engine/ecs/world.js",
+        include_str!("../extension/engine/ecs/world.js"),
+    ),
+    (
+        "engine/geom/focus.js",
+        include_str!("../extension/engine/geom/focus.js"),
+    ),
+    (
+        "engine/geom/movement.js",
+        include_str!("../extension/engine/geom/movement.js"),
+    ),
+    (
+        "engine/geom/rectangle.js",
+        include_str!("../extension/engine/geom/rectangle.js"),
+    ),
+    (
+        "engine/tree/auto_tiler.js",
+        include_str!("../extension/engine/tree/auto_tiler.js"),
+    ),
+    (
+        "engine/tree/auto_tiler_drop.js",
+        include_str!("../extension/engine/tree/auto_tiler_drop.js"),
+    ),
+    (
+        "engine/tree/forest.js",
+        include_str!("../extension/engine/tree/forest.js"),
+    ),
+    (
+        "engine/tree/forest_resize.js",
+        include_str!("../extension/engine/tree/forest_resize.js"),
+    ),
+    (
+        "engine/tree/fork.js",
+        include_str!("../extension/engine/tree/fork.js"),
+    ),
+    (
+        "engine/tree/node.js",
+        include_str!("../extension/engine/tree/node.js"),
+    ),
+    (
+        "engine/tree/tiler.js",
+        include_str!("../extension/engine/tree/tiler.js"),
+    ),
+    (
+        "engine/tree/tiler_actions.js",
+        include_str!("../extension/engine/tree/tiler_actions.js"),
+    ),
+    ("ui/dark.css", include_str!("../extension/ui/dark.css")),
+    (
+        "ui/exception_dialog.js",
+        include_str!("../extension/ui/exception_dialog.js"),
+    ),
+    (
+        "ui/highcontrast.css",
+        include_str!("../extension/ui/highcontrast.css"),
+    ),
+    ("ui/light.css", include_str!("../extension/ui/light.css")),
+    (
+        "ui/panel_indicator.js",
+        include_str!("../extension/ui/panel_indicator.js"),
+    ),
+    (
+        "ui/settings/color.js",
+        include_str!("../extension/ui/settings/color.js"),
+    ),
+    (
+        "ui/settings/float_rules.js",
+        include_str!("../extension/ui/settings/float_rules.js"),
+    ),
+    (
+        "ui/settings/gsettings.js",
+        include_str!("../extension/ui/settings/gsettings.js"),
+    ),
+    (
+        "ui/settings/log.js",
+        include_str!("../extension/ui/settings/log.js"),
+    ),
+    ("ui/stack.js", include_str!("../extension/ui/stack.js")),
+    (
+        "ui/stack_widgets.js",
+        include_str!("../extension/ui/stack_widgets.js"),
+    ),
+    (
+        "window/controller.js",
+        include_str!("../extension/window/controller.js"),
+    ),
+    (
+        "window/controller_display.js",
+        include_str!("../extension/window/controller_display.js"),
+    ),
+    (
+        "window/controller_signals.js",
+        include_str!("../extension/window/controller_signals.js"),
+    ),
+    (
+        "window/controller_workspace.js",
+        include_str!("../extension/window/controller_workspace.js"),
+    ),
+    (
+        "window/keybindings.js",
+        include_str!("../extension/window/keybindings.js"),
+    ),
+    (
+        "window/overview_tray.js",
+        include_str!("../extension/window/overview_tray.js"),
+    ),
+    (
+        "window/shell_window.js",
+        include_str!("../extension/window/shell_window.js"),
+    ),
+    (
+        "window/window_border.js",
+        include_str!("../extension/window/window_border.js"),
+    ),
+];
+
+pub const ICON_FILES: &[(&str, &str)] = &[
+    (
+        "icons/pop-shell-auto-on-symbolic.svg",
+        include_str!("../extension/icons/pop-shell-auto-on-symbolic.svg"),
     ),
     (
         "icons/pop-shell-auto-off-symbolic.svg",
-        include_bytes!("../extension/icons/pop-shell-auto-off-symbolic.svg"),
-    ),
-    (
-        "icons/pop-shell-auto-on-symbolic.svg",
-        include_bytes!("../extension/icons/pop-shell-auto-on-symbolic.svg"),
-    ),
-    (
-        "keybindings.js",
-        include_bytes!("../extension/keybindings.js"),
-    ),
-    ("lib.js", include_bytes!("../extension/lib.js")),
-    ("light.css", include_bytes!("../extension/light.css")),
-    ("log.js", include_bytes!("../extension/log.js")),
-    (
-        "metadata.json",
-        include_bytes!("../extension/metadata.json"),
-    ),
-    ("movement.js", include_bytes!("../extension/movement.js")),
-    ("node.js", include_bytes!("../extension/node.js")),
-    (
-        "panel_settings.js",
-        include_bytes!("../extension/panel_settings.js"),
-    ),
-    ("prefs.js", include_bytes!("../extension/prefs.js")),
-    ("rectangle.js", include_bytes!("../extension/rectangle.js")),
-    ("result.js", include_bytes!("../extension/result.js")),
-    (
-        "schemas/gschemas.compiled",
-        include_bytes!("../extension/schemas/gschemas.compiled"),
-    ),
-    (
-        "schemas/org.gnome.shell.extensions.kelp.gschema.xml",
-        include_bytes!("../extension/schemas/org.gnome.shell.extensions.kelp.gschema.xml"),
-    ),
-    ("settings.js", include_bytes!("../extension/settings.js")),
-    ("stack.js", include_bytes!("../extension/stack.js")),
-    ("tags.js", include_bytes!("../extension/tags.js")),
-    ("tiling.js", include_bytes!("../extension/tiling.js")),
-    ("utils.js", include_bytes!("../extension/utils.js")),
-    ("window.js", include_bytes!("../extension/window.js")),
-];
-
-/// Embedded GSettings XML schema for system-wide `/usr/share/glib-2.0/schemas` installation.
-pub const EMBEDDED_SCHEMA_XML: &[u8] =
-    include_bytes!("../schemas/org.gnome.shell.extensions.kelp.gschema.xml");
-
-/// Embedded GNOME Control Center keybinding definitions.
-pub const EMBEDDED_KEYBINDINGS: &[(&str, &[u8])] = &[
-    (
-        "10-kelp-move.xml",
-        include_bytes!("../keybindings/10-kelp-move.xml"),
-    ),
-    (
-        "10-kelp-navigate.xml",
-        include_bytes!("../keybindings/10-kelp-navigate.xml"),
-    ),
-    (
-        "10-kelp-tile.xml",
-        include_bytes!("../keybindings/10-kelp-tile.xml"),
+        include_str!("../extension/icons/pop-shell-auto-off-symbolic.svg"),
     ),
 ];
 
-/// Default floating window exceptions configuration file.
-pub const EMBEDDED_CONFIG_JSON: &[u8] = include_bytes!("../config/config.json");
+pub const KEYBINDING_FILES: &[(&str, &str)] = &[
+    ("50-kelp-launchers.xml", KEYBINDING_LAUNCHERS_XML),
+    ("50-kelp-navigation.xml", KEYBINDING_NAVIGATION_XML),
+    ("50-kelp-tiling.xml", KEYBINDING_TILING_XML),
+];

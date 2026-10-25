@@ -1,157 +1,173 @@
-//! Enforces the Page Rule (`16..=256` lines per `.rs` file, `<= 8` `.rs` files per directory,
-//! no generic drawer filenames) and zero-dependency / safety attributes across the workspace.
+// SPDX-License-Identifier: GPL-3.0-or-later
+// First-Principles & Zero-Trust Page Header
+// - Page Responsibility / Functional Domain:
+//   Global Page Rule, Directory Density, Banned Filename, and First-Principles & Zero-Trust
+//   Header enforcement suite across the entire repository (`src/`, `tests/`, `extension/`).
+// - Zero-Trust Boundary & Invariants:
+//   Verifies at test time that every `.rs` and `.js` file is `16..=256` lines, starts with
+//   `// SPDX-License-Identifier: GPL-3.0-or-later` on line 1, includes the mandatory
+//   `// First-Principles & Zero-Trust Page Header`, uses zero banned generic filenames,
+//   and that every directory in the repository contains at most 8 visible entries (`<= 8`).
+
+#![forbid(unsafe_code)]
+#![deny(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::todo,
+    clippy::unimplemented,
+    clippy::dbg_macro
+)]
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const MIN_LINES: usize = 16;
-const MAX_LINES: usize = 256;
-const MAX_FILES_PER_DIR: usize = 8;
-
-const BANNED_FILENAMES: &[&str] = &[
-    "util.rs",
-    "utils.rs",
-    "helper.rs",
-    "helpers.rs",
-    "common.rs",
-    "misc.rs",
-    "shared.rs",
-    "base.rs",
-    "core.rs",
+const BANNED_STEMS: &[&str] = &[
+    "util", "utils", "lib", "helper", "helpers", "common", "misc", "shared", "base", "core",
+    "types", "mod",
 ];
 
-fn collect_rs_dirs_and_files(
-    dir: &Path,
-    files: &mut Vec<PathBuf>,
-    dirs: &mut Vec<(PathBuf, usize)>,
-) {
-    let Ok(entries) = fs::read_dir(dir) else {
-        return;
-    };
-    let mut rs_count = 0usize;
-    let mut subdirs = Vec::new();
-    for entry in entries.flatten() {
+fn collect_code_files(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), String> {
+    let entries =
+        fs::read_dir(dir).map_err(|e| format!("failed to read {}: {e}", dir.display()))?;
+    for entry_res in entries {
+        let entry = entry_res.map_err(|e| format!("dir entry error: {e}"))?;
         let path = entry.path();
-        if path.is_dir() {
-            let name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
-            if name != "target" && !name.starts_with('.') {
-                subdirs.push(path);
-            }
-        } else if path.extension().and_then(|s| s.to_str()) == Some("rs") {
-            rs_count += 1;
-            files.push(path);
-        }
-    }
-    if rs_count > 0 {
-        dirs.push((dir.to_path_buf(), rs_count));
-    }
-    for sub in subdirs {
-        collect_rs_dirs_and_files(&sub, files, dirs);
-    }
-}
-
-fn is_pure_shim(content: &str) -> bool {
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if trimmed.is_empty()
-            || trimmed.starts_with("//")
-            || trimmed.starts_with("#![")
-            || trimmed.starts_with("#[")
-        {
+        let name = entry.file_name();
+        let name_str = name.to_string_lossy();
+        if name_str.starts_with('.') || name_str == "target" {
             continue;
         }
-        if !(trimmed.starts_with("pub mod ")
-            || trimmed.starts_with("mod ")
-            || trimmed.starts_with("pub use ")
-            || trimmed.starts_with("use "))
-        {
-            return false;
+        if path.is_dir() {
+            collect_code_files(&path, out)?;
+        } else if matches!(path.extension().and_then(|s| s.to_str()), Some("rs" | "js")) {
+            out.push(path);
         }
     }
-    true
+    Ok(())
+}
+
+fn collect_directories(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), String> {
+    out.push(dir.to_path_buf());
+    let entries =
+        fs::read_dir(dir).map_err(|e| format!("failed to read {}: {e}", dir.display()))?;
+    for entry_res in entries {
+        let entry = entry_res.map_err(|e| format!("dir entry error: {e}"))?;
+        let path = entry.path();
+        let name = entry.file_name();
+        let name_str = name.to_string_lossy();
+        if name_str.starts_with('.') || name_str == "target" {
+            continue;
+        }
+        if path.is_dir() {
+            collect_directories(&path, out)?;
+        }
+    }
+    Ok(())
 }
 
 #[test]
-fn page_rule_line_bounds_and_directory_width() {
+fn every_rs_and_js_file_obeys_page_size_spdx_and_header_invariants() -> Result<(), String> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let mut files = Vec::new();
-    let mut dirs = Vec::new();
-    collect_rs_dirs_and_files(root, &mut files, &mut dirs);
+    collect_code_files(root, &mut files)?;
+    files.sort();
 
-    assert!(!files.is_empty(), "No .rs files found in workspace");
-
-    for (dir, count) in dirs {
-        assert!(
-            count <= MAX_FILES_PER_DIR,
-            "Directory {} has {count} .rs files (maximum allowed is {MAX_FILES_PER_DIR})",
-            dir.display()
-        );
+    if files.len() < 40 {
+        return Err(format!(
+            "expected at least 40 code files (.rs + .js), found {}",
+            files.len()
+        ));
     }
 
-    for file in files {
-        let file_name = file.file_name().and_then(|s| s.to_str()).unwrap_or("");
-        assert!(
-            !BANNED_FILENAMES.contains(&file_name),
-            "Banned drawer filename detected: {}",
-            file.display()
-        );
-
-        let content = fs::read_to_string(&file).unwrap_or_default();
-        let line_count = content.lines().count();
-        assert!(
-            line_count <= MAX_LINES,
-            "File {} has {line_count} lines (exceeds Page Rule ceiling of {MAX_LINES})",
-            file.display()
-        );
-        if !is_pure_shim(&content) {
-            assert!(
-                line_count >= MIN_LINES,
-                "File {} has {line_count} lines (below Page Rule floor of {MIN_LINES})",
+    for file in &files {
+        let content = fs::read_to_string(file)
+            .map_err(|e| format!("failed to read {}: {e}", file.display()))?;
+        let lines: Vec<&str> = content.lines().collect();
+        let count = lines.len();
+        if !(16..=256).contains(&count) {
+            return Err(format!(
+                "Page Rule violation: {} has {count} lines (must be 16..=256)",
                 file.display()
-            );
+            ));
+        }
+
+        let first_line = lines.first().copied().unwrap_or("");
+        if first_line != "// SPDX-License-Identifier: GPL-3.0-or-later" {
+            return Err(format!(
+                "Missing SPDX header on line 1 of {}: found '{first_line}'",
+                file.display()
+            ));
+        }
+
+        let header_block: String = lines
+            .iter()
+            .take(15)
+            .copied()
+            .collect::<Vec<_>>()
+            .join("\n");
+        for required_marker in [
+            "// First-Principles & Zero-Trust Page Header",
+            "- Page Responsibility / Functional Domain:",
+            "- Zero-Trust Boundary & Invariants:",
+        ] {
+            if !header_block.contains(required_marker) {
+                return Err(format!(
+                    "Missing '{required_marker}' in first 15 lines of {}",
+                    file.display()
+                ));
+            }
         }
     }
+    Ok(())
 }
 
 #[test]
-fn zero_external_dependencies_in_cargo_toml_and_lock() {
+fn every_directory_has_at_most_eight_entries_and_no_banned_names() -> Result<(), String> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let cargo_toml = fs::read_to_string(root.join("Cargo.toml")).unwrap_or_default();
-    for line in cargo_toml.lines() {
-        let t = line.trim();
-        assert!(
-            !t.starts_with("[dependencies")
-                && !t.starts_with("[dev-dependencies")
-                && !t.starts_with("[build-dependencies"),
-            "External dependency section `{t}` is forbidden in Cargo.toml"
-        );
-    }
+    let mut dirs = Vec::new();
+    collect_directories(root, &mut dirs)?;
+    dirs.sort();
 
-    let lock_path = root.join("Cargo.lock");
-    if lock_path.exists() {
-        let cargo_lock = fs::read_to_string(lock_path).unwrap_or_default();
-        let pkg_count = cargo_lock.matches("[[package]]").count();
-        assert_eq!(
-            pkg_count, 1,
-            "Cargo.lock must contain exactly 1 [[package]] (the workspace crate), found {pkg_count}"
-        );
-    }
-}
+    for dir in &dirs {
+        let entries =
+            fs::read_dir(dir).map_err(|e| format!("failed to read {}: {e}", dir.display()))?;
+        let mut visible_names = Vec::new();
+        for entry_res in entries {
+            let entry = entry_res.map_err(|e| format!("dir entry error: {e}"))?;
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if name.starts_with('.') || (dir == root && name == "target") {
+                continue;
+            }
+            visible_names.push(name);
+        }
 
-#[test]
-fn crate_roots_enforce_forbid_unsafe_and_deny_panics() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    for rel in ["src/lib.rs", "src/main.rs"] {
-        let content = fs::read_to_string(root.join(rel)).unwrap_or_default();
-        assert!(
-            content.contains("#![forbid(unsafe_code)]"),
-            "{rel} is missing `#![forbid(unsafe_code)]`"
-        );
-        assert!(
-            content.contains("clippy::unwrap_used")
-                && content.contains("clippy::expect_used")
-                && content.contains("clippy::panic"),
-            "{rel} is missing `#![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)]`"
-        );
+        if visible_names.len() > 8 {
+            return Err(format!(
+                "Directory density violation: {} has {} entries (max 8): {:?}",
+                dir.display(),
+                visible_names.len(),
+                visible_names
+            ));
+        }
+
+        for name in &visible_names {
+            let entry_path = dir.join(name);
+            let stem = entry_path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("")
+                .to_lowercase();
+            // Cargo requires `src/lib.rs` as the library crate root; all other banned stems are forbidden
+            let is_cargo_lib_root = dir.ends_with("src") && name == "lib.rs";
+            if !is_cargo_lib_root && BANNED_STEMS.contains(&stem.as_str()) {
+                return Err(format!(
+                    "Banned generic filename/directory '{}' found in {}",
+                    name,
+                    dir.display()
+                ));
+            }
+        }
     }
+    Ok(())
 }

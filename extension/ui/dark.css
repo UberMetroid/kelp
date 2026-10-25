@@ -1,0 +1,59 @@
+.pop-shell-active-hint {
+    border-style: solid;
+    border-color: rgba(106, 215, 225, 1);
+}
+
+.pop-shell-overlay {
+    background-color: rgba(106, 215, 225, 0.25);
+    border: 2px solid rgba(106, 215, 225, 0.85);
+    border-radius: 6px;
+}
+
+.pop-shell-stack {
+    spacing: 2px;
+}
+
+.pop-shell-tab {
+    border-radius: 6px 6px 0px 0px;
+    padding: 2px 8px;
+    margin: 0px;
+    font-weight: bold;
+}
+
+.pop-shell-tab-inactive {
+    background-color: #2b2b2b;
+    color: #cfcfcf;
+}
+
+.pop-shell-tab-active {
+    background-color: rgba(106, 215, 225, 1);
+    color: #000000;
+}
+
+.pop-shell-tab-urgent {
+    background-color: #712600;
+    color: #ffffff;
+}
+
+.pop-shell-entry {
+    width: 3.5em;
+    min-height: 1.5em;
+    margin: 0 4px;
+}
+
+.pop-shell-button {
+    padding: 4px 10px;
+}
+
+.pop-shell-exceptions {
+    min-width: 460px;
+}
+
+.pop-shell-exceptions-scroll {
+    max-height: 360px;
+    margin-top: 8px;
+}
+
+.pop-shell-exceptions-list {
+    spacing: 6px;
+}

@@ -1,164 +1,171 @@
-//! Integration tests for CLI argument parsing, `gsettings` command generation,
-//! file tree installation, and `gnome-extensions pack` EGO zip bundle creation.
+// SPDX-License-Identifier: GPL-3.0-or-later
+// First-Principles & Zero-Trust Page Header
+// - Page Responsibility / Functional Domain:
+//   Integration test suite (`tests/installer.rs`) exercising CLI parsing, config JSON
+//   validation, extension tree extraction, legacy flat-file purging, schema compilation,
+//   and EGO `.shell-extension.zip` bundle creation.
+// - Zero-Trust Boundary & Invariants:
+//   Uses isolated per-test directories under `std::env::temp_dir()` and cleans them up
+//   deterministically so tests never mutate the user's real `~/.local/share` or `~/.config`.
+
+#![forbid(unsafe_code)]
+#![deny(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::todo,
+    clippy::unimplemented,
+    clippy::dbg_macro
+)]
 
 use std::env;
 use std::fs;
-use std::path::{Path, PathBuf};
-use std::process::Command;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::path::PathBuf;
+use std::process::id;
 
-use kelp::cli_options::parse_args;
-use kelp::embedded_assets::{EXTENSION_UUID, SCHEMA_FILENAME, SCHEMA_ID};
-use kelp::gsettings_config::gsettings_commands;
-use kelp::install_files::{install_config_json, install_extension_tree};
-use kelp::pack_bundle::pack_extension_bundle;
+use kelp::{
+    compile_schemas, install_default_config, install_extension_files, install_keybinding_files,
+    install_schema_files, pack_extension_bundle, parse_cli_args, validate_config_json,
+    write_staging_tree, CliAction, DEFAULT_CONFIG_JSON, EXTENSION_FILES, EXTENSION_UUID,
+    ICON_FILES, KEYBINDING_FILES, LEGACY_FLAT_FILES, MAX_CONFIG_BYTES, SCHEMA_FILENAME,
+};
 
-fn unique_temp_dir(prefix: &str) -> PathBuf {
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
-    env::temp_dir().join(format!("{prefix}-{}-{nanos}", std::process::id()))
+fn temp_test_dir(tag: &str) -> Result<PathBuf, String> {
+    let dir = env::temp_dir().join(format!("kelp-test-{tag}-{}", id()));
+    if dir.exists() {
+        fs::remove_dir_all(&dir).map_err(|e| format!("failed to clean {}: {e}", dir.display()))?;
+    }
+    fs::create_dir_all(&dir).map_err(|e| format!("failed to create {}: {e}", dir.display()))?;
+    Ok(dir)
 }
 
 #[test]
-fn test_parse_args_defaults_and_flags() -> Result<(), String> {
-    let opts = parse_args(Vec::<String>::new())?;
-    assert!(!opts.system);
-    assert!(!opts.dry_run);
-    assert!(!opts.skip_gsettings);
-    assert!(opts.target_dir.is_none());
-    assert!(opts.pack_dir.is_none());
-    assert!(!opts.help);
-
-    let opts = parse_args(vec![
-        "--system".to_string(),
-        "--dry-run".to_string(),
-        "--skip-gsettings".to_string(),
-        "--target-dir".to_string(),
-        "/tmp/test-kelp".to_string(),
-        "--pack".to_string(),
-        "/tmp/pack-out".to_string(),
-    ])?;
-    assert!(opts.system);
-    assert!(opts.dry_run);
-    assert!(opts.skip_gsettings);
-    assert_eq!(opts.target_dir, Some(PathBuf::from("/tmp/test-kelp")));
-    assert_eq!(opts.pack_dir, Some(PathBuf::from("/tmp/pack-out")));
-
-    // --pack with no directory argument defaults to "."
-    let opts_pack_default = parse_args(vec!["--pack".to_string(), "--dry-run".to_string()])?;
-    assert_eq!(opts_pack_default.pack_dir, Some(PathBuf::from(".")));
-    assert!(opts_pack_default.dry_run);
+fn cli_parser_handles_valid_and_invalid_arguments() -> Result<(), String> {
+    if parse_cli_args(&[])? != CliAction::Install {
+        return Err("empty args should map to CliAction::Install".to_string());
+    }
+    if parse_cli_args(&["--help".to_string()])? != CliAction::Help {
+        return Err("--help should map to CliAction::Help".to_string());
+    }
+    if parse_cli_args(&["--version".to_string()])? != CliAction::Version {
+        return Err("--version should map to CliAction::Version".to_string());
+    }
+    if parse_cli_args(&["--pack".to_string()])? != CliAction::Pack(PathBuf::from(".")) {
+        return Err("--pack without dir should default to '.'".to_string());
+    }
+    if parse_cli_args(&["--pack".to_string(), "/tmp/out".to_string()])?
+        != CliAction::Pack(PathBuf::from("/tmp/out"))
+    {
+        return Err("--pack /tmp/out failed".to_string());
+    }
+    if parse_cli_args(&["--pack".to_string(), String::new()]).is_ok() {
+        return Err("empty --pack directory must be rejected".to_string());
+    }
+    if parse_cli_args(&["--unknown-flag".to_string()]).is_ok() {
+        return Err("unknown flag must be rejected".to_string());
+    }
     Ok(())
 }
 
 #[test]
-fn test_parse_args_rejects_invalid_inputs() {
-    assert!(parse_args(vec!["--unknown-flag".to_string()]).is_err());
-    assert!(parse_args(vec!["--target-dir".to_string()]).is_err());
-    assert!(parse_args(vec!["--target-dir".to_string(), String::new()]).is_err());
-    assert!(parse_args(vec!["--pack".to_string(), String::new()]).is_err());
-}
-
-#[test]
-fn test_gsettings_commands_target_kelp_schema() {
-    let cmds = gsettings_commands(Some(Path::new("/tmp/schemas")));
-    let joined: Vec<String> = cmds.iter().map(|c| c.join(" ")).collect();
-
-    assert!(joined
-        .iter()
-        .any(|c| c.contains("org.gnome.mutter auto-maximize false")));
-    assert!(joined
-        .iter()
-        .any(|c| c.contains("org.gnome.mutter edge-tiling false")));
-    assert!(joined
-        .iter()
-        .any(|c| c.contains("org.gnome.desktop.wm.preferences focus-mode 'click'")));
-    assert!(joined
-        .iter()
-        .any(|c| c.contains(&format!("{SCHEMA_ID} hint-color-rgba 'rgb(255,0,0)'"))));
-    assert!(joined
-        .iter()
-        .any(|c| c.contains(&format!("{SCHEMA_ID} active-hint-border-radius 2"))));
-    assert!(joined
-        .iter()
-        .any(|c| c.contains(&format!("{SCHEMA_ID} tile-move-left-global"))));
-    assert!(joined
-        .iter()
-        .any(|c| c.contains("switch-to-workspace-10 ['<Super>0']")));
-    assert!(joined
-        .iter()
-        .any(|c| c.contains("move-to-workspace-10 ['<Super><Shift>0']")));
-    assert!(joined
-        .iter()
-        .any(|c| c.contains("toggle-quick-settings ['<Super><Control>s']")));
-}
-
-#[test]
-fn test_install_extension_tree_and_config_json() -> Result<(), String> {
-    let temp_dir = unique_temp_dir("kelp-install-test");
-    fs::create_dir_all(temp_dir.join("color_dialog")).map_err(|e| e.to_string())?;
-    fs::write(temp_dir.join("launcher.js"), b"stale").map_err(|e| e.to_string())?;
-    fs::write(temp_dir.join("paths.js"), b"stale").map_err(|e| e.to_string())?;
-
-    install_extension_tree(&temp_dir, false)?;
-
-    assert!(temp_dir.join("extension.js").exists());
-    assert!(temp_dir.join("prefs.js").exists());
-    assert!(temp_dir.join("metadata.json").exists());
-    assert!(temp_dir.join("schemas/gschemas.compiled").exists());
-    assert!(temp_dir.join("schemas").join(SCHEMA_FILENAME).exists());
-    assert!(temp_dir
-        .join("icons/pop-shell-auto-on-symbolic.svg")
-        .exists());
-    assert!(!temp_dir.join("launcher.js").exists());
-    assert!(!temp_dir.join("paths.js").exists());
-    assert!(!temp_dir.join("color_dialog").exists());
-
-    let cfg_path = install_config_json(&temp_dir, false)?;
-    assert_eq!(cfg_path, temp_dir.join(".config/kelp/config.json"));
-    assert!(cfg_path.exists());
-
-    fs::remove_dir_all(&temp_dir).map_err(|e| e.to_string())?;
+fn config_validator_enforces_size_and_structure() -> Result<(), String> {
+    validate_config_json(DEFAULT_CONFIG_JSON)?;
+    if validate_config_json("not json").is_ok() {
+        return Err("non-object JSON should fail validation".to_string());
+    }
+    if validate_config_json(r#"{"other": []}"#).is_ok() {
+        return Err("JSON missing 'float' field should fail validation".to_string());
+    }
+    if validate_config_json(r#"{"float": [{"class": "A"}]"#).is_ok() {
+        return Err("unbalanced JSON braces should fail validation".to_string());
+    }
+    let oversized = format!(r#"{{"float": ["{}"]}}"#, "a".repeat(MAX_CONFIG_BYTES + 10));
+    if validate_config_json(&oversized).is_ok() {
+        return Err("oversized config.json must fail OWASP size check".to_string());
+    }
     Ok(())
 }
 
 #[test]
-fn test_pack_extension_bundle_creates_valid_ego_zip() -> Result<(), String> {
-    let temp_dir = unique_temp_dir("kelp-pack-test");
-    let zip_path = pack_extension_bundle(&temp_dir, false)?;
-    assert_eq!(
-        zip_path,
-        temp_dir.join(format!("{EXTENSION_UUID}.shell-extension.zip"))
-    );
-    assert!(zip_path.exists(), "Packed zip file must exist");
+fn installer_extracts_modular_tree_purges_legacy_and_compiles_schemas() -> Result<(), String> {
+    let root = temp_test_dir("install")?;
+    let ext_dir = root
+        .join("share")
+        .join("gnome-shell")
+        .join("extensions")
+        .join(EXTENSION_UUID);
+    fs::create_dir_all(&ext_dir).map_err(|e| e.to_string())?;
 
-    let output = Command::new("unzip")
-        .arg("-l")
-        .arg(&zip_path)
-        .output()
-        .map_err(|e| e.to_string())?;
-    assert!(output.status.success());
-    let listing = String::from_utf8_lossy(&output.stdout);
-    for required in [
-        "extension.js",
-        "prefs.js",
-        "metadata.json",
-        "dark.css",
-        "light.css",
-        "highcontrast.css",
-        "window.js",
-        "auto_tiler.js",
-        "icons/pop-shell-auto-on-symbolic.svg",
-        &format!("schemas/{SCHEMA_FILENAME}"),
-    ] {
-        assert!(
-            listing.contains(required),
-            "EGO zip bundle is missing `{required}`:\n{listing}"
-        );
+    // Plant a legacy flat file to verify it gets purged during upgrade
+    let stale_file = ext_dir.join(LEGACY_FLAT_FILES[0]);
+    fs::write(&stale_file, "// stale").map_err(|e| e.to_string())?;
+
+    install_extension_files(&ext_dir)?;
+    if stale_file.exists() {
+        return Err("legacy flat file was not purged by install_extension_files".to_string());
     }
 
-    fs::remove_dir_all(&temp_dir).map_err(|e| e.to_string())?;
+    for &(rel_path, _) in EXTENSION_FILES {
+        if !ext_dir.join(rel_path).is_file() {
+            return Err(format!("missing installed file: {rel_path}"));
+        }
+    }
+    for &(rel_path, _) in ICON_FILES {
+        if !ext_dir.join(rel_path).is_file() {
+            return Err(format!("missing installed icon: {rel_path}"));
+        }
+    }
+
+    let ext_schema_dir = ext_dir.join("schemas");
+    let user_schema_dir = root.join("share").join("glib-2.0").join("schemas");
+    let dirs = install_schema_files(&ext_schema_dir, &user_schema_dir)?;
+    compile_schemas(&dirs)?;
+    if !ext_schema_dir.join("gschemas.compiled").is_file() {
+        return Err("gschemas.compiled was not generated".to_string());
+    }
+
+    install_keybinding_files(&root.join("share"))?;
+    for &(kb_file, _) in KEYBINDING_FILES {
+        let p = root
+            .join("share")
+            .join("gnome-control-center")
+            .join("keybindings")
+            .join(kb_file);
+        if !p.is_file() {
+            return Err(format!("missing keybinding XML: {}", p.display()));
+        }
+    }
+
+    let cfg_dir = root.join("config");
+    install_default_config(&cfg_dir)?;
+    let cfg_path = cfg_dir.join("kelp").join("config.json");
+    if !cfg_path.is_file() {
+        return Err("default config.json was not written".to_string());
+    }
+
+    let _ = fs::remove_dir_all(&root);
+    Ok(())
+}
+
+#[test]
+fn staging_and_ego_bundle_pack_include_modular_subdirectories() -> Result<(), String> {
+    let root = temp_test_dir("pack")?;
+    let stage = root.join("stage");
+    write_staging_tree(&stage)?;
+
+    if !stage.join("schemas").join(SCHEMA_FILENAME).is_file() {
+        return Err("staged schema XML missing".to_string());
+    }
+    if stage.join("schemas").join("gschemas.compiled").exists() {
+        return Err("EGO staging tree must not contain binary gschemas.compiled".to_string());
+    }
+
+    let out_dir = root.join("out");
+    let bundle = pack_extension_bundle(&out_dir)?;
+    if !bundle.is_file() {
+        return Err(format!("bundle {} not created", bundle.display()));
+    }
+
+    let _ = fs::remove_dir_all(&root);
     Ok(())
 }

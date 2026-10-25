@@ -1,85 +1,105 @@
-# Kelp (`kelp@ubermetroid.github.io`)
+# Kelp — GNOME Shell Wayland Auto-Tiling Extension & Self-Contained Rust Installer
 
-**Kelp** is a hardened, zero-subprocess Wayland auto-tiling extension for **GNOME 45–51** (Mutter 13–19), compliant with the official [GNOME Extensions (`extensions.gnome.org` / EGO) Review Guidelines](https://gjs.guide/extensions/review-guidelines/review-guidelines.html) and packaged inside a single zero-dependency Rust installer & bundler (`kelp`).
-
-Derived from System76's Pop Shell auto-tiling engine, Kelp strips out all legacy subprocesses (`xprop`, `/proc` readers, external GTK3 color/exception app spawners, launcher services, and D-Bus daemons) and modernizes every GJS module for modern Wayland GNOME Shell sessions.
+**Kelp** (`kelp@ubermetroid.github.io`) is a fast, zero-dependency, Wayland-first binary space partitioning (BSP) auto-tiling extension for **GNOME Shell 45–51** (Mutter 18/19), bundled inside a single self-contained Rust installer and EGO packager binary (`kelp`).
 
 ---
 
-## Key Features & Hardening
+## Features
 
-1. **100% EGO (`extensions.gnome.org`) Compliant**:
-   - Independent extension identity (`kelp@ubermetroid.github.io`) and GSettings schema (`org.gnome.shell.extensions.kelp` at `/org/gnome/shell/extensions/kelp/`).
-   - Strict process-boundary isolation: GNOME Shell modules never import `gi://Gdk`, `gi://Gtk`, or `gi://Adw`; `prefs.js` uses `ExtensionPreferences` and `this.getSettings()`.
-   - Zero import-time GObject/Shell mutations before `enable()` and full signal, timer, executor, widget, and stylesheet teardown in `disable()`.
-   - Built-in `--pack` flag (`kelp --pack [OUT_DIR]`) that runs `gnome-extensions pack` to produce an upload-ready `kelp@ubermetroid.github.io.shell-extension.zip` archive.
-2. **GNOME 45–51 / Mutter Wayland Compatibility**:
-   - Uses `Clutter.Orientation` on `St.BoxLayout` (replacing removed `vertical` boolean property).
-   - Uses `global.stage.get_context().get_backend().get_default_seat().warp_pointer()` for Wayland-safe cursor focus warping.
-   - Uses `Meta.DisplayDirection` and supports both `Meta.Window.is_maximized()` (GNOME 49/50+) and `Meta.Window.get_maximized()`.
-   - Native ES2022 private class fields (`#event_loop`, `#events`, `#executor`) and batched `GLib.PRIORITY_HIGH_IDLE` event draining.
-   - Event-driven `notify::minimized` and `restacked` signals (zero background polling timers).
-3. **Hyprland-Style Keybindings & Defaults**:
-   - Auto-tiles windows by default (`tile-by-default = true`) with a `2px` red active-window border (`rgb(255,0,0)`), `2px` inner/outer gaps, and hidden titlebars (`show-title = false`).
-   - Direct directional window movement (`<Super><Shift>Arrows/HJKL` and `<Primary><Super>Arrows/HJKL`) without entering a modal grab mode.
-   - Workspaces `1–10` mapped to `<Super>1..0` (switch) and `<Super><Shift>1..0` (move window).
+- **Automatic Binary Space Partitioning (BSP) Tiling**: Automatically tiles normal windows across monitors and workspaces with dynamic orientation splits.
+- **Window Stacking**: Group windows into tabbed stacks (`Super + S`) and cycle tabs with directional focus (`Super + H/Left`, `Super + L/Right`).
+- **Interactive Adjustment Mode**: Enter modal keyboard tiling/resize mode (`Super + Return`), move/swap/resize with directional keys, and commit (`Return`) or cancel (`Escape`).
+- **Smart Gaps & Active Hint Border**: Configurable inner/outer gaps, single-window smart gap elision, and WCAG-luminance-aware active border and stack tab accents.
+- **Zero-Runtime-Dependency Rust Installer (`kelp`)**: All 33 ES2022 modules, 3 CSS themes, SVG icons, GSettings schemas, and GNOME Control Center keybinding definitions are embedded at compile time via `include_str!`.
 
 ---
 
-## Installation & Usage
+## Quick Start
 
-### Build & Install from Source
+### Build & Install
 
 ```bash
-cargo build --release
-install -Dm755 target/release/kelp ~/.local/bin/kelp
-
-# Install extension to ~/.local/share/gnome-shell/extensions/kelp@ubermetroid.github.io,
-# write ~/.config/kelp/config.json, apply Hyprland-style gsettings, and enable the extension:
+cargo install --path . --root ~/.local
 kelp
 ```
 
-### Generate an `extensions.gnome.org` (EGO) Upload Bundle
+Running `kelp` with no arguments:
+1. Purges any obsolete flat extension files from earlier versions.
+2. Extracts the modular extension tree into `~/.local/share/gnome-shell/extensions/kelp@ubermetroid.github.io/`.
+3. Installs and compiles `org.gnome.shell.extensions.kelp.gschema.xml`.
+4. Validates/writes `~/.config/kelp/config.json` and installs GNOME Control Center keybinding entries.
+5. Configures default tiling shortcuts and enables the extension.
+
+### Package an EGO `.shell-extension.zip` Archive
 
 ```bash
-kelp --pack .
-# Produces: ./kelp@ubermetroid.github.io.shell-extension.zip
-```
-
-### CLI Options
-
-```text
-USAGE:
-    kelp [OPTIONS]
-
-OPTIONS:
-    --user              Install extension into ~/.local/share/gnome-shell/extensions/kelp@ubermetroid.github.io (default)
-    --system            Install extension system-wide in /usr/share/gnome-shell/extensions/kelp@ubermetroid.github.io (uses run0 if not root)
-    --pack [OUT_DIR]    Build an EGO-ready kelp@ubermetroid.github.io.shell-extension.zip bundle in OUT_DIR (default: .)
-    --target-dir <DIR>  Install extension files into a custom directory
-    --skip-gsettings    Install files only; do not run gsettings or gnome-extensions
-    --dry-run           Print actions without modifying the system
-    -h, --help          Print this help message
+kelp --pack /tmp
 ```
 
 ---
 
-## Repository Structure
+## Default Keyboard Shortcuts
+
+| Shortcut | Action |
+| :--- | :--- |
+| `Super + H / J / K / L` or `Super + Arrow` | Focus window Left / Down / Up / Right |
+| `Super + Return` | Enter interactive adjustment / resize mode |
+| `Super + Y` | Toggle auto-tiling on / off |
+| `Super + G` | Toggle floating mode for the focused window |
+| `Super + O` | Toggle split orientation (horizontal / vertical) |
+| `Super + S` | Toggle window stacking on the focused window |
+| `Super + Shift + H / J / K / L` or `Arrow` | Move window to adjacent monitor |
+| `Super + Ctrl + J / K` or `Up / Down` | Move window to adjacent workspace |
+
+---
+
+## Repository Architecture
+
+Every `.rs` and `.js` source file strictly obeys the **Page Rule** (`16..=256` lines per file, `<= 8` entries per directory, SPDX `GPL-3.0-or-later` on line 1, and a structured First-Principles & Zero-Trust Page Header):
 
 ```text
 kelp/
-├── AGENTS.md           # House Laws, Page Rule (16–256 lines), and EGO invariants
-├── Cargo.toml          # Zero external dependencies
-├── config/             # Default floating window exceptions (config.json)
-├── extension/          # EGO-compliant GNOME Shell Extension (kelp@ubermetroid.github.io)
-├── keybindings/        # GNOME Settings keyboard shortcut XML definitions
-├── schemas/            # GSettings schema (org.gnome.shell.extensions.kelp.gschema.xml)
-├── src/                # Modular Rust installer & EGO packager (7 focused pages)
-└── tests/              # Page Rule, EGO static lint, and installer/packager integration tests
+├── AGENTS.md
+├── Cargo.toml
+├── Cargo.lock
+├── LICENSE
+├── README.md
+├── src/                  # 8 Rust pages (16..=256 lines each)
+│   ├── lib.rs
+│   ├── main.rs
+│   ├── cli_options.rs
+│   ├── default_rules.rs
+│   ├── embedded_assets.rs
+│   ├── gsettings_config.rs
+│   ├── install_files.rs
+│   └── pack_bundle.rs
+├── tests/                # 3 Rust integration/lint suites (16..=256 lines each)
+│   ├── installer.rs
+│   ├── lint.rs
+│   └── page_rules.rs
+└── extension/            # 8 top-level entries, 33 ES2022 JS pages (16..=256 lines each)
+    ├── extension.js
+    ├── prefs.js
+    ├── metadata.json
+    ├── icons/
+    ├── schemas/
+    ├── engine/           # ecs/ (4 pages), geom/ (3 pages), tree/ (8 pages)
+    ├── window/           # 8 window & compositor controller pages
+    └── ui/               # 4 UI pages, 3 CSS themes, settings/ (4 pages)
 ```
 
 ---
 
+## Verification
+
+```bash
+cargo test --workspace --all-targets
+cargo clippy --workspace --all-targets -- -D warnings -W clippy::pedantic \
+  -D clippy::unwrap_used -D clippy::expect_used -D clippy::panic \
+  -D clippy::todo -D clippy::unimplemented -D clippy::dbg_macro
+cargo fmt --all -- --check
+```
+
 ## License
 
-GPL-3.0-only (see [LICENSE](LICENSE)). Original Pop Shell copyright System76; Kelp hardening and EGO port copyright UberMetroid.
+GPL-3.0-or-later (`// SPDX-License-Identifier: GPL-3.0-or-later`).

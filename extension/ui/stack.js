@@ -1,0 +1,227 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// First-Principles & Zero-Trust Page Header
+// - Page Responsibility / Functional Domain:
+//   Tabbed window stack container (`Stack`) managing the `St.BoxLayout` tab header bar,
+//   tab switching, window actor visibility within a stack leaf node, and geometry updates.
+// - Zero-Trust Boundary & Invariants:
+//   Tracks all tab button signals, `Meta.Window` property signals, and GSettings `hint_signal`
+//   subscriptions via `disconnect_stack_tab` and `destroy()`, ensuring zero leaked actors in
+//   `global.window_group` or dangling GSettings callbacks when unstacking or disabling.
+
+import Clutter from 'gi://Clutter';
+import St from 'gi://St';
+import * as Ecs from '../engine/ecs/world.js';
+import {
+    INACTIVE_TAB_STYLE,
+    active_tab_style,
+    create_stack_tab,
+    disconnect_stack_tab,
+} from './stack_widgets.js';
+
+export const TAB_HEIGHT = 24;
+
+export class Stack {
+    constructor(ext, active_entity, workspace) {
+        this.ext = ext;
+        this.active = active_entity;
+        this.active_id = 0;
+        this.workspace = workspace;
+        this.tabs = [];
+        this.rect = null;
+        this.restack = null;
+        this.active_style = active_tab_style(ext);
+
+        this.widgets = {
+            tabs: new St.BoxLayout({
+                style_class: 'pop-shell-stack',
+                reactive: true,
+                x_expand: true,
+            }),
+        };
+
+        const group = global.window_group;
+        if (group) {
+            group.add_child(this.widgets.tabs);
+        }
+
+        const display = global.display;
+        if (display) {
+            this.restack = display.connect('restacked', () => this.restack_tabs());
+        }
+    }
+
+    restack_tabs() {
+        if (!this.widgets) return;
+        const win = this.ext.windows.get(this.active);
+        if (!win) return;
+        const actor = win.meta.get_compositor_private();
+        const group = global.window_group;
+        if (actor && group && this.widgets.tabs.get_parent() === group) {
+            group.set_child_above_sibling(this.widgets.tabs, actor);
+        }
+    }
+
+    add(window) {
+        const entity = window.entity;
+        for (const c of this.tabs) {
+            if (Ecs.entity_eq(c.entity, entity)) return;
+        }
+        const entry = create_stack_tab(this, window, this.active_style);
+        this.tabs.push(entry);
+        if (this.widgets) {
+            this.widgets.tabs.add_child(entry.button);
+        }
+        this.activate(this.active);
+    }
+
+    activate(entity) {
+        const permitted = Ecs.entity_eq(entity, this.active) ||
+            this.tabs.some((c) => Ecs.entity_eq(c.entity, entity));
+        if (!permitted) return;
+
+        this.active = entity;
+        this.active_style = active_tab_style(this.ext);
+
+        for (let i = 0; i < this.tabs.length; i += 1) {
+            const c = this.tabs[i];
+            const is_active = Ecs.entity_eq(c.entity, entity);
+            c.active = is_active;
+            if (is_active) {
+                this.active_id = i;
+                c.button.style_class = 'pop-shell-tab pop-shell-tab-active';
+                c.button.style = this.active_style;
+            } else {
+                c.button.style_class = 'pop-shell-tab pop-shell-tab-inactive';
+                c.button.style = INACTIVE_TAB_STYLE;
+            }
+            this.comp_show(c.entity, is_active);
+        }
+        this.restack_tabs();
+    }
+
+    comp_show(entity, show) {
+        const win = this.ext.windows.get(entity);
+        if (!win) return;
+        const actor = win.meta.get_compositor_private();
+        if (!actor) return;
+        if (show) {
+            actor.show();
+            win.stack_Previously_hidden = false;
+        } else if (!win.meta.minimized) {
+            actor.hide();
+            win.stack_Previously_hidden = true;
+        }
+    }
+
+    auto_activate() {
+        if (this.tabs.length === 0) return null;
+        if (this.active_id >= this.tabs.length) {
+            this.active_id = this.tabs.length - 1;
+        }
+        const c = this.tabs[this.active_id];
+        this.activate(c.entity);
+        return c.entity;
+    }
+
+    deactivate(window) {
+        for (const c of this.tabs) {
+            if (Ecs.entity_eq(c.entity, window.entity)) {
+                this.tab_disconnect(c);
+                this.comp_show(c.entity, true);
+            }
+        }
+    }
+
+    remove_by_pos(idx) {
+        const c = this.tabs[idx];
+        if (!c) return;
+        this.remove_tab_component(c);
+        this.tabs.splice(idx, 1);
+    }
+
+    remove_tab(entity) {
+        for (let idx = 0; idx < this.tabs.length; idx += 1) {
+            if (Ecs.entity_eq(this.tabs[idx].entity, entity)) {
+                this.remove_by_pos(idx);
+                if (this.tabs.length > 0) {
+                    this.auto_activate();
+                }
+                return idx;
+            }
+        }
+        return null;
+    }
+
+    remove_tab_component(c) {
+        this.tab_disconnect(c);
+        if (this.widgets && c.button.get_parent() === this.widgets.tabs) {
+            this.widgets.tabs.remove_child(c.button);
+        }
+        c.button.destroy();
+        this.comp_show(c.entity, true);
+    }
+
+    tab_disconnect(c) {
+        for (const s of c.signals) {
+            c.button.disconnect(s);
+        }
+        c.signals = [];
+        disconnect_stack_tab(this.ext, c);
+    }
+
+    reposition() {
+        if (!this.rect || !this.widgets) return;
+        const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor || 1;
+        const tab_h = TAB_HEIGHT * scale;
+        this.widgets.tabs.set_position(this.rect.x, this.rect.y - tab_h);
+        this.widgets.tabs.set_size(this.rect.width, tab_h);
+        this.restack_tabs();
+    }
+
+    update_positions(rect) {
+        const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor || 1;
+        const tab_h = TAB_HEIGHT * scale;
+        this.rect = {
+            x: rect.x,
+            y: rect.y + tab_h,
+            width: rect.width,
+            height: Math.max(1, rect.height - tab_h),
+        };
+        this.reposition();
+    }
+
+    replace(window) {
+        const c = this.tabs[this.active_id];
+        if (!c) return;
+        this.remove_tab_component(c);
+        const entry = create_stack_tab(this, window, this.active_style);
+        this.tabs[this.active_id] = entry;
+        if (this.widgets) {
+            this.widgets.tabs.insert_child_at_index(entry.button, this.active_id);
+        }
+        this.activate(window.entity);
+    }
+
+    clear() {
+        for (const c of this.tabs) {
+            this.remove_tab_component(c);
+        }
+        this.tabs = [];
+    }
+
+    destroy() {
+        if (this.restack !== null && global.display) {
+            global.display.disconnect(this.restack);
+            this.restack = null;
+        }
+        for (const c of this.tabs) {
+            this.tab_disconnect(c);
+            this.comp_show(c.entity, true);
+        }
+        this.tabs = [];
+        if (this.widgets) {
+            this.widgets.tabs.destroy();
+            this.widgets = null;
+        }
+    }
+}

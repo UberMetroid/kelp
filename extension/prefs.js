@@ -1,191 +1,172 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// First-Principles & Zero-Trust Page Header
+// - Page Responsibility / Functional Domain:
+//   GTK4 / Libadwaita Preferences UI (`KelpPreferences extends ExtensionPreferences`)
+//   rendering tiling, active-hint, gap, cursor-warp, and logging controls in `gnome-extensions-app`.
+// - Zero-Trust Boundary & Invariants:
+//   Runs in the separate GTK4 `gnome-extensions-app` process. Imports ONLY GTK4 (`gi://Gtk`,
+//   `gi://Gdk`), `ExtensionPreferences`, and process-agnostic modules (`FocusPosition`,
+//   `ExtensionSettings`, `LOG_LEVELS`). Never imports `gi://Meta`, `gi://Clutter`, or `gi://St`.
+
+import Gdk from 'gi://Gdk';
 import Gtk from 'gi://Gtk';
-import Gio from 'gi://Gio';
-const Settings = Gio.Settings;
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
-import * as settings from './settings.js';
-import * as log from './log.js';
-import * as focus from './focus.js';
-export default class KelpPreferences extends ExtensionPreferences {
-    getPreferencesWidget() {
-        return settings_dialog_new(this.getSettings());
-    }
-}
-function settings_dialog_new(ext_settings) {
-    let [app, grid] = settings_dialog_view();
-    let ext = new settings.ExtensionSettings(ext_settings);
-    app.window_titles.set_active(ext.show_title());
-    app.window_titles.connect('state-set', (_widget, state) => {
-        ext.set_show_title(state);
-        Settings.sync();
-    });
-    app.snap_to_grid.set_active(ext.snap_to_grid());
-    app.snap_to_grid.connect('state-set', (_widget, state) => {
-        ext.set_snap_to_grid(state);
-        Settings.sync();
-    });
-    app.smart_gaps.set_active(ext.smart_gaps());
-    app.smart_gaps.connect('state-set', (_widget, state) => {
-        ext.set_smart_gaps(state);
-        Settings.sync();
-    });
-    app.outer_gap.set_text(String(ext.gap_outer()));
-    app.outer_gap.connect('activate', (widget) => {
-        let parsed = parseInt(widget.get_text().trim());
-        if (!isNaN(parsed)) {
-            ext.set_gap_outer(parsed);
-            Settings.sync();
-        }
-    });
-    app.inner_gap.set_text(String(ext.gap_inner()));
-    app.inner_gap.connect('activate', (widget) => {
-        let parsed = parseInt(widget.get_text().trim());
-        if (!isNaN(parsed)) {
-            ext.set_gap_inner(parsed);
-            Settings.sync();
-        }
-    });
-    app.log_level.set_active(ext.log_level());
-    app.log_level.connect('changed', () => {
-        let active_id = app.log_level.get_active_id();
-        ext.set_log_level(active_id);
-    });
-    app.show_skip_taskbar.set_active(ext.show_skiptaskbar());
-    app.show_skip_taskbar.connect('state-set', (_widget, state) => {
-        ext.set_show_skiptaskbar(state);
-        Settings.sync();
-    });
-    app.mouse_cursor_follows_active_window.set_active(ext.mouse_cursor_follows_active_window());
-    app.mouse_cursor_follows_active_window.connect('state-set', (_widget, state) => {
-        ext.set_mouse_cursor_follows_active_window(state);
-        Settings.sync();
-    });
-    app.mouse_cursor_focus_position.set_active(ext.mouse_cursor_focus_location());
-    app.mouse_cursor_focus_position.connect('changed', () => {
-        let active_id = app.mouse_cursor_focus_position.get_active_id();
-        ext.set_mouse_cursor_focus_location(active_id);
-    });
-    app.stacking_with_mouse.set_active(ext.stacking_with_mouse());
-    app.stacking_with_mouse.connect('state-set', (_widget, state) => {
-        ext.set_stacking_with_mouse(state);
-        Settings.sync();
-    });
-    app.max_window_width.set_text(String(ext.max_window_width()));
-    app.max_window_width.connect('activate', (widget) => {
-        let parsed = parseInt(widget.get_text().trim());
-        if (!isNaN(parsed)) {
-            ext.set_max_window_width(parsed);
-            Settings.sync();
-        }
-    });
-    return grid;
-}
-function settings_dialog_view() {
-    const grid = new Gtk.Grid({
-        column_spacing: 12,
-        row_spacing: 12,
-        margin_start: 10,
-        margin_end: 10,
-        margin_bottom: 10,
-        margin_top: 10,
-    });
-    const win_label = new Gtk.Label({
-        label: 'Show Window Titles',
-        xalign: 0.0,
+import { FocusPosition } from './engine/geom/focus.js';
+import { ExtensionSettings } from './ui/settings/gsettings.js';
+import { LOG_LEVELS } from './ui/settings/log.js';
+
+function add_toggle_row(grid, row, label_text, active, on_toggle) {
+    const label = new Gtk.Label({
+        label: label_text,
+        halign: Gtk.Align.START,
         hexpand: true,
     });
-    const snap_label = new Gtk.Label({
-        label: 'Snap to Grid (Floating Mode)',
-        xalign: 0.0,
+    const toggle = new Gtk.Switch({
+        active: Boolean(active),
+        halign: Gtk.Align.END,
+        valign: Gtk.Align.CENTER,
     });
-    const smart_label = new Gtk.Label({
-        label: 'Smart Gaps',
-        xalign: 0.0,
-    });
-    const show_skip_taskbar_label = new Gtk.Label({
-        label: 'Show Minimize to Tray Windows',
-        xalign: 0.0,
-    });
-    const mouse_cursor_follows_active_window_label = new Gtk.Label({
-        label: 'Mouse Cursor Follows Active Window',
-        xalign: 0.0,
-    });
-    const stacking_with_mouse = new Gtk.Label({
-        label: 'Allow stacking with mouse',
-        xalign: 0.0,
-    });
-    const max_window_width_label = new Gtk.Label({
-        label: 'Max window width (in pixels); 0 to disable',
-        xalign: 0.0,
-    });
-    const [inner_gap, outer_gap] = gaps_section(grid, 9);
-    const settings = {
-        inner_gap,
-        outer_gap,
-        stacking_with_mouse: new Gtk.Switch({ halign: Gtk.Align.END }),
-        smart_gaps: new Gtk.Switch({ halign: Gtk.Align.END }),
-        snap_to_grid: new Gtk.Switch({ halign: Gtk.Align.END }),
-        window_titles: new Gtk.Switch({ halign: Gtk.Align.END }),
-        show_skip_taskbar: new Gtk.Switch({ halign: Gtk.Align.END }),
-        mouse_cursor_follows_active_window: new Gtk.Switch({ halign: Gtk.Align.END }),
-        mouse_cursor_focus_position: build_combo(grid, 7, focus.FocusPosition, 'Mouse Cursor Focus Position'),
-        log_level: build_combo(grid, 8, log.LOG_LEVELS, 'Log Level'),
-        max_window_width: number_entry(),
-    };
-    grid.attach(win_label, 0, 0, 1, 1);
-    grid.attach(settings.window_titles, 1, 0, 1, 1);
-    grid.attach(snap_label, 0, 1, 1, 1);
-    grid.attach(settings.snap_to_grid, 1, 1, 1, 1);
-    grid.attach(smart_label, 0, 2, 1, 1);
-    grid.attach(settings.smart_gaps, 1, 2, 1, 1);
-    grid.attach(stacking_with_mouse, 0, 4, 1, 1);
-    grid.attach(settings.stacking_with_mouse, 1, 4, 1, 1);
-    grid.attach(show_skip_taskbar_label, 0, 5, 1, 1);
-    grid.attach(settings.show_skip_taskbar, 1, 5, 1, 1);
-    grid.attach(mouse_cursor_follows_active_window_label, 0, 6, 1, 1);
-    grid.attach(settings.mouse_cursor_follows_active_window, 1, 6, 1, 1);
-    grid.attach(max_window_width_label, 0, 12, 1, 1);
-    grid.attach(settings.max_window_width, 1, 12, 1, 1);
-    return [settings, grid];
+    toggle.connect('notify::active', () => on_toggle(toggle.active));
+    grid.attach(label, 0, row, 1, 1);
+    grid.attach(toggle, 1, row, 1, 1);
+    return toggle;
 }
-function gaps_section(grid, top) {
-    let outer_label = new Gtk.Label({
-        label: 'Outer',
-        xalign: 0.0,
-        margin_start: 24,
-    });
-    let outer_entry = number_entry();
-    let inner_label = new Gtk.Label({
-        label: 'Inner',
-        xalign: 0.0,
-        margin_start: 24,
-    });
-    let inner_entry = number_entry();
-    let section_label = new Gtk.Label({
-        label: 'Gaps (in pixels)',
-        xalign: 0.0,
-    });
-    grid.attach(section_label, 0, top, 1, 1);
-    grid.attach(outer_label, 0, top + 1, 1, 1);
-    grid.attach(outer_entry, 1, top + 1, 1, 1);
-    grid.attach(inner_label, 0, top + 2, 1, 1);
-    grid.attach(inner_entry, 1, top + 2, 1, 1);
-    return [inner_entry, outer_entry];
-}
-function number_entry() {
-    return new Gtk.Entry({ input_purpose: Gtk.InputPurpose.NUMBER });
-}
-function build_combo(grid, top_index, iter_enum, label) {
-    let label_ = new Gtk.Label({
-        label: label,
+
+function add_spin_row(grid, row, label_text, value, min, max, step, on_change) {
+    const label = new Gtk.Label({
+        label: label_text,
         halign: Gtk.Align.START,
+        hexpand: true,
     });
-    grid.attach(label_, 0, top_index, 1, 1);
-    let combo = new Gtk.ComboBoxText();
-    for (const [index, key] of Object.keys(iter_enum).entries()) {
-        if (typeof iter_enum[key] == 'string') {
-            combo.append(`${index}`, iter_enum[key]);
-        }
+    const spin = Gtk.SpinButton.new_with_range(min, max, step);
+    spin.set_value(value);
+    spin.set_halign(Gtk.Align.END);
+    spin.connect('value-changed', () => on_change(spin.get_value_as_int()));
+    grid.attach(label, 0, row, 1, 1);
+    grid.attach(spin, 1, row, 1, 1);
+    return spin;
+}
+
+function add_combo_row(grid, row, label_text, items, active_idx, on_change) {
+    const label = new Gtk.Label({
+        label: label_text,
+        halign: Gtk.Align.START,
+        hexpand: true,
+    });
+    const combo = new Gtk.ComboBoxText({ halign: Gtk.Align.END });
+    for (const item of items) {
+        combo.append_text(item);
     }
-    grid.attach(combo, 1, top_index, 1, 1);
+    combo.set_active(active_idx);
+    combo.connect('changed', () => on_change(combo.get_active()));
+    grid.attach(label, 0, row, 1, 1);
+    grid.attach(combo, 1, row, 1, 1);
     return combo;
+}
+
+function build_settings_widget(ext_settings) {
+    const settings = new ExtensionSettings(ext_settings);
+    const grid = new Gtk.Grid({
+        column_spacing: 16,
+        row_spacing: 12,
+        margin_top: 24,
+        margin_bottom: 24,
+        margin_start: 24,
+        margin_end: 24,
+    });
+
+    let row = 0;
+    add_toggle_row(grid, row++, 'Tile Windows by Default', settings.tile_by_default(), (v) =>
+        settings.set_tile_by_default(v),
+    );
+    add_toggle_row(grid, row++, 'Show Window Titles', settings.show_title(), (v) =>
+        settings.set_show_title(v),
+    );
+    add_toggle_row(grid, row++, 'Smart Gaps', settings.smart_gaps(), (v) =>
+        settings.set_smart_gaps(v),
+    );
+    add_toggle_row(grid, row++, 'Snap to Grid (Adjustment Mode)', settings.snap_to_grid(), (v) =>
+        settings.set_snap_to_grid(v),
+    );
+    add_toggle_row(grid, row++, 'Show Active Hint Border', settings.active_hint(), (v) =>
+        settings.set_active_hint(v),
+    );
+
+    const color_label = new Gtk.Label({
+        label: 'Active Hint Color',
+        halign: Gtk.Align.START,
+        hexpand: true,
+    });
+    const rgba = new Gdk.RGBA();
+    if (!rgba.parse(settings.hint_color_rgba())) {
+        rgba.parse('rgba(106, 215, 225, 1)');
+    }
+    const color_button = new Gtk.ColorButton({
+        rgba,
+        use_alpha: true,
+        halign: Gtk.Align.END,
+    });
+    color_button.connect('color-set', () => {
+        settings.set_hint_color_rgba(color_button.get_rgba().to_string());
+    });
+    grid.attach(color_label, 0, row, 1, 1);
+    grid.attach(color_button, 1, row++, 1, 1);
+
+    add_spin_row(
+        grid, row++, 'Active Hint Border Width (px)',
+        settings.active_hint_size(), 1, 16, 1,
+        (v) => settings.set_active_hint_size(v),
+    );
+    add_spin_row(
+        grid, row++, 'Active Hint Border Radius (px)',
+        settings.active_hint_border_radius(), 0, 32, 1,
+        (v) => settings.set_active_hint_border_radius(v),
+    );
+    add_spin_row(
+        grid, row++, 'Inner Window Gap (px)',
+        settings.gap_inner(), 0, 64, 2,
+        (v) => settings.set_gap_inner(v),
+    );
+    add_spin_row(
+        grid, row++, 'Outer Workspace Gap (px)',
+        settings.gap_outer(), 0, 64, 2,
+        (v) => settings.set_gap_outer(v),
+    );
+    add_toggle_row(
+        grid, row++, 'Mouse Cursor Follows Active Window',
+        settings.mouse_cursor_follows_active_window(),
+        (v) => settings.set_mouse_cursor_follows_active_window(v),
+    );
+
+    const focus_positions = [
+        FocusPosition.TopLeft,
+        FocusPosition.TopRight,
+        FocusPosition.BottomLeft,
+        FocusPosition.BottomRight,
+        FocusPosition.Center,
+    ];
+    add_combo_row(
+        grid, row++, 'Mouse Cursor Focus Position',
+        focus_positions, settings.mouse_cursor_focus_location(),
+        (idx) => {
+            if (idx >= 0) settings.set_mouse_cursor_focus_location(idx);
+        },
+    );
+
+    const log_names = Object.keys(LOG_LEVELS);
+    add_combo_row(
+        grid, row++, 'Log Level',
+        log_names, settings.log_level(),
+        (idx) => {
+            if (idx >= 0) settings.set_log_level(idx);
+        },
+    );
+
+    return grid;
+}
+
+export default class KelpPreferences extends ExtensionPreferences {
+    getPreferencesWidget() {
+        return build_settings_widget(this.getSettings());
+    }
 }

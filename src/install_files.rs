@@ -1,176 +1,156 @@
-use std::env;
+// SPDX-License-Identifier: GPL-3.0-or-later
+// First-Principles & Zero-Trust Page Header
+// - Page Responsibility / Functional Domain:
+//   Extension tree extractor (`install_extension_files`), legacy flat-file cleaner, GSettings
+//   schema installer/compiler (`install_schema_files`, `compile_schemas`), and config writer.
+// - Zero-Trust Boundary & Invariants:
+//   Rejects relative paths containing parent traversal (`..`), purges obsolete flat `.js`/`.css`
+//   files from previous installs so they cannot shadow `engine/`/`window/`/`ui/` pages, and
+//   validates `~/.config/kelp/config.json` via `validate_config_json` before writing or keeping it.
+
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::process::Command;
 
+use crate::default_rules::{validate_config_json, DEFAULT_CONFIG_JSON};
 use crate::embedded_assets::{
-    EMBEDDED_CONFIG_JSON, EMBEDDED_EXTENSION_FILES, EMBEDDED_KEYBINDINGS, EMBEDDED_SCHEMA_XML,
-    EXTENSION_UUID, SCHEMA_FILENAME,
+    EXTENSION_FILES, ICON_FILES, KEYBINDING_FILES, LEGACY_FLAT_FILES, SCHEMA_FILENAME, SCHEMA_XML,
 };
 
-const REMOVED_LEGACY_FILES: &[&str] = &[
-    "launcher.js",
-    "launcher_service.js",
-    "search.js",
-    "context.js",
-    "scheduler.js",
-    "xprop.js",
-    "dbus_service.js",
-    "once_cell.js",
-    "paths.js",
-    "shell.js",
-    "shortcut_overlay.js",
-    "schemas/org.gnome.shell.extensions.pop-shell.gschema.xml",
-];
-
-const REMOVED_LEGACY_DIRS: &[&str] = &["color_dialog", "floating_exceptions"];
-
-/// Writes the embedded extension files into `dest_dir`, removes any legacy files,
-/// and compiles GSettings schemas if `glib-compile-schemas` is available.
-pub fn install_extension_tree(dest_dir: &Path, dry_run: bool) -> Result<(), String> {
-    if dry_run {
-        println!(
-            "[dry-run] Would write {} hardened extension files to {}",
-            EMBEDDED_EXTENSION_FILES.len(),
-            dest_dir.display()
-        );
-        return Ok(());
-    }
-
-    if dest_dir.exists() {
-        for stale_file in REMOVED_LEGACY_FILES {
-            let p = dest_dir.join(stale_file);
-            if p.exists() {
-                let _ = fs::remove_file(p);
-            }
-        }
-        for stale_dir in REMOVED_LEGACY_DIRS {
-            let p = dest_dir.join(stale_dir);
-            if p.exists() {
-                let _ = fs::remove_dir_all(p);
-            }
+fn write_verified_rel_path(base_dir: &Path, rel_path: &str, contents: &str) -> Result<(), String> {
+    let rel = Path::new(rel_path);
+    for comp in rel.components() {
+        if matches!(
+            comp,
+            Component::ParentDir | Component::RootDir | Component::Prefix(_)
+        ) {
+            return Err(format!("refusing unsafe relative asset path: {rel_path}"));
         }
     }
+    let full_path = base_dir.join(rel);
+    if let Some(parent) = full_path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("failed to create directory {}: {e}", parent.display()))?;
+    }
+    fs::write(&full_path, contents)
+        .map_err(|e| format!("failed to write {}: {e}", full_path.display()))
+}
 
-    for (rel_path, bytes) in EMBEDDED_EXTENSION_FILES {
-        let full_path = dest_dir.join(rel_path);
-        if let Some(parent) = full_path.parent() {
-            fs::create_dir_all(parent)
-                .map_err(|e| format!("Failed to create directory {}: {e}", parent.display()))?;
+fn purge_legacy_flat_files(ext_dir: &Path) {
+    for &legacy in LEGACY_FLAT_FILES {
+        let candidate = ext_dir.join(legacy);
+        if candidate.is_file() {
+            let _ = fs::remove_file(candidate);
         }
-        fs::write(&full_path, bytes)
-            .map_err(|e| format!("Failed to write {}: {e}", full_path.display()))?;
     }
+}
 
-    let schemas_dir = dest_dir.join("schemas");
-    if schemas_dir.exists() {
-        let _ = Command::new("glib-compile-schemas")
-            .arg(&schemas_dir)
-            .status();
+/// Extracts all embedded extension `.js`, `.css`, `metadata.json`, and `.svg` icon files
+/// into `ext_dir`, removing any obsolete flat `.js`/`.css` files from older installations.
+///
+/// # Errors
+///
+/// Returns an `Err(String)` if any directory or file cannot be created.
+pub fn install_extension_files(ext_dir: &Path) -> Result<(), String> {
+    println!(
+        "  -> Installing extension files to {}...",
+        ext_dir.display()
+    );
+    fs::create_dir_all(ext_dir)
+        .map_err(|e| format!("failed to create {}: {e}", ext_dir.display()))?;
+
+    purge_legacy_flat_files(ext_dir);
+
+    for &(rel_path, contents) in EXTENSION_FILES {
+        write_verified_rel_path(ext_dir, rel_path, contents)?;
     }
-
+    for &(rel_path, contents) in ICON_FILES {
+        write_verified_rel_path(ext_dir, rel_path, contents)?;
+    }
     Ok(())
 }
 
-/// Writes the default floating window exceptions `config.json` to `~/.config/kelp/config.json`.
-pub fn install_config_json(home_dir: &Path, dry_run: bool) -> Result<PathBuf, String> {
-    let config_path = home_dir.join(".config/kelp/config.json");
-    if dry_run {
-        println!("[dry-run] Would write {}", config_path.display());
-        return Ok(config_path);
+/// Writes `org.gnome.shell.extensions.kelp.gschema.xml` to both the extension schema directory
+/// and the user's XDG `glib-2.0/schemas` directory.
+///
+/// # Errors
+///
+/// Returns an `Err(String)` if either schema file cannot be written.
+pub fn install_schema_files(
+    ext_schema_dir: &Path,
+    user_schema_dir: &Path,
+) -> Result<Vec<PathBuf>, String> {
+    println!("  -> Installing GSettings schema {SCHEMA_FILENAME}...");
+    let dirs = vec![ext_schema_dir.to_path_buf(), user_schema_dir.to_path_buf()];
+    for dir in &dirs {
+        write_verified_rel_path(dir, SCHEMA_FILENAME, SCHEMA_XML)?;
     }
-    if let Some(parent) = config_path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|e| format!("Failed to create {}: {e}", parent.display()))?;
-    }
-    fs::write(&config_path, EMBEDDED_CONFIG_JSON)
-        .map_err(|e| format!("Failed to write {}: {e}", config_path.display()))?;
-    Ok(config_path)
+    Ok(dirs)
 }
 
-fn is_root() -> bool {
-    Command::new("id")
-        .arg("-u")
-        .output()
-        .ok()
-        .and_then(|o| String::from_utf8(o.stdout).ok())
-        .map(|s| s.trim() == "0")
-        .unwrap_or(false)
+/// Installs GNOME Control Center keybinding XML definitions into
+/// `<data_dir>/gnome-control-center/keybindings`.
+///
+/// # Errors
+///
+/// Returns an `Err(String)` if the keybinding files cannot be written.
+pub fn install_keybinding_files(data_dir: &Path) -> Result<(), String> {
+    let kb_dir = data_dir.join("gnome-control-center").join("keybindings");
+    println!(
+        "  -> Installing GNOME Control Center keybinding definitions to {}...",
+        kb_dir.display()
+    );
+    for &(filename, contents) in KEYBINDING_FILES {
+        write_verified_rel_path(&kb_dir, filename, contents)?;
+    }
+    Ok(())
 }
 
-/// Installs the extension, GSettings schema, and keybinding definitions into `/usr/share`.
-/// If not running as root, re-executes the current binary directly via `run0` (without `sh -c`).
-pub fn install_system_wide(dry_run: bool) -> Result<(), String> {
-    let sys_ext_dir = Path::new("/usr/share/gnome-shell/extensions").join(EXTENSION_UUID);
-    let sys_schema_dir = Path::new("/usr/share/glib-2.0/schemas");
-    let sys_keybindings_dir = Path::new("/usr/share/gnome-control-center/keybindings");
+/// Ensures a valid `~/.config/kelp/config.json` exists, validating any existing file via
+/// [`validate_config_json`] and writing [`DEFAULT_CONFIG_JSON`] when absent.
+///
+/// # Errors
+///
+/// Returns an `Err(String)` if the configuration directory or file cannot be written or
+/// if the embedded default config fails validation.
+pub fn install_default_config(config_dir: &Path) -> Result<(), String> {
+    validate_config_json(DEFAULT_CONFIG_JSON)?;
+    let kelp_cfg_dir = config_dir.join("kelp");
+    let cfg_file = kelp_cfg_dir.join("config.json");
 
-    if dry_run {
-        println!(
-            "[dry-run] Would install extension system-wide to {}",
-            sys_ext_dir.display()
-        );
-        println!(
-            "[dry-run] Would install schema to {}/{SCHEMA_FILENAME}",
-            sys_schema_dir.display()
-        );
-        println!(
-            "[dry-run] Would install keybinding XMLs to {}",
-            sys_keybindings_dir.display()
-        );
-        return Ok(());
+    if let Ok(existing) = fs::read_to_string(&cfg_file) {
+        if validate_config_json(&existing).is_ok() {
+            return Ok(());
+        }
+        println!("  -> Existing config.json was invalid; restoring default config.json...");
     }
 
-    if is_root() {
-        let legacy_sys_dir = Path::new("/usr/share/gnome-shell/extensions")
-            .join(crate::embedded_assets::LEGACY_UUID);
-        if legacy_sys_dir.exists() {
-            let _ = fs::remove_dir_all(&legacy_sys_dir);
-        }
-        install_extension_tree(&sys_ext_dir, false)?;
-        if sys_schema_dir.exists() {
-            let legacy_schema =
-                sys_schema_dir.join("org.gnome.shell.extensions.pop-shell.gschema.xml");
-            if legacy_schema.exists() {
-                let _ = fs::remove_file(&legacy_schema);
-            }
-            let schema_path = sys_schema_dir.join(SCHEMA_FILENAME);
-            fs::write(&schema_path, EMBEDDED_SCHEMA_XML)
-                .map_err(|e| format!("Failed to write {}: {e}", schema_path.display()))?;
-            let _ = Command::new("glib-compile-schemas")
-                .arg(sys_schema_dir)
-                .status();
-        }
-        if sys_keybindings_dir.exists() {
-            for legacy_kb in [
-                "10-pop-shell-move.xml",
-                "10-pop-shell-navigate.xml",
-                "10-pop-shell-tile.xml",
-            ] {
-                let p = sys_keybindings_dir.join(legacy_kb);
-                if p.exists() {
-                    let _ = fs::remove_file(p);
-                }
-            }
-            for (name, bytes) in EMBEDDED_KEYBINDINGS {
-                let kb_path = sys_keybindings_dir.join(name);
-                fs::write(&kb_path, bytes)
-                    .map_err(|e| format!("Failed to write {}: {e}", kb_path.display()))?;
-            }
-        }
-        Ok(())
-    } else {
-        let exe = env::current_exe()
-            .map_err(|e| format!("Failed to determine current executable path: {e}"))?;
-        println!("==> Elevating via run0 to install into /usr/share...");
-        let status = Command::new("run0")
-            .arg(&exe)
-            .args(["--system", "--skip-gsettings"])
+    write_verified_rel_path(&kelp_cfg_dir, "config.json", DEFAULT_CONFIG_JSON)
+}
+
+/// Compiles `GSettings` schemas in each directory in `schema_dirs` via `glib-compile-schemas`.
+///
+/// # Errors
+///
+/// Returns an `Err(String)` if `glib-compile-schemas` cannot be executed or exits non-zero.
+pub fn compile_schemas(schema_dirs: &[PathBuf]) -> Result<(), String> {
+    for dir in schema_dirs {
+        println!("  -> Compiling schemas in {}...", dir.display());
+        let status = Command::new("glib-compile-schemas")
+            .arg(dir)
             .status()
-            .map_err(|e| format!("Failed to execute run0: {e}"))?;
+            .map_err(|e| {
+                format!(
+                    "failed to run glib-compile-schemas on {}: {e}",
+                    dir.display()
+                )
+            })?;
         if !status.success() {
-            return Err("run0 failed to install system-wide extension files".to_string());
+            return Err(format!(
+                "glib-compile-schemas failed with status {status} on {}",
+                dir.display()
+            ));
         }
-        Ok(())
     }
+    Ok(())
 }
