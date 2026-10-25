@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Libadwaita Preferences Shortcuts and About pages plus border color theme presets.
+// Libadwaita Preferences Shortcuts and About pages plus border color presets.
 
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
@@ -103,7 +103,7 @@ export function build_about_page() {
 
     const header_group = new Adw.PreferencesGroup({
         title: 'Kelp — Wayland Auto-Tiling for GNOME 45–50',
-        description: 'Three instant kelp-forest tiling modes: Octopus (2D Binary Space Partition), ' +
+        description: 'Three instant layout modes: Octopus (2D Binary Space Partition), ' +
             'Seahorse (Niri/PaperWM Scrolling Column Strip), and Otter (Manual Floating &amp; Snap).',
     });
 

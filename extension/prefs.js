@@ -44,7 +44,7 @@ function build_tiling_page(ext_settings, settings, signals) {
     const page = new Adw.PreferencesPage({ title: 'Tiling & Modes', icon_name: 'view-grid-symbolic' });
     const mode_group = new Adw.PreferencesGroup({
         title: 'Default Tiling Mode &amp; Behavior',
-        description: 'Select your active kelp-forest layout mode and tiling behavior',
+        description: 'Select your default layout mode and tiling behavior',
     });
     const mode_labels = ['Octopus (2D BSP)', 'Seahorse (Scrolling Columns)', 'Otter (Floating & Snap)'];
     const mode_ids = ['octopus', 'seahorse', 'otter'];
@@ -131,7 +131,7 @@ function build_appearance_page(ext_settings, settings, signals) {
     const page = new Adw.PreferencesPage({ title: 'Appearance & Borders', icon_name: 'applications-graphics-symbolic' });
     const border_group = new Adw.PreferencesGroup({
         title: 'Active Window Border &amp; Color Presets',
-        description: 'Customize the focus border ring and 1-click kelp forest color palettes',
+        description: 'Customize the focus border ring and 1-click color presets',
     });
     const [hint_row, hint_sw] = make_switch_row('Show Active Window Border',
         'Draw a high-contrast border around the focused window', settings.active_hint(), (v) => settings.set_active_hint(v));
@@ -139,7 +139,7 @@ function build_appearance_page(ext_settings, settings, signals) {
 
     const color_row = new Adw.ActionRow({
         title: 'Active Border Color',
-        subtitle: 'Pick a custom RGBA color or select a theme preset below',
+        subtitle: 'Pick a custom RGBA color or select a color preset below',
     });
     const rgba = new Gdk.RGBA();
     if (!rgba.parse(settings.hint_color_rgba())) rgba.parse('rgb(255,0,0)');
@@ -151,7 +151,7 @@ function build_appearance_page(ext_settings, settings, signals) {
     const preset_labels = BORDER_PRESETS.map(([label]) => label);
     const match_preset = (color) => BORDER_PRESETS.findIndex(([, c]) => format_rgba(parse_rgba(c)) === color);
     const [preset_row, preset_combo] = make_combo_row(
-        'Quick Theme Presets', 'One-click color palettes for your active window border',
+        'Quick Color Presets', 'One-click color presets for your active window border',
         preset_labels, match_preset(settings.hint_color_rgba()),
         (idx) => {
             if (idx >= 0 && idx < BORDER_PRESETS.length) {

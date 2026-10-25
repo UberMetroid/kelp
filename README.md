@@ -7,7 +7,7 @@
 [![Sponsor: Tuition, Not Coffee](https://img.shields.io/badge/Sponsor-Tuition%2C%20Not%20Coffee%20%F0%9F%8E%93-2ec27e)](https://ubermetroid.github.io/tuition-not-coffee)
 [![Star on GitHub](https://img.shields.io/github/stars/UberMetroid/kelp?style=social)](https://github.com/UberMetroid/kelp)
 
-**Kelp** (`kelp@ubermetroid.github.io`) brings 3 instant window-tiling modes themed after kelp forest animals — **Octopus (2D Grid)**, **Seahorse (Scrolling Strip)**, and **Otter (Floating)** — plus window stacking, active focus borders, and a 4-tab Libadwaita Settings & About dialog to **GNOME 45–50 on Wayland**.
+**Kelp** (`kelp@ubermetroid.github.io`) provides **three layout modes** — **Octopus (2D Grid)**, **Seahorse (Scrolling Strip)**, and **Otter (Floating)** — each with its own top-bar indicator icon (`kelp-octopus-symbolic.svg`, `kelp-seahorse-symbolic.svg`, `kelp-otter-symbolic.svg`), plus window stacking, active focus borders, and a 4-tab Libadwaita Settings & About dialog for **GNOME 45–50 on Wayland**.
 
 Built from System76's Pop Shell — stripped of legacy X11 and launcher bloat, and updated for modern GNOME (`45` through `50`, including Ubuntu 24.04+, Fedora, Arch, and Debian).
 
@@ -15,11 +15,11 @@ Built from System76's Pop Shell — stripped of legacy X11 and launcher bloat, a
 
 ---
 
-## Three Kelp Forest Modes (One Left-Click Away)
+## Three Layout Modes (One Left-Click Away)
 
 Left-clicking the top-bar icon (or pressing `Super + Y`) cycles through all 3 modes and **immediately reformats every open window** on your workspace:
 
-| Top-Bar Icon | Animal Mode | Layout Style | Left-Click / Scroll Action |
+| Top-Bar Icon | Layout Mode | Layout Style | Left-Click / Scroll Action |
 | :---: | :--- | :--- | :--- |
 | <img src="extension/icons/kelp-octopus-symbolic.svg" width="32" height="32" alt="Octopus 2D Grid Icon" /> | **Octopus — 2D Grid** *(Default)* | Hyprland-style 2D Binary Space Partitioning (`OctopusTiler` + `Forest` in `engine/octopus/`) with tabbed stacks (`Super + S`). | Left-click switches to **Seahorse** |
 | <img src="extension/icons/kelp-seahorse-symbolic.svg" width="32" height="32" alt="Seahorse Scrolling Strip Icon" /> | **Seahorse — Scrolling Strip** | Niri/PaperWM-style horizontal scrolling strip of full-height columns (`SeahorseTiler` in `engine/seahorse/`), progressively sizing from **1/1 full width** (1 window) → **1/2 each** (2 windows) → **1/3 each** (3+ windows, up to 3 columns visible at once; `Super + O` for 100% full-width toggle, `Super + Enter` -> `Shift + Left/Right` or mouse drag to resize column widths) with clickable `8px` screen-edge peek slivers that jump directly to off-screen neighbor columns. | Left-click switches to **Otter** · Mouse wheel scrolls columns |
