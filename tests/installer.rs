@@ -161,7 +161,8 @@ fn installer_extracts_modular_tree_purges_legacy_and_compiles_schemas() -> Resul
     // Verify invalid config.json is backed up to config.json.bak before restoring default
     fs::write(&cfg_path, "corrupted-json").map_err(|e| e.to_string())?;
     install_default_config(&cfg_dir)?;
-    if fs::read_to_string(cfg_dir.join("kelp").join("config.json.bak")).map_err(|e| e.to_string())?
+    if fs::read_to_string(cfg_dir.join("kelp").join("config.json.bak"))
+        .map_err(|e| e.to_string())?
         != "corrupted-json"
     {
         return Err("invalid config.json was not backed up to config.json.bak".to_string());

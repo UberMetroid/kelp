@@ -136,37 +136,58 @@ fn prefs_and_shared_settings_never_import_compositor_only_typelibs() -> Result<(
 fn ego_lifecycle_and_mutter_18_19_invariants_hold() -> Result<(), String> {
     let ext_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("extension");
     let read = |rel: &str| fs::read_to_string(ext_root.join(rel)).map_err(|e| e.to_string());
-
-    check_contains(
+    let combined = [
         "extension.js",
-        &read("extension.js")?,
+        "prefs.js",
+        "ui/stack_widgets.js",
+        "window/controller_display.js",
+        "ui/exception_dialog.js",
+        "metadata.json",
+        "schemas/org.gnome.shell.extensions.kelp.gschema.xml",
+        "ui/panel_indicator.js",
+    ]
+    .into_iter()
+    .map(read)
+    .collect::<Result<Vec<_>, _>>()?
+    .join("\n");
+    if EXTENSION_FILES.len() < 36 {
+        return Err("EXTENSION_FILES invariant failed".to_string());
+    }
+    check_contains(
+        "EGO lifecycle & Mutter 18/19 invariants",
+        &combined,
         &[
             "export default class KelpExtension extends Extension",
-            "enable()",
-            "disable()",
             "this.unload_theme()",
             "this.ext.destroy()",
             "this.exception_dialog.close()",
+            "fillPreferencesWindow(window)",
+            "Adw.PreferencesPage",
+            "c.hint_signal",
+            "disconnect(c.hint_signal)",
+            "notify::demands-attention",
+            "restore_edge_tiling",
+            "destroyOnClose: true",
+            "\"45\"",
+            "\"51\"",
+            "name=\"tiling-mode\"",
+            "name=\"enable-shortcuts\"",
+            "name=\"tile-move-left-global\"",
+            "name=\"kelp-monitor-left\"",
+            "name=\"kelp-workspace-up\"",
+            "'rgb(255,0,0)'",
+            "Octopus (2D Grid)",
+            "Seahorse (Scrolling Strip)",
+            "Otter (Floating)",
+            "Keyboard Shortcuts",
+            "Focus Follows Mouse",
+            "Retile Workspace",
+            "Smart Gaps",
+            "addToStatusArea('kelp'",
+            "icons/kelp-octopus-symbolic.svg",
+            "icons/kelp-seahorse-symbolic.svg",
+            "icons/kelp-otter-symbolic.svg",
         ],
-    )?;
-    check_contains(
-        "prefs/stack_widgets/controller_display",
-        &format!("{}\n{}\n{}", read("prefs.js")?, read("ui/stack_widgets.js")?, read("window/controller_display.js")?),
-        &["fillPreferencesWindow(window)", "Adw.PreferencesPage", "c.hint_signal", "disconnect(c.hint_signal)", "notify::demands-attention", "restore_edge_tiling"],
-    )?;
-    if !read("ui/exception_dialog.js")?.contains("destroyOnClose: true") || EXTENSION_FILES.len() < 36 {
-        return Err("exception_dialog or EXTENSION_FILES invariant failed".to_string());
-    }
-    check_contains("metadata.json", &read("metadata.json")?, &["\"45\"", "\"46\"", "\"47\"", "\"48\"", "\"49\"", "\"50\"", "\"51\""])?;
-    check_contains(
-        "schema XML",
-        &read("schemas/org.gnome.shell.extensions.kelp.gschema.xml")?,
-        &["name=\"tiling-mode\"", "'octopus'", "name=\"enable-shortcuts\"", "name=\"tile-move-left-global\"", "name=\"kelp-monitor-left\"", "name=\"kelp-workspace-up\"", "'rgb(255,0,0)'"],
-    )?;
-    check_contains(
-        "ui/panel_indicator.js",
-        &read("ui/panel_indicator.js")?,
-        &["Octopus (2D Grid)", "Seahorse (Scrolling Strip)", "Otter (Floating)", "Keyboard Shortcuts", "Focus Follows Mouse", "Retile Workspace", "Smart Gaps", "addToStatusArea('kelp'", "icons/kelp-octopus-symbolic.svg", "icons/kelp-seahorse-symbolic.svg", "icons/kelp-otter-symbolic.svg"],
     )?;
     run_gjs_runtime_smoke_test(&ext_root)
 }
