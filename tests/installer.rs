@@ -42,8 +42,10 @@ fn temp_test_dir(tag: &str) -> Result<PathBuf, String> {
 
 #[test]
 fn cli_parser_handles_valid_and_invalid_arguments() -> Result<(), String> {
-    if parse_cli_args(&[])? != CliAction::Install {
-        return Err("empty args should map to CliAction::Install".to_string());
+    if parse_cli_args(&[])? != CliAction::Install
+        || parse_cli_args(&["install".to_string()])? != CliAction::Install
+    {
+        return Err("empty or 'install' args should map to CliAction::Install".to_string());
     }
     if parse_cli_args(&["--help".to_string()])? != CliAction::Help {
         return Err("--help should map to CliAction::Help".to_string());
@@ -221,10 +223,6 @@ fn gsettings_overrides_include_desktop_shortcuts_and_gap_defaults() -> Result<()
     for expected in [
         (wm, "close", "['<Super>q', '<Alt>F4']"),
         (wm, "toggle-maximized", "['<Super>m']"),
-        (media, "www", "['<Super>b']"),
-        (media, "home", "['<Super>f']"),
-        (media, "email", "['<Super>e']"),
-        (media, "screensaver", "['<Super>Escape']"),
         (SCHEMA_ID, "active-hint-border-radius", "2"),
         (SCHEMA_ID, "gap-inner", "6"),
         (SCHEMA_ID, "gap-outer", "6"),
@@ -232,6 +230,12 @@ fn gsettings_overrides_include_desktop_shortcuts_and_gap_defaults() -> Result<()
         if !GSETTINGS_OVERRIDES.contains(&expected) {
             return Err(format!("GSETTINGS_OVERRIDES missing {expected:?}"));
         }
+    }
+    if GSETTINGS_OVERRIDES
+        .iter()
+        .any(|&(schema, _, _)| schema == media)
+    {
+        return Err("GSETTINGS_OVERRIDES must not touch unrelated media-keys".to_string());
     }
     if !WM_CONFLICTS.contains(&("org.gnome.shell.keybindings", "shift-overview-up"))
         || WM_CONFLICTS.contains(&(wm, "switch-to-workspace-left"))

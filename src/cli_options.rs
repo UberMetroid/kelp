@@ -23,7 +23,7 @@ pub enum CliAction {
 ///
 /// Returns an `Err(String)` if an unrecognized flag is passed.
 pub fn parse_cli_args(args: &[String]) -> Result<CliAction, String> {
-    if args.is_empty() {
+    if args.is_empty() || (args.len() == 1 && matches!(args[0].as_str(), "install" | "--install")) {
         return Ok(CliAction::Install);
     }
 

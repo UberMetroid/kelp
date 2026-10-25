@@ -40,7 +40,7 @@ Left-clicking the top-bar icon (or pressing `Super + Y`) cycles through all 3 mo
 
 ## Install in 10 Seconds
 
-Download the latest release (`v1.9.0`) from [**GitHub Releases**](https://github.com/UberMetroid/kelp/releases/latest) and choose either method:
+Download the latest release (`v1.9.1`) from [**GitHub Releases**](https://github.com/UberMetroid/kelp/releases/latest) and choose either method:
 
 ### Option 1: Standard GNOME Extension `.zip` (No compiler needed)
 
@@ -53,7 +53,7 @@ gnome-extensions enable kelp@ubermetroid.github.io
 
 ### Option 2: Standalone `kelp` CLI Installer
 
-The standalone `kelp` binary installs the extension, compiles the GSettings schemas, configures desktop launcher/window shortcuts (`Super + Q`, `Super + M`, `Super + B`, `Super + F`, `Super + E`, `Super + V`, `Super + Ctrl + S`, `Super + Escape`), and automatically clears GNOME's conflicting default `Ctrl + Super + Left/Right` edge-tiling shortcuts so directional tile movement works immediately:
+The standalone `kelp` binary installs the extension, compiles the GSettings schemas, configures window and workspace management shortcuts (`Super + Q`, `Super + M`, `Super + Alt + Arrows/HJKL`), and automatically clears GNOME's conflicting default `Ctrl + Super + Left/Right` edge-tiling shortcuts so directional tile movement works immediately:
 
 ```bash
 chmod +x kelp-linux-x86_64
@@ -73,24 +73,17 @@ kelp
 
 | Shortcut | Action |
 | :--- | :--- |
+| `Super + Y` | Cycle Kelp tiling mode (**Octopus -> Seahorse -> Otter**) |
 | `Super + Arrow` or `Super + H / J / K / L` | Focus window Left / Down / Up / Right (or scroll columns in **Seahorse** mode) |
 | `Ctrl + Super + Arrow` or `Ctrl + Super + H / J / K / L` | Move tiled window / swap column / edge-snap floating window (**Otter** mode) |
 | `Super + Shift + Arrow` or `Super + Shift + H / J / K / L` | Move tiled window / swap column / edge-snap floating window (**Otter** mode) |
-| `Super + Q` | Close focused window (`<Super>q`, `<Alt>F4`) |
-| `Super + M` | Toggle maximize on the focused window |
-| `Super + B` | Open default web browser |
-| `Super + F` | Open file manager |
-| `Super + E` | Open default email client |
-| `Super + V` | Toggle notification & calendar message tray |
-| `Super + Ctrl + S` | Toggle GNOME Quick Settings menu |
-| `Super + Escape` | Lock screen / activate screensaver |
+| `Super + G` | Toggle floating mode for the focused window |
+| `Super + Enter` | Enter interactive adjustment mode (`Arrows/HJKL` to move, `Shift + Arrows/HJKL` to resize, `Enter` to apply, `Esc` to cancel) |
+| `Super + M` / `Super + Q` | Toggle maximize / Close focused window (`<Super>m`, `<Super>q`, `<Alt>F4`) |
 | `Super + O` | Toggle split orientation (**Octopus**) or toggle 100% full-width vs progressive `1 -> 1/2 -> 1/3` column width (**Seahorse**) |
 | `Super + S` | Toggle tabbed stacking (**Octopus**) or full-width column (**Seahorse**) |
-| `Super + G` | Toggle floating mode for the focused window |
-| `Super + Y` | Cycle Kelp tiling mode (**Octopus -> Seahorse -> Otter**) |
-| `Super + Enter` | Enter interactive adjustment mode (`Arrows/HJKL` to move, `Shift + Arrows/HJKL` to resize, `Enter` to apply, `Esc` to cancel) |
 | `Super + Alt + Arrow / H / J / K / L` | Switch to workspace Left / Down / Up / Right |
-| `Super + Alt + Shift + Arrow / H / J / K / L` or `Super + Shift + Page_Up / Page_Down` | Move window to another workspace |
+| `Super + Alt + Shift + Arrow / H / J / K / L` | Move window to another workspace |
 | `Ctrl + Super + Shift + Arrow / H / J / K / L` | Move window to another monitor |
 
 ---

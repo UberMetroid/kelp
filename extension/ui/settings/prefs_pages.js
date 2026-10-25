@@ -20,14 +20,15 @@ export const BORDER_PRESETS = Object.freeze([
 
 const SHORTCUT_GROUPS = Object.freeze([
     [
-        'Tiling &amp; Mode Control',
-        'Switch between Kelp layout engines and adjust window geometry',
+        'Tiling Mode &amp; Window Control',
+        'Switch between Kelp layout engines and control tiled or floating windows',
         [
             ['Cycle Tiling Mode (Octopus → Seahorse → Otter)', 'Super + Y'],
             ['Focus Window (Left / Down / Up / Right)', 'Super + Arrows / H J K L'],
             ['Move Window / Swap Column / Snap Otter Edge', 'Ctrl/Shift + Super + Arrows / H J K L'],
             ['Toggle Floating Exception on Window', 'Super + G'],
-            ['Interactive Adjustment Mode (Resize / Swap)', 'Super + Enter'],
+            ['Interactive Adjustment Mode (Move / Resize)', 'Super + Enter'],
+            ['Toggle Maximize / Close Focused Window', 'Super + M  /  Super + Q'],
         ],
     ],
     [
@@ -36,29 +37,17 @@ const SHORTCUT_GROUPS = Object.freeze([
         [
             ['Toggle Split Orientation (Octopus) / Full-Width Column (Seahorse)', 'Super + O'],
             ['Toggle Tabbed Stack (Octopus) / Full-Width Column (Seahorse)', 'Super + S'],
-            ['Resize Column / Split Ratio (Inside Super+Enter Mode)', 'Shift + Arrows / H J K L'],
-            ['Scroll Seahorse Columns from Top Bar or Screen-Edge Peeks', 'Mouse Wheel / Click 8px Peek'],
+            ['Resize Column / Split Ratio (Inside Adjustment Mode)', 'Shift + Arrows / H J K L'],
+            ['Scroll Seahorse Strip or Jump to Off-Screen Column', 'Top-Bar Scroll / 8px Edge Peek'],
         ],
     ],
     [
-        'Workspaces &amp; Monitors (Super+Alt)',
+        'Workspaces &amp; Monitors',
         'Navigate and migrate windows across workspaces and multi-monitor setups',
         [
             ['Switch Workspace (Left / Down / Up / Right)', 'Super + Alt + Arrows / H J K L'],
-            ['Move Window to Workspace (Left / Down / Up / Right)', 'Super + Alt + Shift + Arrows / H J K L'],
-            ['Move Window to Upper / Lower Workspace', 'Super + Shift + Page_Up / Page_Down'],
+            ['Move Window to Workspace', 'Super + Alt + Shift + Arrows / H J K L'],
             ['Move Window to Another Monitor', 'Ctrl + Super + Shift + Arrows / H J K L'],
-        ],
-    ],
-    [
-        'Desktop Quick Launch (Super+Q/M/B/F/E/V)',
-        'Ergonomic desktop shortcuts configured by the Kelp installer',
-        [
-            ['Close Focused Window', 'Super + Q  /  Alt + F4'],
-            ['Toggle Maximize Focused Window', 'Super + M'],
-            ['Open Web Browser / File Manager / Email', 'Super + B  /  Super + F  /  Super + E'],
-            ['Notification &amp; Calendar Tray / Quick Settings', 'Super + V  /  Super + Ctrl + S'],
-            ['Lock Screen / Activate Screensaver', 'Super + Escape'],
         ],
     ],
 ]);
@@ -127,7 +116,7 @@ export function build_about_page() {
         title: 'Kelp Release Version',
         subtitle: 'Zero-subprocess, zero-telemetry Wayland tiling engine &amp; Rust installer',
     });
-    ver_row.add_suffix(new Gtk.Label({ label: 'v1.9.0', valign: Gtk.Align.CENTER, css_classes: ['monospace'] }));
+    ver_row.add_suffix(new Gtk.Label({ label: 'v1.9.1', valign: Gtk.Align.CENTER, css_classes: ['monospace'] }));
     header_group.add(ver_row);
 
     const lic_row = new Adw.ActionRow({

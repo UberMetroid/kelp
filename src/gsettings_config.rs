@@ -13,7 +13,6 @@ use std::process::Command;
 use crate::embedded_assets::{EXTENSION_UUID, SCHEMA_ID};
 
 const WM_KB: &str = "org.gnome.desktop.wm.keybindings";
-const MEDIA_KB: &str = "org.gnome.settings-daemon.plugins.media-keys";
 const SHELL_KB: &str = "org.gnome.shell.keybindings";
 
 pub const WM_CONFLICTS: &[(&str, &str)] = &[
@@ -76,12 +75,6 @@ pub const GSETTINGS_OVERRIDES: &[(&str, &str, &str)] = &[
         "move-to-workspace-down",
         "['<Super><Alt><Shift>Down', '<Super><Alt><Shift>j']",
     ),
-    (MEDIA_KB, "www", "['<Super>b']"),
-    (MEDIA_KB, "home", "['<Super>f']"),
-    (MEDIA_KB, "email", "['<Super>e']"),
-    (MEDIA_KB, "screensaver", "['<Super>Escape']"),
-    (SHELL_KB, "toggle-message-tray", "['<Super>v']"),
-    (SHELL_KB, "toggle-quick-settings", "['<Super><Control>s']"),
     (SCHEMA_ID, "tile-by-default", "true"),
     (SCHEMA_ID, "tiling-mode", "'octopus'"),
     (SCHEMA_ID, "enable-shortcuts", "true"),

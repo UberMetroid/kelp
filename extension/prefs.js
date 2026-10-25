@@ -58,9 +58,9 @@ function build_tiling_page(ext_settings, settings, signals) {
         description: 'Select your active kelp-forest layout mode and tiling behavior',
     });
     const mode_labels = [
-        'Octopus — 2D Binary Space Partition',
-        'Seahorse — Scrolling Column Strip (1→1/2→1/3)',
-        'Otter — Manual Floating & Snap',
+        'Octopus (2D BSP)',
+        'Seahorse (Scrolling Columns)',
+        'Otter (Floating & Snap)',
     ];
     const mode_ids = ['octopus', 'seahorse', 'otter'];
     const cur_idx = Math.max(0, mode_ids.indexOf(settings.tiling_mode()));
@@ -146,7 +146,7 @@ function build_appearance_page(ext_settings, settings, signals) {
 
     const color_row = new Adw.ActionRow({
         title: 'Active Border Color',
-        subtitle: 'Pick a custom RGBA color or click a theme preset below',
+        subtitle: 'Pick a custom RGBA color or select a theme preset below',
     });
     const rgba = new Gdk.RGBA();
     if (!rgba.parse(settings.hint_color_rgba())) rgba.parse('rgb(255,0,0)');
@@ -155,21 +155,23 @@ function build_appearance_page(ext_settings, settings, signals) {
     color_row.add_suffix(color_btn);
     border_group.add(color_row);
 
-    const preset_row = new Adw.ActionRow({
-        title: 'Quick Theme Presets',
-        subtitle: 'One-click color palettes for your active window border',
-    });
-    const preset_box = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6, valign: Gtk.Align.CENTER });
-    for (const [label, css_color] of BORDER_PRESETS) {
-        const btn = new Gtk.Button({ label });
-        btn.connect('clicked', () => {
-            settings.set_hint_color_rgba(css_color);
-            const next_rgba = new Gdk.RGBA();
-            if (next_rgba.parse(css_color)) color_btn.set_rgba(next_rgba);
-        });
-        preset_box.append(btn);
-    }
-    preset_row.add_suffix(preset_box);
+    const preset_labels = BORDER_PRESETS.map(([label]) => label);
+    const cur_color = settings.hint_color_rgba();
+    const cur_preset_idx = Math.max(0, BORDER_PRESETS.findIndex(([, c]) => c === cur_color));
+    const [preset_row, preset_combo] = make_combo_row(
+        'Quick Theme Presets',
+        'One-click color palettes for your active window border',
+        preset_labels,
+        cur_preset_idx,
+        (idx) => {
+            if (idx >= 0 && idx < BORDER_PRESETS.length) {
+                const css_color = BORDER_PRESETS[idx][1];
+                settings.set_hint_color_rgba(css_color);
+                const next_rgba = new Gdk.RGBA();
+                if (next_rgba.parse(css_color)) color_btn.set_rgba(next_rgba);
+            }
+        },
+    );
     border_group.add(preset_row);
 
     const [size_row, size_spin] = make_spin_row('Border Width (px)', 'Thickness of the active focus border (1–16 px)', settings.active_hint_size(), 1, 16, 1, (v) => settings.set_active_hint_size(v));
@@ -195,8 +197,13 @@ function build_appearance_page(ext_settings, settings, signals) {
         if (rad_spin.get_value_as_int() !== settings.active_hint_border_radius()) rad_spin.set_value(settings.active_hint_border_radius());
         if (in_spin.get_value_as_int() !== settings.gap_inner()) in_spin.set_value(settings.gap_inner());
         if (out_spin.get_value_as_int() !== settings.gap_outer()) out_spin.set_value(settings.gap_outer());
+        const next_color = settings.hint_color_rgba();
+        const next_rgba = new Gdk.RGBA();
+        if (next_rgba.parse(next_color) && !color_btn.get_rgba().equal(next_rgba)) color_btn.set_rgba(next_rgba);
+        const next_idx = BORDER_PRESETS.findIndex(([, c]) => c === next_color);
+        if (next_idx >= 0 && preset_combo.get_active() !== next_idx) preset_combo.set_active(next_idx);
     };
-    for (const k of ['active-hint', 'active-hint-size', 'active-hint-border-radius', 'gap-inner', 'gap-outer']) {
+    for (const k of ['active-hint', 'active-hint-size', 'active-hint-border-radius', 'gap-inner', 'gap-outer', 'hint-color-rgba']) {
         if (ext_settings.settings_schema?.has_key(k)) {
             signals.push([ext_settings, ext_settings.connect(`changed::${k}`, sync_ui)]);
         }

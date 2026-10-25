@@ -137,23 +137,18 @@ fn prefs_and_shared_settings_never_import_compositor_only_typelibs() -> Result<(
 fn ego_lifecycle_and_mutter_18_19_invariants_hold() -> Result<(), String> {
     let ext_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("extension");
     let read = |rel: &str| fs::read_to_string(ext_root.join(rel)).map_err(|e| e.to_string());
+    #[rustfmt::skip]
     let combined = [
-        "extension.js",
-        "prefs.js",
-        "ui/settings/prefs_pages.js",
-        "ui/stack_widgets.js",
-        "window/controller_display.js",
-        "ui/exception_dialog.js",
-        "metadata.json",
-        "schemas/org.gnome.shell.extensions.kelp.gschema.xml",
-        "ui/panel_indicator.js",
+        "extension.js", "prefs.js", "ui/settings/prefs_pages.js", "ui/stack_widgets.js",
+        "window/controller_display.js", "ui/exception_dialog.js", "metadata.json",
+        "schemas/org.gnome.shell.extensions.kelp.gschema.xml", "ui/panel_indicator.js",
     ]
-    .into_iter()
-    .map(read)
-    .collect::<Result<Vec<_>, _>>()?
-    .join("\n");
-    if EXTENSION_FILES.len() < 37 {
-        return Err("EXTENSION_FILES invariant failed".to_string());
+    .into_iter().map(read).collect::<Result<Vec<_>, _>>()?.join("\n");
+    if EXTENSION_FILES.len() < 37
+        || combined.contains("Screensaver")
+        || read("ui/panel_indicator.js")?.contains("vfunc_event")
+    {
+        return Err("EXTENSION_FILES / panel_indicator / prefs_pages invariant failed".to_string());
     }
     #[rustfmt::skip]
     check_contains(
@@ -176,10 +171,14 @@ fn ego_lifecycle_and_mutter_18_19_invariants_hold() -> Result<(), String> {
             "addToStatusArea('kelp'", "this._clickGesture.set_enabled(false)",
             "button-press-event", "scroll-event", "touch-event",
             "icons/kelp-octopus-symbolic.svg", "icons/kelp-seahorse-symbolic.svg", "icons/kelp-otter-symbolic.svg",
+            "Octopus (2D BSP)", "Seahorse (Scrolling Columns)", "Otter (Floating & Snap)",
+            "Tiling Mode &amp; Window Control", "Toggle Maximize / Close Focused Window", "v1.9.1",
         ],
     )?;
-    if read("ui/panel_indicator.js")?.contains("vfunc_event") {
-        return Err("panel_indicator.js must not override or call vfunc_event".to_string());
+    if read("ui/panel_indicator.js")?.contains("vfunc_event")
+        || read("ui/settings/prefs_pages.js")?.contains("Screensaver")
+    {
+        return Err("panel_indicator.js/prefs_pages.js invariant failed".to_string());
     }
     run_gjs_runtime_smoke_test(&ext_root)
 }
