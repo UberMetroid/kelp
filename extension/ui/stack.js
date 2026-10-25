@@ -33,7 +33,7 @@ export class Stack {
 
         this.widgets = {
             tabs: new St.BoxLayout({
-                style_class: 'pop-shell-stack',
+                style_class: 'kelp-stack',
                 reactive: true,
                 x_expand: true,
             }),
@@ -88,10 +88,10 @@ export class Stack {
             c.active = is_active;
             if (is_active) {
                 this.active_id = i;
-                c.button.style_class = 'pop-shell-tab pop-shell-tab-active';
+                c.button.style_class = 'kelp-tab kelp-tab-active';
                 c.button.style = this.active_style;
             } else {
-                c.button.style_class = 'pop-shell-tab pop-shell-tab-inactive';
+                c.button.style_class = 'kelp-tab kelp-tab-inactive';
                 c.button.style = INACTIVE_TAB_STYLE;
             }
             this.comp_show(c.entity, is_active);

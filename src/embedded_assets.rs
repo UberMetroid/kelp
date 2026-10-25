@@ -70,6 +70,8 @@ pub const LEGACY_FLAT_FILES: &[&str] = &[
     "window.js",
     "xprop.js",
     "schemas/org.gnome.shell.extensions.pop-shell.gschema.xml",
+    "icons/pop-shell-auto-on-symbolic.svg",
+    "icons/pop-shell-auto-off-symbolic.svg",
 ];
 
 /// Legacy subdirectories from older Pop Shell / Kelp releases that must be removed on upgrade.
@@ -222,12 +224,12 @@ pub const EXTENSION_FILES: &[(&str, &str)] = &[
 
 pub const ICON_FILES: &[(&str, &str)] = &[
     (
-        "icons/pop-shell-auto-on-symbolic.svg",
-        include_str!("../extension/icons/pop-shell-auto-on-symbolic.svg"),
+        "icons/kelp-auto-on-symbolic.svg",
+        include_str!("../extension/icons/kelp-auto-on-symbolic.svg"),
     ),
     (
-        "icons/pop-shell-auto-off-symbolic.svg",
-        include_str!("../extension/icons/pop-shell-auto-off-symbolic.svg"),
+        "icons/kelp-auto-off-symbolic.svg",
+        include_str!("../extension/icons/kelp-auto-off-symbolic.svg"),
     ),
 ];
 

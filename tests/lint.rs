@@ -182,6 +182,8 @@ fn ego_lifecycle_and_mutter_18_19_invariants_hold() -> Result<(), String> {
     for req in [
         "name=\"enable-shortcuts\"",
         "name=\"tile-move-left-global\"",
+        "name=\"kelp-monitor-left\"",
+        "name=\"kelp-workspace-up\"",
         "'rgb(255,0,0)'",
     ] {
         if !schema.contains(req) {
@@ -195,6 +197,8 @@ fn ego_lifecycle_and_mutter_18_19_invariants_hold() -> Result<(), String> {
         "Focus Follows Mouse",
         "Retile Workspace",
         "Smart Gaps",
+        "addToStatusArea('kelp'",
+        "icons/kelp-auto-on-symbolic.svg",
     ] {
         if !ind.contains(req) {
             return Err(format!("ui/panel_indicator.js missing {req}"));

@@ -17,7 +17,7 @@ export class WindowBorder {
     constructor(win) {
         this.win = win;
         this.border = new St.Bin({
-            style_class: 'pop-shell-active-hint pop-shell-border-normal',
+            style_class: 'kelp-active-hint kelp-border-normal',
             reactive: false,
             can_focus: false,
         });

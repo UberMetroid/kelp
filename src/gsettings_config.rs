@@ -98,27 +98,27 @@ pub const KEYBINDINGS: &[(&str, &str)] = &[
         "['<Primary><Super>Right', '<Primary><Super>KP_Right', '<Primary><Super>l', '<Super><Shift>Right', '<Super><Shift>KP_Right', '<Super><Shift>l']",
     ),
     (
-        "pop-workspace-down",
+        "kelp-workspace-down",
         "['<Super><Shift>Page_Down', '<Super><Shift><Alt>Down', '<Super><Shift><Alt>j']",
     ),
     (
-        "pop-workspace-up",
+        "kelp-workspace-up",
         "['<Super><Shift>Page_Up', '<Super><Shift><Alt>Up', '<Super><Shift><Alt>k']",
     ),
     (
-        "pop-monitor-left",
+        "kelp-monitor-left",
         "['<Super><Shift><Primary>Left', '<Super><Shift><Primary>KP_Left', '<Super><Shift><Primary>h']",
     ),
     (
-        "pop-monitor-right",
+        "kelp-monitor-right",
         "['<Super><Shift><Primary>Right', '<Super><Shift><Primary>KP_Right', '<Super><Shift><Primary>l']",
     ),
     (
-        "pop-monitor-up",
+        "kelp-monitor-up",
         "['<Super><Shift><Primary>Up', '<Super><Shift><Primary>KP_Up', '<Super><Shift><Primary>k']",
     ),
     (
-        "pop-monitor-down",
+        "kelp-monitor-down",
         "['<Super><Shift><Primary>Down', '<Super><Shift><Primary>KP_Down', '<Super><Shift><Primary>j']",
     ),
 ];

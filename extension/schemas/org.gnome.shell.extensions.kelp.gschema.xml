@@ -235,32 +235,32 @@
         </key>
 
         <!-- Workspace & Monitor Management -->
-        <key type="as" name="pop-workspace-down">
+        <key type="as" name="kelp-workspace-down">
             <default><![CDATA[['<Super><Shift>Page_Down','<Super><Shift><Alt>Down','<Super><Shift><Alt>j']]]></default>
             <summary>Move window to the lower workspace</summary>
         </key>
 
-        <key type="as" name="pop-workspace-up">
+        <key type="as" name="kelp-workspace-up">
             <default><![CDATA[['<Super><Shift>Page_Up','<Super><Shift><Alt>Up','<Super><Shift><Alt>k']]]></default>
             <summary>Move window to the upper workspace</summary>
         </key>
 
-        <key type="as" name="pop-monitor-down">
+        <key type="as" name="kelp-monitor-down">
             <default><![CDATA[['<Super><Shift><Primary>Down','<Super><Shift><Primary>KP_Down','<Super><Shift><Primary>j']]]></default>
             <summary>Move window to the lower monitor</summary>
         </key>
 
-        <key type="as" name="pop-monitor-up">
+        <key type="as" name="kelp-monitor-up">
             <default><![CDATA[['<Super><Shift><Primary>Up','<Super><Shift><Primary>KP_Up','<Super><Shift><Primary>k']]]></default>
             <summary>Move window to the upper monitor</summary>
         </key>
 
-        <key type="as" name="pop-monitor-left">
+        <key type="as" name="kelp-monitor-left">
             <default><![CDATA[['<Super><Shift><Primary>Left','<Super><Shift><Primary>KP_Left','<Super><Shift><Primary>h']]]></default>
             <summary>Move window to the leftward monitor</summary>
         </key>
 
-        <key type="as" name="pop-monitor-right">
+        <key type="as" name="kelp-monitor-right">
             <default><![CDATA[['<Super><Shift><Primary>Right','<Super><Shift><Primary>KP_Right','<Super><Shift><Primary>l']]]></default>
             <summary>Move window to the rightward monitor</summary>
         </key>

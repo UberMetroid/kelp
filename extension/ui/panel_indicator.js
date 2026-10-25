@@ -32,7 +32,7 @@ function number_entry(label, value_or_options, callback) {
         input_purpose: Clutter.InputContentPurpose.NUMBER,
         x_align: Clutter.ActorAlign.CENTER,
         y_align: Clutter.ActorAlign.CENTER,
-        style_class: 'pop-shell-entry',
+        style_class: 'kelp-entry',
     });
 
     const clamp_value = (raw) => {
@@ -69,12 +69,12 @@ function number_entry(label, value_or_options, callback) {
 
     const dec = new St.Button({
         label: '-',
-        style_class: 'button pop-shell-button',
+        style_class: 'button kelp-button',
         y_align: Clutter.ActorAlign.CENTER,
     });
     const inc = new St.Button({
         label: '+',
-        style_class: 'button pop-shell-button',
+        style_class: 'button kelp-button',
         y_align: Clutter.ActorAlign.CENTER,
     });
     dec.connect('clicked', () => adjust(-1));
@@ -105,8 +105,8 @@ const KelpButton = GObject.registerClass(
         _init(ext) {
             super._init(0.0, _('Kelp Auto-Tiler'), false);
             this.ext = ext;
-            this.icon_on = Gio.icon_new_for_string(`${ext.path}/icons/pop-shell-auto-on-symbolic.svg`);
-            this.icon_off = Gio.icon_new_for_string(`${ext.path}/icons/pop-shell-auto-off-symbolic.svg`);
+            this.icon_on = Gio.icon_new_for_string(`${ext.path}/icons/kelp-auto-on-symbolic.svg`);
+            this.icon_off = Gio.icon_new_for_string(`${ext.path}/icons/kelp-auto-off-symbolic.svg`);
             this.icon = new St.Icon({
                 gicon: ext.auto_tiler !== null ? this.icon_on : this.icon_off,
                 style_class: 'system-status-icon',
@@ -216,7 +216,7 @@ export class Indicator {
         menu.addMenuItem(border_item);
         menu.addMenuItem(gap_item);
 
-        Main.panel.addToStatusArea('pop-shell', this.button);
+        Main.panel.addToStatusArea('kelp', this.button);
     }
 
     get switch_workspace_mode() {

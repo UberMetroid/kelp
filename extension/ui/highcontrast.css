@@ -1,19 +1,19 @@
-.pop-shell-active-hint {
+.kelp-active-hint {
     border-style: solid;
     border-color: #ffffff;
 }
 
-.pop-shell-overlay {
+.kelp-overlay {
     background-color: rgba(255, 255, 255, 0.25);
     border: 3px solid #ffffff;
     border-radius: 4px;
 }
 
-.pop-shell-stack {
+.kelp-stack {
     spacing: 2px;
 }
 
-.pop-shell-tab {
+.kelp-tab {
     border-radius: 4px 4px 0px 0px;
     padding: 2px 8px;
     margin: 0px;
@@ -21,40 +21,40 @@
     border: 1px solid #ffffff;
 }
 
-.pop-shell-tab-inactive {
+.kelp-tab-inactive {
     background-color: #000000;
     color: #ffffff;
 }
 
-.pop-shell-tab-active {
+.kelp-tab-active {
     background-color: #ffffff;
     color: #000000;
 }
 
-.pop-shell-tab-urgent {
+.kelp-tab-urgent {
     background-color: #712600;
     color: #ffffff;
 }
 
-.pop-shell-entry {
+.kelp-entry {
     width: 3.5em;
     min-height: 1.5em;
     margin: 0 4px;
 }
 
-.pop-shell-button {
+.kelp-button {
     padding: 4px 10px;
 }
 
-.pop-shell-exceptions {
+.kelp-exceptions {
     min-width: 460px;
 }
 
-.pop-shell-exceptions-scroll {
+.kelp-exceptions-scroll {
     max-height: 360px;
     margin-top: 8px;
 }
 
-.pop-shell-exceptions-list {
+.kelp-exceptions-list {
     spacing: 6px;
 }

@@ -15,8 +15,8 @@ pub const MAX_CONFIG_BYTES: usize = 65_536;
 pub const DEFAULT_CONFIG_JSON: &str = r#"{
   "float": [
     {
-      "class": "pop-shell-example",
-      "title": "pop-shell-example"
+      "class": "kelp-example",
+      "title": "kelp-example"
     },
     {
       "class": "steam"
@@ -43,22 +43,22 @@ pub const KEYBINDING_MOVE_XML: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
                 name="Move, resize, and swap windows"
                 wm_name="Kelp">
 
-    <KeyListEntry name="pop-workspace-down"
+    <KeyListEntry name="kelp-workspace-down"
                   description="Move window to lower workspace"/>
 
-    <KeyListEntry name="pop-workspace-up"
+    <KeyListEntry name="kelp-workspace-up"
                   description="Move window to upper workspace"/>
 
-    <KeyListEntry name="pop-monitor-left"
+    <KeyListEntry name="kelp-monitor-left"
                   description="Move window to left monitor"/>
 
-    <KeyListEntry name="pop-monitor-right"
+    <KeyListEntry name="kelp-monitor-right"
                   description="Move window to right monitor"/>
 
-    <KeyListEntry name="pop-monitor-up"
+    <KeyListEntry name="kelp-monitor-up"
                   description="Move window to upper monitor"/>
 
-    <KeyListEntry name="pop-monitor-down"
+    <KeyListEntry name="kelp-monitor-down"
                   description="Move window to lower monitor"/>
 
 </KeyListEntries>

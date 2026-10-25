@@ -96,13 +96,20 @@ fn installer_extracts_modular_tree_purges_legacy_and_compiles_schemas() -> Resul
         .join(EXTENSION_UUID);
     fs::create_dir_all(&ext_dir).map_err(|e| e.to_string())?;
 
-    // Plant a legacy flat file to verify it gets purged during upgrade
+    // Plant legacy flat files and legacy icons to verify they get purged during upgrade
     let stale_file = ext_dir.join(LEGACY_FLAT_FILES[0]);
     fs::write(&stale_file, "// stale").map_err(|e| e.to_string())?;
+    let stale_icon = ext_dir
+        .join("icons")
+        .join("pop-shell-auto-on-symbolic.svg");
+    fs::create_dir_all(ext_dir.join("icons")).map_err(|e| e.to_string())?;
+    fs::write(&stale_icon, "<svg/>").map_err(|e| e.to_string())?;
 
     install_extension_files(&ext_dir)?;
-    if stale_file.exists() {
-        return Err("legacy flat file was not purged by install_extension_files".to_string());
+    if stale_file.exists() || stale_icon.exists() {
+        return Err(
+            "legacy flat file or icon was not purged by install_extension_files".to_string(),
+        );
     }
 
     for &(rel_path, _) in EXTENSION_FILES {

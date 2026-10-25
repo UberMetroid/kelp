@@ -63,7 +63,7 @@ export function create_stack_tab(stack, window, active_style) {
         can_focus: true,
         track_hover: true,
         x_expand: true,
-        style_class: 'pop-shell-tab',
+        style_class: 'kelp-tab',
         style: active_style,
         child: label,
     });
@@ -95,13 +95,13 @@ export function create_stack_tab(stack, window, active_style) {
 
     const on_urgency = () => {
         if (window.meta.demands_attention || window.meta.urgent) {
-            button.style_class = 'pop-shell-tab pop-shell-tab-urgent';
+            button.style_class = 'kelp-tab kelp-tab-urgent';
             button.style = URGENT_TAB_STYLE;
         } else if (entry.active) {
-            button.style_class = 'pop-shell-tab pop-shell-tab-active';
+            button.style_class = 'kelp-tab kelp-tab-active';
             button.style = stack.active_style;
         } else {
-            button.style_class = 'pop-shell-tab pop-shell-tab-inactive';
+            button.style_class = 'kelp-tab kelp-tab-inactive';
             button.style = INACTIVE_TAB_STYLE;
         }
     };

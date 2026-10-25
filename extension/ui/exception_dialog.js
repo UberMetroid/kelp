@@ -19,7 +19,7 @@ export const SelectWindowDialog = GObject.registerClass(
     class SelectWindowDialog extends ModalDialog.ModalDialog {
         _init(select_cb, cancel_cb) {
             super._init({
-                styleClass: 'pop-shell-OSDs',
+                styleClass: 'kelp-OSDs',
                 destroyOnClose: true,
                 shellReactive: true,
                 shouldFadeIn: false,
@@ -27,7 +27,7 @@ export const SelectWindowDialog = GObject.registerClass(
             });
             const title = new St.Label({
                 text: 'Select a window to add a floating exception',
-                style_class: 'pop-shell-osd-title',
+                style_class: 'kelp-osd-title',
                 x_align: Clutter.ActorAlign.CENTER,
             });
             const body = new St.Label({
@@ -56,7 +56,7 @@ export const OverviewDialog = GObject.registerClass(
     class OverviewDialog extends ModalDialog.ModalDialog {
         _init(add_rule, remove_rule, toggle_rule, config, cancel_cb) {
             super._init({
-                styleClass: 'pop-shell-exceptions',
+                styleClass: 'kelp-exceptions',
                 destroyOnClose: true,
                 shellReactive: false,
                 shouldFadeIn: true,
@@ -70,7 +70,7 @@ export const OverviewDialog = GObject.registerClass(
             const select_btn = new St.Button({
                 label: '+ Select Window',
                 x_align: Clutter.ActorAlign.CENTER,
-                style_class: 'pop-shell-button button',
+                style_class: 'kelp-button button',
             });
             select_btn.connect('clicked', () => {
                 this.close();
@@ -82,12 +82,12 @@ export const OverviewDialog = GObject.registerClass(
                 : { vertical: true };
             this.list = new St.BoxLayout({
                 ...box_orient,
-                style_class: 'pop-shell-exceptions-list',
+                style_class: 'kelp-exceptions-list',
             });
 
             const scroll = new St.ScrollView({
                 overlay_scrollbars: true,
-                style_class: 'pop-shell-exceptions-scroll',
+                style_class: 'kelp-exceptions-scroll',
             });
             scroll.add_child(this.list);
 

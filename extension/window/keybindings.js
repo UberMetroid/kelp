@@ -39,12 +39,12 @@ export class Keybindings {
             'tile-move-down-global': () => ext.tiler.move_down(ext, ext.focus_window()?.entity),
             'tile-move-up-global': () => ext.tiler.move_up(ext, ext.focus_window()?.entity),
             'tile-move-right-global': () => ext.tiler.move_right(ext, ext.focus_window()?.entity),
-            'pop-monitor-left': () => ext.move_monitor(Meta.DisplayDirection.LEFT),
-            'pop-monitor-right': () => ext.move_monitor(Meta.DisplayDirection.RIGHT),
-            'pop-monitor-up': () => ext.move_monitor(Meta.DisplayDirection.UP),
-            'pop-monitor-down': () => ext.move_monitor(Meta.DisplayDirection.DOWN),
-            'pop-workspace-up': () => ext.move_workspace(Meta.MotionDirection.UP),
-            'pop-workspace-down': () => ext.move_workspace(Meta.MotionDirection.DOWN),
+            'kelp-monitor-left': () => ext.move_monitor(Meta.DisplayDirection.LEFT),
+            'kelp-monitor-right': () => ext.move_monitor(Meta.DisplayDirection.RIGHT),
+            'kelp-monitor-up': () => ext.move_monitor(Meta.DisplayDirection.UP),
+            'kelp-monitor-down': () => ext.move_monitor(Meta.DisplayDirection.DOWN),
+            'kelp-workspace-up': () => ext.move_workspace(Meta.MotionDirection.UP),
+            'kelp-workspace-down': () => ext.move_workspace(Meta.MotionDirection.DOWN),
         };
         this.window = this.window_focus;
     }

@@ -58,7 +58,7 @@ export class Ext extends Ecs.World {
         this.current_style = null;
         this.focus_selector = focus_selector;
 
-        this.overlay = new St.BoxLayout({ style_class: 'pop-shell-overlay', visible: false });
+        this.overlay = new St.BoxLayout({ style_class: 'kelp-overlay', visible: false });
         if (global.window_group) global.window_group.add_child(this.overlay);
 
         update_scale(this);
