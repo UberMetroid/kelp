@@ -172,7 +172,7 @@ fn ego_lifecycle_and_mutter_18_19_invariants_hold() -> Result<(), String> {
             "button-press-event", "scroll-event", "touch-event",
             "icons/kelp-octopus-symbolic.svg", "icons/kelp-seahorse-symbolic.svg", "icons/kelp-otter-symbolic.svg",
             "Octopus (2D BSP)", "Seahorse (Scrolling Columns)", "Otter (Floating & Snap)",
-            "Tiling Mode &amp; Window Control", "Toggle Maximize / Close Focused Window", "v1.9.1",
+            "Tiling Mode &amp; Window Control", "Toggle Maximize / Close Focused Window", "v1.9.1", "match_preset(",
         ],
     )?;
     if read("ui/panel_indicator.js")?.contains("vfunc_event")

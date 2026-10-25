@@ -14,6 +14,7 @@ import Gdk from 'gi://Gdk';
 import Gtk from 'gi://Gtk';
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import { FocusPosition } from './engine/geom/focus.js';
+import { format_rgba, parse_rgba } from './ui/settings/color.js';
 import { ExtensionSettings } from './ui/settings/gsettings.js';
 import { LOG_LEVELS } from './ui/settings/log.js';
 import { BORDER_PRESETS, build_about_page, build_shortcuts_page } from './ui/settings/prefs_pages.js';
@@ -156,13 +157,12 @@ function build_appearance_page(ext_settings, settings, signals) {
     border_group.add(color_row);
 
     const preset_labels = BORDER_PRESETS.map(([label]) => label);
-    const cur_color = settings.hint_color_rgba();
-    const cur_preset_idx = Math.max(0, BORDER_PRESETS.findIndex(([, c]) => c === cur_color));
+    const match_preset = (color) => BORDER_PRESETS.findIndex(([, c]) => format_rgba(parse_rgba(c)) === color);
     const [preset_row, preset_combo] = make_combo_row(
         'Quick Theme Presets',
         'One-click color palettes for your active window border',
         preset_labels,
-        cur_preset_idx,
+        match_preset(settings.hint_color_rgba()),
         (idx) => {
             if (idx >= 0 && idx < BORDER_PRESETS.length) {
                 const css_color = BORDER_PRESETS[idx][1];
@@ -200,8 +200,8 @@ function build_appearance_page(ext_settings, settings, signals) {
         const next_color = settings.hint_color_rgba();
         const next_rgba = new Gdk.RGBA();
         if (next_rgba.parse(next_color) && !color_btn.get_rgba().equal(next_rgba)) color_btn.set_rgba(next_rgba);
-        const next_idx = BORDER_PRESETS.findIndex(([, c]) => c === next_color);
-        if (next_idx >= 0 && preset_combo.get_active() !== next_idx) preset_combo.set_active(next_idx);
+        const next_idx = match_preset(next_color);
+        if (preset_combo.get_active() !== next_idx) preset_combo.set_active(next_idx);
     };
     for (const k of ['active-hint', 'active-hint-size', 'active-hint-border-radius', 'gap-inner', 'gap-outer', 'hint-color-rgba']) {
         if (ext_settings.settings_schema?.has_key(k)) {
