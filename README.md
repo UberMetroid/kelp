@@ -15,7 +15,7 @@ Built from System76's Pop Shell — stripped of legacy X11 and launcher bloat, a
 - **Automatic Binary Tree Tiling**: Windows automatically split and tile across monitors and workspaces as you open them.
 - **Window Stacking (`Super + S`)**: Group tiled windows into tabbed stacks and switch tabs with directional focus keys.
 - **Hyprland-Style Active Border**: High-contrast `2px` active window border (`rgb(255,0,0)`), `2px` inner/outer gaps, and window titlebars hidden by default.
-- **Top-Bar Quick Menu**: One-click toggles for **Tile Windows**, **Keyboard Shortcuts (On/Off)**, **Focus Follows Mouse (On/Off)**, **Smart Gaps**, **Show Window Titles**, **Show Active Hint**, and **Retile Workspace**.
+- **Top-Bar Quick Menu**: One-click toggles for **Tile Windows**, **Keyboard Shortcuts (On/Off)**, **Focus Follows Mouse (On/Off)**, **Smart Gaps**, **Show Active Hint**, and **Retile Workspace**.
 - **Built-In Float Rules**: Dialogs, Picture-in-Picture, Steam, `caligula`, `btm`, and `macchina` float automatically; add custom per-app or per-window exceptions in two clicks.
 - **Identical Everywhere**: Installing from [GNOME Extensions](https://extensions.gnome.org/) or GitHub Releases gives you the exact same out-of-the-box configuration.
 
@@ -80,7 +80,6 @@ Clicking the Kelp icon in the GNOME top bar gives you instant access to:
 | **Focus Follows Mouse** | **Off** | Switch GNOME's window focus mode between Click-to-Focus (`click`) and Focus-Follows-Mouse (`sloppy`). |
 | **Retile Workspace** | Action | Immediately recalculate and snap all tiled windows on the active workspace into alignment. |
 | **Floating Window Exceptions** | Action | Open the picker to float specific windows or applications. |
-| **Show Window Titles** | **Off** | Show or hide server-side window titlebars. |
 | **Show Active Hint** | **On** | Show or hide the colored border around the focused window. |
 | **Smart Gaps** | **Off** | Hide outer screen gaps when only a single tiled window is open on a workspace. |
 | **Active Hint Border Radius** | **`2` px** | Adjust the corner radius of the active window border (`0–30 px`). |

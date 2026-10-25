@@ -85,9 +85,6 @@ function build_settings_widget(ext_settings) {
     add_toggle_row(grid, row++, 'Focus Follows Mouse', settings.focus_follows_mouse(), (v) =>
         settings.set_focus_follows_mouse(v),
     );
-    add_toggle_row(grid, row++, 'Show Window Titles', settings.show_title(), (v) =>
-        settings.set_show_title(v),
-    );
     add_toggle_row(grid, row++, 'Smart Gaps', settings.smart_gaps(), (v) =>
         settings.set_smart_gaps(v),
     );

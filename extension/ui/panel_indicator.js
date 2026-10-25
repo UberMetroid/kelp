@@ -143,10 +143,6 @@ export class Indicator {
             }),
         ]);
 
-        this.titlebars = toggle_item(_('Show Window Titles'), ext.settings.show_title(), (enable) => {
-            ext.settings.set_show_title(enable);
-        });
-
         this.active_hint = toggle_item(_('Show Active Hint'), ext.settings.active_hint(), (enable) => {
             ext.settings.set_active_hint(enable);
         });
@@ -192,7 +188,6 @@ export class Indicator {
         menu.addMenuItem(float_item);
 
         menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        menu.addMenuItem(this.titlebars);
         menu.addMenuItem(this.active_hint);
         menu.addMenuItem(this.smart_gaps);
         menu.addMenuItem(border_item);
