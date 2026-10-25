@@ -184,6 +184,7 @@ fn ego_lifecycle_and_mutter_18_19_invariants_hold() -> Result<(), String> {
             "Retile Workspace",
             "Smart Gaps",
             "addToStatusArea('kelp'",
+            "this._clickGesture.set_enabled(false)",
             "icons/kelp-octopus-symbolic.svg",
             "icons/kelp-seahorse-symbolic.svg",
             "icons/kelp-otter-symbolic.svg",

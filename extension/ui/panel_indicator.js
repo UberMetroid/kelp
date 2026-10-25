@@ -87,6 +87,10 @@ const KelpButton = GObject.registerClass(
         _init(ext) {
             super._init(0.0, _('Kelp Auto-Tiler'), false);
             this.ext = ext;
+            if (this._clickGesture) {
+                this._clickGesture.set_enabled(false);
+                this.remove_action(this._clickGesture);
+            }
             this.icon_octopus = Gio.icon_new_for_string(`${ext.path}/icons/kelp-octopus-symbolic.svg`);
             this.icon_seahorse = Gio.icon_new_for_string(`${ext.path}/icons/kelp-seahorse-symbolic.svg`);
             this.icon_otter = Gio.icon_new_for_string(`${ext.path}/icons/kelp-otter-symbolic.svg`);
@@ -122,6 +126,9 @@ const KelpButton = GObject.registerClass(
                     this.menu.toggle();
                     return Clutter.EVENT_STOP;
                 }
+            } else if (event.type() === Clutter.EventType.TOUCH_BEGIN) {
+                this.menu.toggle();
+                return Clutter.EVENT_STOP;
             } else if (event.type() === Clutter.EventType.SCROLL && this.ext.auto_tiler?.is_seahorse) {
                 const dir = event.get_scroll_direction();
                 if (dir === Clutter.ScrollDirection.UP || dir === Clutter.ScrollDirection.LEFT) {
