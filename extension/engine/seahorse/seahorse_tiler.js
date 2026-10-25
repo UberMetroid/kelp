@@ -137,9 +137,9 @@ export class SeahorseTiler {
         const strip = this._strip(ext.workspace_id(win));
         if (strip.cols.length <= 1 || this.full_width.has(this._entity_key(win.entity))) { this.arrange_strip(ext, strip); return; }
         const area = ext.monitor_work_area(strip.id[0]);
-        const avail_w = Math.max(128, area.width - ext.gap_outer * 2 - ext.gap_inner);
-        const frac = Math.max(0.25, Math.min(0.75, win.rect().width / avail_w));
         const vis0 = strip.scroll, vis1 = Math.min(strip.cols.length - 1, strip.scroll + 1);
+        const peek_w = (vis0 > 0 ? PEEK_WIDTH + ext.gap_inner : 0) + (vis1 < strip.cols.length - 1 ? PEEK_WIDTH + ext.gap_inner : 0);
+        const frac = Math.max(0.25, Math.min(0.75, win.rect().width / Math.max(128, area.width - ext.gap_outer * 2 - peek_w - ext.gap_inner)));
         const other_ent = Ecs.entity_eq(strip.cols[vis0], win.entity) ? strip.cols[vis1] : strip.cols[vis0];
         const other_w = other_ent ? this._weight(other_ent) : 1.0;
         this.ratios.set(this._entity_key(win.entity), Math.max(0.35, Math.min(2.85, (frac / (1 - frac)) * other_w)));
