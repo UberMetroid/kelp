@@ -149,6 +149,17 @@ fn installer_extracts_modular_tree_purges_legacy_and_compiles_schemas() -> Resul
     if !cfg_path.is_file() {
         return Err("default config.json was not written".to_string());
     }
+    // Verify legacy pop-shell-example placeholder in existing valid config.json is migrated
+    fs::write(
+        &cfg_path,
+        r#"{"float":[{"class":"pop-shell-example","title":"pop-shell-example"}]}"#,
+    )
+    .map_err(|e| e.to_string())?;
+    install_default_config(&cfg_dir)?;
+    let migrated_cfg = fs::read_to_string(&cfg_path).map_err(|e| e.to_string())?;
+    if migrated_cfg.contains("pop-shell-example") || !migrated_cfg.contains("kelp-example") {
+        return Err("install_default_config did not migrate pop-shell-example".to_string());
+    }
 
     let _ = fs::remove_dir_all(&root);
     Ok(())

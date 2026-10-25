@@ -133,6 +133,10 @@ pub fn install_default_config(config_dir: &Path) -> Result<(), String> {
 
     if let Ok(existing) = fs::read_to_string(&cfg_file) {
         if validate_config_json(&existing).is_ok() {
+            if existing.contains("\"pop-shell-example\"") {
+                let migrated = existing.replace("\"pop-shell-example\"", "\"kelp-example\"");
+                write_verified_rel_path(&kelp_cfg_dir, "config.json", &migrated)?;
+            }
             return Ok(());
         }
         println!("  -> Existing config.json was invalid; restoring default config.json...");

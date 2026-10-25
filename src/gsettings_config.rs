@@ -123,6 +123,15 @@ pub const KEYBINDINGS: &[(&str, &str)] = &[
     ),
 ];
 
+pub const LEGACY_DCONF_KEYS: &[&str] = &[
+    "/org/gnome/shell/extensions/kelp/pop-monitor-down",
+    "/org/gnome/shell/extensions/kelp/pop-monitor-left",
+    "/org/gnome/shell/extensions/kelp/pop-monitor-right",
+    "/org/gnome/shell/extensions/kelp/pop-monitor-up",
+    "/org/gnome/shell/extensions/kelp/pop-workspace-down",
+    "/org/gnome/shell/extensions/kelp/pop-workspace-up",
+];
+
 fn gsettings_set(schema_dir: &Path, schema: &str, key: &str, value: &str) {
     let _ = Command::new("gsettings")
         .args([
@@ -136,11 +145,12 @@ fn gsettings_set(schema_dir: &Path, schema: &str, key: &str, value: &str) {
         .status();
 }
 
-/// Applies WM conflict overrides and default Kelp keybindings in `gsettings`.
+/// Applies WM conflict overrides and default Kelp keybindings in `gsettings`,
+/// and purges deprecated `pop-*` dconf keys from the extension's dconf subtree.
 ///
 /// # Errors
 ///
-/// Returns `Ok(())` even if `gsettings` is unavailable in a headless build container.
+/// Returns `Ok(())` even if `gsettings` or `dconf` is unavailable in a headless build container.
 pub fn configure_keybindings(ext_schema_dir: &Path) -> Result<(), String> {
     println!("  -> Configuring GNOME keybindings and tiling settings...");
     for &(schema, key) in WM_CONFLICTS {
@@ -151,6 +161,9 @@ pub fn configure_keybindings(ext_schema_dir: &Path) -> Result<(), String> {
     }
     for &(key, val) in KEYBINDINGS {
         gsettings_set(ext_schema_dir, SCHEMA_ID, key, val);
+    }
+    for &dconf_key in LEGACY_DCONF_KEYS {
+        let _ = Command::new("dconf").args(["reset", dconf_key]).status();
     }
     Ok(())
 }
