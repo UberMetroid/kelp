@@ -1,11 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Zero-dependency CLI argument parser (`CliAction`, `parse_cli_args`) supporting default
-//   installation, `--pack [OUT_DIR]` EGO bundle generation, `--help`, and `--version`.
-// - Zero-Trust Boundary & Invariants:
-//   Rejects unknown flags and non-empty invalid option combinations deterministically without
-//   external parser crates or panics, defaulting `--pack` output to `.` when omitted.
+// Zero-dependency CLI argument parser (CliAction, parse_cli_args) for install and --pack modes.
 
 use std::path::PathBuf;
 

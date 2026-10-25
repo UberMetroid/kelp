@@ -1,13 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Severity-filtered structured logging (`LOG_LEVELS`, `error`, `warn`, `info`, `debug`)
-//   routing messages to the GJS / systemd journal via `console.log()` / `console.error()`.
-// - Zero-Trust Boundary & Invariants:
-//   Process-agnostic pure JS module with zero `gi://` or `resource://` imports so both the
-//   GNOME Shell compositor process (`extension.js`) and the GTK4 preferences process
-//   (`prefs.js`) can import `LOG_LEVELS` safely. Performs zero string interpolation when a
-//   log severity level is disabled, eliminating string allocation churn in hot tiling paths.
+// Severity-filtered structured logging (LOG_LEVELS, error, warn, info, debug) for GJS.
 
 export const LOG_LEVELS = Object.freeze({
     OFF: 0,

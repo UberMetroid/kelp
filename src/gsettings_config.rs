@@ -1,11 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   GSettings keybinding configurator (`configure_keybindings`), WM conflict clearer
-//   (`WM_CONFLICTS`), and GNOME Shell extension activator (`enable_extension`).
-// - Zero-Trust Boundary & Invariants:
-//   Invokes `gsettings` and `gnome-extensions` via `std::process::Command` without a shell
-//   interpreter (`sh -c`), preventing command injection across environment variables or paths.
+// GSettings keybinding configurator, WM conflict clearer, and GNOME Shell extension activator.
 
 use std::path::Path;
 use std::process::Command;

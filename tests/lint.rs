@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Static security & EGO compliance lint suite (`tests/lint.rs`) verifying modern ES2022
-//   syntax (`const`/`let` only, strict equality `===`/`!==`), Mutter 18/19 API usage,
-//   process-boundary separation (`prefs.js`), and deterministic lifecycle cleanup.
-// - Zero-Trust Boundary & Invariants:
-//   Scans every `.js` file under `extension/` to forbid `var`, loose `==`/`!=`, legacy
-//   `imports.gi` / `imports.ui`, deprecated Clutter actors, and Mutter imports in `prefs.js`.
+// Static EGO compliance, ES2022 syntax, Mutter 18/19 API, and GJS runtime smoke test suite.
 
 #![forbid(unsafe_code)]
 #![deny(
@@ -158,7 +151,7 @@ fn ego_lifecycle_and_mutter_18_19_invariants_hold() -> Result<(), String> {
             "Tuition, Not Coffee — Help send my daughter to college",
             "https://ubermetroid.github.io/tuition-not-coffee",
             "c.hint_signal", "disconnect(c.hint_signal)", "notify::demands-attention",
-            "restore_edge_tiling", "destroyOnClose: true", "\"45\"", "\"51\"",
+            "restore_edge_tiling", "destroyOnClose: true", "\"45\"", "\"50\"",
             "name=\"tiling-mode\"", "name=\"enable-shortcuts\"", "name=\"active-hint-size\"",
             "name=\"tile-move-left-global\"", "name=\"kelp-monitor-left\"", "name=\"kelp-workspace-up\"",
             "'rgb(255,0,0)'", "Octopus (2D Grid)", "Seahorse (Scrolling Strip)", "Otter (Floating)",
@@ -167,7 +160,7 @@ fn ego_lifecycle_and_mutter_18_19_invariants_hold() -> Result<(), String> {
             "button-press-event", "scroll-event", "touch-event",
             "icons/kelp-octopus-symbolic.svg", "icons/kelp-seahorse-symbolic.svg", "icons/kelp-otter-symbolic.svg",
             "Octopus (2D BSP)", "Seahorse (Scrolling Columns)", "Otter (Floating & Snap)",
-            "Tiling Mode &amp; Window Control", "Toggle Maximize / Close Focused Window", "v1.9.2", "match_preset(",
+            "Tiling Mode &amp; Window Control", "Toggle Maximize / Close Focused Window", "v2.0.0", "match_preset(",
         ],
     )?;
     if read("ui/panel_indicator.js")?.contains("vfunc_event")
@@ -230,8 +223,8 @@ fn run_gjs_runtime_smoke_test(ext_root: &Path) -> Result<(), String> {
          sh.toggle_orientation(fake_ext, w.windows.get(e2)); if (!w.windows.get(e2).shown || w.windows.get(e4).shown) throw new Error('seahorse full-width toggle');\n\
          sh.toggle_orientation(fake_ext, w.windows.get(e2)); f = w.windows.get(e4); sh.move_step(fake_ext, -1); if (sh._strip([0, 0]).cols[0] !== e4) throw new Error('seahorse move_step');\n\
          sh.ratios.set(sh._entity_key(e4), 1.75); cur_x = 900; sh.on_drop(fake_ext, w.windows.get(e4)); if (sh._strip([0, 0]).cols[2] !== e4 || sh._weight(e4) !== 1.75) throw new Error('seahorse on_drop 3rd column & ratio preservation');\n\
-         w.windows.get(e3).ws = [0, 1]; w.windows.get(e3).shown = false; sh.overview_show(fake_ext, true); if (!w.windows.get(e3).shown || !w.windows.get(e2).shown) throw new Error('all unminimized windows must be shown in overview for ClutterClone'); sh.overview_show(fake_ext, false); if (w.windows.get(e3).shown) throw new Error('inactive ws must be hidden on overview hide');\n\
-         sh.destroy(fake_ext); if (w.windows.get(e3).shown || !w.windows.get(e2).shown || !w.windows.get(e4).shown) throw new Error('seahorse destroy must only show active workspace windows');\n\
+         w.windows.get(e3).ws = [0, 1]; w.windows.get(e3).shown = false; sh.overview_show(fake_ext, true); if (w.windows.get(e3).shown || !w.windows.get(e2).shown) throw new Error('overview_show must only show active workspace windows'); sh.overview_show(fake_ext, false); if (w.windows.get(e3).shown) throw new Error('inactive ws must stay hidden on overview hide');\n\
+         sh.destroy(fake_ext); if (!w.windows.get(e3).shown || !w.windows.get(e2).shown || !w.windows.get(e4).shown) throw new Error('seahorse destroy must restore visibility across all workspaces');\n\
          w.windows.get(e1).floating_rect = new Rectangle([0, 0, 1000, 500]); w.windows.get(e2).floating_rect = new Rectangle([2, 2, 996, 496]); cascade_otter_windows(fake_ext); if (!is_full_work_area_rect(new Rectangle([2, 2, 996, 496]), new Rectangle([0, 0, 1000, 500]), 2) || w.windows.get(e1).floating_rect.width >= 900 || w.windows.get(e1).floating_rect.x === w.windows.get(e2).floating_rect.x) throw new Error('otter cascade must replace full-screen rects and stagger siblings'); snap_otter_window(fake_ext, 0);\n\
          w.windows.get(e3).ws = [0, 0]; w.delete_entity(e5); w.windows.get(e4).meta.minimized = true; f = w.windows.get(e2); const sh2 = new SeahorseTiler(w.register_storage()); for (const win of [w.windows.get(e1), w.windows.get(e2), w.windows.get(e3), w.windows.get(e4)]) if (!win.meta.minimized) sh2.auto_tile(fake_ext, win, true); sh2.on_focused(fake_ext, f); sh2.resize_column(fake_ext, 1, w.windows.get(e1)); if (sh2._strip([0, 0]).active !== 1 || sh2._strip([0, 0]).cols.length !== 3) throw new Error('seahorse mode transition active focus & minimized guard'); sh2.destroy(fake_ext); cascade_otter_windows(fake_ext, f); if (f.rect().x <= w.windows.get(e1).rect().x) throw new Error('otter cascade must place focused window last/on-top'); const att = w.register_storage(); const forest = new Forest().connect_on_attach((p, c) => att.insert(c, p)).connect_on_detach((c) => att.remove(c)); const ord = [w.windows.get(e1), w.windows.get(e2), w.windows.get(e3), w.windows.get(e4)].filter((win) => !win.meta.minimized); ord.splice(ord.indexOf(f), 1); ord.unshift(f); const [tl_e, tl_fk] = forest.create_toplevel(ord[0].entity, new Rectangle([2, 2, 996, 496]), [0, 0]); forest.on_attach(tl_e, ord[0].entity); forest.tile(fake_ext, tl_fk, tl_fk.area); for (const win of ord.slice(1)) {{ const onto = forest.largest_window_on(fake_ext, tl_e); const [, pfk] = forest.attach_window(fake_ext, onto.entity, win.entity, {{ auto: 0 }}, true); forest.tile(fake_ext, pfk, pfk.area.clone()); }} if (f.rect().x !== fake_ext.gap_outer || f.rect().height !== 496 || w.windows.get(e1).rect().x <= fake_ext.gap_outer || w.windows.get(e3).rect().x <= fake_ext.gap_outer || fake_ext.focus_window() !== f) throw new Error('octopus must keep focused window as main left window across full mode cycle'); new WakeupExecutor().stop();\n",
         ext = ext_root.display(),

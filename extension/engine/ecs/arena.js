@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Generational Arena (`Arena`) for O(1) indexed slot insertion, removal, and dense
-//   iteration of UI components (such as stack tab widgets) without array compaction shifts.
-// - Zero-Trust Boundary & Invariants:
-//   Pure ES2022 data structure with zero GObject/Shell dependencies and zero import-time
-//   side effects. Removed slots are nulled and recycled via `this.unused` so existing
-//   numeric handles remain stable until `truncate(0)` is invoked during teardown.
+// Generational Arena for O(1) indexed slot insertion, removal, and dense UI component iteration.
 
 export class Arena {
     constructor() {

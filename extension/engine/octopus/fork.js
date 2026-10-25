@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Binary Space Partitioning (BSP) internal split node (`Fork`) managing left/right
-//   branch geometry, split ratios, and orientation toggling.
-// - Zero-Trust Boundary & Invariants:
-//   Split ratios are clamped (`min_b = Math.min(256, Math.max(32, floor(fork_len / 4)))`) and
-//   snapped to 32px grid increments within `[min_b, fork_len - min_b]` so degenerate resize drags
-//   cannot collapse a branch to 0px or 1px. Zero top-level GObject calls at import time.
+// Binary Space Partitioning (BSP) internal split node (Fork) managing branch geometry and ratios.
 
 import * as Ecs from '../ecs/world.js';
 import * as Rect from '../geom/rectangle.js';

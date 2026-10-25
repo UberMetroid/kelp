@@ -1,13 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Interactive drag-and-drop placement (`on_drop`, `place_or_stack`, `cursor_placement`),
-//   window tree swapping (`attach_swap`), floating toggle (`toggle_floating_window`), and
-//   stack unwrapping (`unstack_window`).
-// - Zero-Trust Boundary & Invariants:
-//   Validates that the dropped or swapped window's parent fork and target sibling still exist
-//   in the ECS world before mutating branches or creating/destroying a stack. Purely
-//   synchronous tree updates with zero background timers or subprocesses.
+// Interactive drag-and-drop placement, window tree swapping, floating toggle, and unstacking.
 
 import * as Ecs from '../ecs/world.js';
 import * as geom from '../geom/rectangle.js';

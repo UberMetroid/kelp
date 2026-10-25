@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Window grab operation tracking (`GrabOp`), resize/move bitflags (`Movement`), and
-//   Mutter `Meta.GrabOp` bitmask classification (`is_keyboard_op`, `is_resize_op`, `is_move_op`).
-// - Zero-Trust Boundary & Invariants:
-//   Pure geometric diffing (`calculate`) and bitmask checks over `Meta.GrabOp` constants.
-//   Does not retain GObject references or allocate actors; `cursor_rect` and `current_monitor`
-//   query `global` only when invoked at runtime inside an active session.
+// Window grab operation tracking (GrabOp), resize/move bitflags, and Meta.GrabOp classification.
 
 import { Rectangle } from './rectangle.js';
 

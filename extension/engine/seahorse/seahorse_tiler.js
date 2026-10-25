@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Seahorse scrolling column strip engine (`SeahorseTiler`) implementing Niri/PaperWM-style
-//   horizontal scrolling columns, screen-edge peek slivers (`PEEK_WIDTH`), and column resizing.
-// - Zero-Trust Boundary & Invariants:
-//   Purely process-agnostic JS geometry & ECS storage module (imports ONLY `../ecs/world.js`
-//   and `../geom/rectangle.js` — zero `gi://` typelibs) so it can be unit-tested headlessly.
-//   Restores `actor.show()` on `overview_show()` and `destroy()` for active-workspace windows.
+// Seahorse scrolling column strip engine (`SeahorseTiler`) with screen-edge peek slivers.
 
 import * as Ecs from '../ecs/world.js';
 import { Rectangle } from '../geom/rectangle.js';
@@ -74,6 +67,7 @@ export class SeahorseTiler {
         strip.cols = strip.cols.filter((e) => {
             const w = ext.windows.get(e), wid = w ? ext.workspace_id(w) : null;
             if (w && wid && this._is_alive(w) && w.is_tilable(ext) && !w.meta.minimized && wid[0] === strip.id[0] && wid[1] === strip.id[1]) return true;
+            if (w && this._is_alive(w)) this._show_actor(w, ext);
             this.attached.remove(e); this.full_width.delete(this._entity_key(e)); this.ratios.delete(this._entity_key(e));
             return false;
         });
@@ -85,13 +79,15 @@ export class SeahorseTiler {
         const single_view = n === 1 || Boolean(active_ent && this.full_width.has(this._entity_key(active_ent)));
         const vis_count = single_view ? 1 : Math.min(n, 3);
         const vis0 = single_view ? strip.active : strip.scroll, vis_end = vis0 + vis_count - 1;
-        const has_left = vis0 > 0, has_right = vis_end < n - 1;
-        const peek_l = has_left ? PEEK_WIDTH + inner : 0, peek_r = has_right ? PEEK_WIDTH + inner : 0;
+        const peek_w = PEEK_WIDTH * (ext.dpi || 1), has_left = vis0 > 0, has_right = vis_end < n - 1;
+        const peek_l = has_left ? peek_w + inner : 0, peek_r = has_right ? peek_w + inner : 0;
         const x0 = area.x + outer + peek_l, y0 = area.y + outer;
         const avail_w = Math.max(64, area.width - outer * 2 - peek_l - peek_r), avail_h = Math.max(64, area.height - outer * 2);
-        ext.sync_seahorse_peeks?.(strip.id, {
-            left: has_left ? new Rectangle([area.x + outer, y0, PEEK_WIDTH, avail_h]) : null,
-            right: has_right ? new Rectangle([area.x + area.width - outer - PEEK_WIDTH, y0, PEEK_WIDTH, avail_h]) : null,
+        let any_fs = false;
+        for (let i = vis0; i <= vis_end; i += 1) if (ext.windows.get(strip.cols[i])?.meta?.is_fullscreen?.()) { any_fs = true; break; }
+        ext.sync_seahorse_peeks?.(strip.id, any_fs ? null : {
+            left: has_left ? new Rectangle([area.x + outer, y0, peek_w, avail_h]) : null,
+            right: has_right ? new Rectangle([area.x + area.width - outer - peek_w, y0, peek_w, avail_h]) : null,
         });
         if (single_view) strip.scroll = strip.active;
         const cols_avail_w = Math.max(64, avail_w - inner * (vis_count - 1));
@@ -104,7 +100,8 @@ export class SeahorseTiler {
             if (i >= vis0 && i <= vis_end) {
                 const frac = Math.max(0.35, Math.min(2.85, this._weight(strip.cols[i]))) / Math.max(0.01, sum_w);
                 const col_w = i === vis_end ? Math.max(32, x0 + avail_w - cur_x) : Math.max(32, Math.floor(cols_avail_w * frac));
-                this._show_actor(win, ext); this._move_win(ext, win, new Rectangle([cur_x, y0, col_w, avail_h]));
+                this._show_actor(win, ext);
+                if (!win.meta?.is_fullscreen?.()) this._move_win(ext, win, new Rectangle([cur_x, y0, col_w, avail_h]));
                 cur_x += col_w + inner;
             } else if (!this.overview_visible) this._hide_actor(win);
         }
@@ -130,7 +127,8 @@ export class SeahorseTiler {
         const area = ext.monitor_work_area(strip.id[0]), vis_count = Math.min(strip.cols.length, 3);
         const vis0 = strip.scroll, vis_end = vis0 + vis_count - 1;
         if (idx < vis0 || idx > vis_end) { this.arrange_strip(ext, strip); return; }
-        const peek_w = (vis0 > 0 ? PEEK_WIDTH + ext.gap_inner : 0) + (vis_end < strip.cols.length - 1 ? PEEK_WIDTH + ext.gap_inner : 0);
+        const pw = PEEK_WIDTH * (ext.dpi || 1);
+        const peek_w = (vis0 > 0 ? pw + ext.gap_inner : 0) + (vis_end < strip.cols.length - 1 ? pw + ext.gap_inner : 0);
         const cols_avail = Math.max(128, area.width - ext.gap_outer * 2 - peek_w - ext.gap_inner * (vis_count - 1));
         const frac = Math.max(0.15, Math.min(0.8, (win.rect?.()?.width ?? cols_avail / vis_count) / cols_avail));
         let other_w = 0;
@@ -230,19 +228,24 @@ export class SeahorseTiler {
 
     retile_all(ext) { for (const strip of this.strips.values()) this.arrange_strip(ext, strip); }
     sync_workspace_visibility(ext) {
+        ext.clear_seahorse_peeks?.();
         for (const [, win] of ext.windows.iter()) if (!this._is_active_ws(win, ext)) this._hide_actor(win);
         this.retile_all(ext);
     }
     overview_show(ext, showing) {
         this.overview_visible = Boolean(showing);
-        if (showing) { ext.clear_seahorse_peeks?.(); for (const [, win] of ext.windows.iter()) this._show_actor(win, ext); }
-        else this.sync_workspace_visibility(ext);
+        if (showing) {
+            ext.clear_seahorse_peeks?.();
+            for (const [, win] of ext.windows.iter()) if (this._is_active_ws(win, ext)) win.meta?.get_compositor_private?.()?.show?.();
+        } else this.sync_workspace_visibility(ext);
     }
     _is_active_ws(win, ext) {
-        return Boolean(win && !win.meta?.minimized && (!ext?.active_workspace || ext.should_ignore_workspace?.(win.meta?.get_monitor?.() ?? 0) || (win.workspace_id?.() ?? win.ws?.[1] ?? 0) === ext.active_workspace()));
+        if (!win || win.meta?.minimized) return false;
+        const mon = win.meta?.get_monitor?.() ?? 0;
+        return !ext?.active_workspace || ext.should_ignore_workspace?.(mon) || (win.workspace_id?.() ?? win.ws?.[1] ?? 0) === ext.active_workspace();
     }
     _show_actor(win, ext, force_ws = false) {
-        if (win && !win.meta?.minimized && ((this.overview_visible && !force_ws) || this._is_active_ws(win, ext))) win.meta?.get_compositor_private?.()?.show?.();
+        if (win && !win.meta?.minimized && (force_ws || this._is_active_ws(win, ext))) win.meta?.get_compositor_private?.()?.show?.();
     }
     _hide_actor(win) { if (!win?.meta?.minimized) win?.meta?.get_compositor_private?.()?.hide?.(); }
     destroy(ext) {

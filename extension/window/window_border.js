@@ -1,13 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Active window border actor (`WindowBorder`) and cursor warp helper (`place_cursor_on_window`)
-//   for `ShellWindow` wrappers.
-// - Zero-Trust Boundary & Invariants:
-//   Attaches the active border `St.Bin` to `global.window_group`, hides it during fullscreen or
-//   maximized states, and destroys the actor deterministically on window removal or `ext.destroy()`.
-//   Uses Clutter's virtual input device (`Clutter.get_default_backend().get_default_seat()`)
-//   defensively when warping the pointer so Wayland cursor moves never throw if unavailable.
+// Active window border actor (`WindowBorder`) and cursor warp helper (`place_cursor_on_rect`).
 
 import Clutter from 'gi://Clutter';
 import Meta from 'gi://Meta';
@@ -40,11 +32,11 @@ export class WindowBorder {
             return;
         }
         const meta = this.win.meta;
-        const title = meta.get_title?.() ?? '';
+        const title = meta.get_title() ?? '';
         if (
             meta.minimized ||
             meta.is_fullscreen() ||
-            meta.customJS_ding ||
+            meta.is_attached_dialog?.() ||
             meta.get_window_type() !== Meta.WindowType.NORMAL ||
             title.startsWith('Desktop Icons ') ||
             title.includes('@!') ||
@@ -61,19 +53,20 @@ export class WindowBorder {
         }
 
         const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor || 1;
-        const width = ext.settings.active_hint_size() * scale;
-        const radius = ext.settings.active_hint_border_radius() * scale;
+        const css_w = ext.settings.active_hint_size();
+        const css_r = ext.settings.active_hint_border_radius();
+        const width = css_w * scale;
         const color = ext.settings.hint_color_rgba();
         const rect = this.win.target_rect ?? this.win.rect();
 
         this.border.style =
-            `border-width: ${width}px; border-color: ${color}; border-radius: ${radius}px;`;
+            `border-width: ${css_w}px; border-color: ${color}; border-radius: ${css_r}px;`;
         this.border.set_position(rect.x - width, rect.y - width);
         this.border.set_size(rect.width + width * 2, rect.height + width * 2);
 
         const group = global.window_group;
         if (group && this.border.get_parent() === group && actor.get_parent() === group) {
-            group.set_child_above_sibling(this.border, actor);
+            group.set_child_below_sibling(this.border, actor);
         }
         this.border.show();
     }
@@ -86,9 +79,6 @@ export class WindowBorder {
     }
 }
 
-/**
- * Warps the mouse pointer to the user's configured `FocusPosition` anchor inside `rect`.
- */
 export function place_cursor_on_rect(rect, focus_position) {
     let x = rect.x + rect.width / 2;
     let y = rect.y + rect.height / 2;

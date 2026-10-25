@@ -1,13 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   BSP tree detachment (`detach_from_forest`), parent/sibling reassignment, interactive
-//   fork boundary resizing (`grow_sibling`, `shrink_sibling`, `resize_fork_in_forest`),
-//   and debug string formatting (`display_fork`).
-// - Zero-Trust Boundary & Invariants:
-//   Every parent/child lookup (`forest.forks.get`, `forest.parents.get`, `forest.stacks.get`)
-//   is null-checked before dereferencing. Parent upward traversal in `resize_fork_in_forest`
-//   is bounded by `MAX_PARENT_DEPTH` (NASA JPL Power-of-10 bounded loop rule).
+// BSP tree detachment, parent/sibling reassignment, and interactive fork boundary resizing.
 
 import { Movement } from '../geom/movement.js';
 import * as log from '../../ui/settings/log.js';

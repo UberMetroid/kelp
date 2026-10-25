@@ -1,11 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Binary entrypoint (`main`, `run`) orchestrating CLI argument dispatch, XDG directory
-//   resolution, extension file extraction, GSettings schema compilation, and shortcut setup.
-// - Zero-Trust Boundary & Invariants:
-//   Enforces `#![forbid(unsafe_code)]` and zero-panic error propagation via `Result<(), String>`,
-//   returning exit code `1` with structured `stderr` output on any environmental failure.
+// Binary entrypoint orchestrating CLI dispatch, XDG path resolution, and extension installation.
 
 #![forbid(unsafe_code)]
 #![deny(

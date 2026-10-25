@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Tabbed window stack container (`Stack`) managing the `St.BoxLayout` tab header bar,
-//   tab switching, window actor visibility within a stack leaf node, and geometry updates.
-// - Zero-Trust Boundary & Invariants:
-//   Tracks all tab button signals, `Meta.Window` property signals, and GSettings `hint_signal`
-//   subscriptions via `disconnect_stack_tab` and `destroy()`, ensuring zero leaked actors in
-//   `global.window_group` or dangling GSettings callbacks when unstacking or disabling.
+// Tabbed window stack container managing St.BoxLayout tab headers and actor visibility.
 
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
@@ -59,16 +52,23 @@ export class Stack {
             this.workspace === this.ext.active_workspace();
         if (overview_visible) {
             this.widgets.tabs.hide();
-            for (const c of this.tabs) {
-                const win = this.ext.windows.get(c.entity);
-                if (win && !win.meta.minimized) win.meta.get_compositor_private()?.show();
+            if (on_active_ws) {
+                for (const c of this.tabs) {
+                    const win = this.ext.windows.get(c.entity);
+                    if (win && !win.meta.minimized) win.meta.get_compositor_private()?.show();
+                }
             }
         } else if (!on_active_ws) {
             this.widgets.tabs.hide();
             for (const c of this.tabs) this.comp_show(c.entity, false);
         } else {
-            this.widgets.tabs.show();
-            this.restack_tabs();
+            const active_win = this.ext.windows.get(this.active);
+            if (active_win?.meta?.is_fullscreen?.()) {
+                this.widgets.tabs.hide();
+            } else {
+                this.widgets.tabs.show();
+                this.restack_tabs();
+            }
         }
     }
 
@@ -76,10 +76,14 @@ export class Stack {
         if (!this.widgets) return;
         const win = this.ext.windows.get(this.active);
         if (!win) return;
+        if (win.meta.is_fullscreen?.()) {
+            this.widgets.tabs.hide();
+            return;
+        }
         const actor = win.meta.get_compositor_private();
         const group = global.window_group;
         if (actor && group && this.widgets.tabs.get_parent() === group) {
-            group.set_child_above_sibling(this.widgets.tabs, actor);
+            group.set_child_below_sibling(this.widgets.tabs, actor);
         }
     }
 
@@ -178,13 +182,13 @@ export class Stack {
         return null;
     }
 
-    remove_tab_component(c) {
+    remove_tab_component(c, restore_actor = true) {
         this.tab_disconnect(c);
         if (this.widgets && c.button.get_parent() === this.widgets.tabs) {
             this.widgets.tabs.remove_child(c.button);
         }
         c.button.destroy();
-        this.comp_show(c.entity, true);
+        if (restore_actor) this.comp_show(c.entity, true);
     }
 
     tab_disconnect(c) {
@@ -227,9 +231,9 @@ export class Stack {
         this.activate(window.entity);
     }
 
-    clear() {
+    clear(restore_actors = true) {
         for (const c of this.tabs) {
-            this.remove_tab_component(c);
+            this.remove_tab_component(c, restore_actors);
         }
         this.tabs = [];
     }

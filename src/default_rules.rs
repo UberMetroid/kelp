@@ -1,11 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Default floating window exception configuration (`DEFAULT_CONFIG_JSON`), config schema
-//   validator (`validate_config_json`), and GNOME Control Center custom shortcut XML blobs.
-// - Zero-Trust Boundary & Invariants:
-//   Enforces an OWASP payload size ceiling (`MAX_CONFIG_BYTES = 65_536`) and validates JSON
-//   structure in pure safe Rust before writing or accepting user configuration files.
+// Default floating window exception config, JSON schema validator, and GNOME shortcut XML blobs.
 
 /// Maximum allowed byte length for `~/.config/kelp/config.json`.
 pub const MAX_CONFIG_BYTES: usize = 65_536;

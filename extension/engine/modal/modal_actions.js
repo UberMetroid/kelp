@@ -1,13 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Directional stack detachment (`move_from_stack`, `move_alongside_stack`), automatic
-//   tree sibling/monitor movement (`move_auto`), keyboard resize (`resize_auto`), modal
-//   commit (`accept_tile`), and multi-monitor raycasting (`locate_monitor`).
-// - Zero-Trust Boundary & Invariants:
-//   `locate_monitor` verifies `win.actor_exists()` and bounds monitor iteration by
-//   `global.display.get_n_monitors()`. `move_auto` sets `focused.ignore_detach = true`
-//   so reattaching a window on a neighbor avoids spurious floating-rectangle restoration.
+// Directional stack detachment, tree movement, keyboard resize, and modal commit actions.
 
 import Meta from 'gi://Meta';
 import * as Ecs from '../ecs/world.js';
@@ -122,7 +114,8 @@ export function move_from_stack(tiler, ext, [fork, branch, is_left], focused, di
 }
 
 export function resize_auto(tiler, ext, direction) {
-    const hrow = Math.max(16, Math.round((ext.column_size || 128) / 2)), hcolumn = Math.max(16, Math.round((ext.row_size || 128) / 2));
+    const hrow = Math.max(16, Math.round((ext.column_size || 128) / 2));
+    const hcolumn = Math.max(16, Math.round((ext.row_size || 128) / 2));
     const [mov1, mov2] =
         direction === Direction.Left ? [[hrow, 0, -hrow, 0], [0, 0, -hrow, 0]]
         : direction === Direction.Right ? [[0, 0, hrow, 0], [-hrow, 0, hrow, 0]]
@@ -207,9 +200,11 @@ export function accept_tile(tiler, ext) {
     const meta = tiler.window ? ext.windows.get(tiler.window) : null;
     if (meta) {
         let tree_swapped = false;
+        const is_floating = !ext.auto_tiler || ext.contains_tag(meta.entity, Ecs.Floating) ||
+            !ext.auto_tiler.attached.contains(meta.entity);
         const meta_swap = tiler.swap_window ? ext.windows.get(tiler.swap_window) : null;
         if (meta_swap) {
-            if (ext.auto_tiler && !ext.auto_tiler.is_seahorse) {
+            if (ext.auto_tiler && !ext.auto_tiler.is_seahorse && !is_floating) {
                 tree_swapped = true;
                 ext.auto_tiler.attach_swap(ext, tiler.swap_window, tiler.window);
             } else {
@@ -218,12 +213,11 @@ export function accept_tile(tiler, ext) {
             }
             ext.register_fn(() => meta.activate(true));
         }
-        if (!tree_swapped && !ext.auto_tiler?.is_seahorse) {
+        if (!tree_swapped && is_floating) {
             ext.size_signals_block(meta);
-            const meta_entity = tiler.window;
+            meta.floating_rect = Rect.Rectangle.from_meta(ext.overlay);
             meta.move(ext, ext.overlay, () => {
                 ext.size_signals_unblock(meta);
-                ext.add_tag(meta_entity, Ecs.Tiled);
             });
         }
     }

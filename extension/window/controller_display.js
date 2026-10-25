@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Monitor & workarea geometry queries (`monitor_work_area`, `update_display_configuration`,
-//   `update_scale`) and stylesheet loader (`load_theme`, `unload_theme`) for `Ext` controller.
-// - Zero-Trust Boundary & Invariants:
-//   Always unloads any previously loaded custom stylesheet from `St.ThemeContext` before
-//   loading a new theme (`dark.css`, `light.css`, `highcontrast.css`), and exposes
-//   `unload_theme(ext)` so `KelpExtension.disable()` leaves zero stale stylesheets in GNOME Shell.
+// Monitor workarea geometry queries, HiDPI scale factor, WM settings restore, and theme loader.
 
 import Gio from 'gi://Gio';
 import St from 'gi://St';
@@ -89,12 +82,20 @@ export function set_edge_tiling(ext, enable) {
         if (ext.saved_edge_tiling === undefined) ext.saved_edge_tiling = m.get_boolean('edge-tiling');
         m.set_boolean('edge-tiling', Boolean(enable));
     }
+    const wm = ext.settings.wm;
+    if (wm && wm.settings_schema.has_key('focus-mode') && ext.saved_focus_mode === undefined) {
+        ext.saved_focus_mode = wm.get_string('focus-mode');
+    }
 }
 
 export function restore_edge_tiling(ext) {
     const m = ext.settings?.mutter;
     if (ext.saved_edge_tiling !== undefined && m && m.settings_schema.has_key('edge-tiling')) {
         m.set_boolean('edge-tiling', Boolean(ext.saved_edge_tiling));
+    }
+    const wm = ext.settings?.wm;
+    if (ext.saved_focus_mode !== undefined && wm && wm.settings_schema.has_key('focus-mode')) {
+        wm.set_string('focus-mode', String(ext.saved_focus_mode));
     }
 }
 
@@ -112,7 +113,16 @@ export function sync_seahorse_peeks(ext, strip_id, rects) {
     if (!ext.seahorse_peeks) ext.seahorse_peeks = new Map();
     const key = `${strip_id[0]}:${strip_id[1]}`;
     const active = strip_id[1] === ext.active_workspace() || ext.should_ignore_workspace(strip_id[0]);
-    if (!rects || !active || (!rects.left && !rects.right)) {
+    let has_fs = false;
+    if (ext.windows) {
+        for (const [, w] of ext.windows.iter()) {
+            if (!w.meta?.minimized && w.meta?.is_fullscreen?.() && w.meta.get_monitor?.() === strip_id[0]) {
+                has_fs = true;
+                break;
+            }
+        }
+    }
+    if (!rects || !active || has_fs || (!rects.left && !rects.right)) {
         const old = ext.seahorse_peeks.get(key);
         if (old) { old.left?.destroy?.(); old.right?.destroy?.(); ext.seahorse_peeks.delete(key); }
         return;
@@ -126,7 +136,11 @@ export function sync_seahorse_peeks(ext, strip_id, rects) {
             continue;
         }
         if (!pair[side]) {
-            const btn = new St.Button({ style_class: 'kelp-seahorse-peek', reactive: true, can_focus: false });
+            const btn = new St.Button({
+                style_class: 'kelp-seahorse-peek',
+                reactive: true,
+                can_focus: false,
+            });
             btn.connect('clicked', () => ext.auto_tiler?.focus_step?.(ext, delta, true));
             global.window_group.add_child(btn);
             pair[side] = btn;

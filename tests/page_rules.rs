@@ -1,13 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Global Page Rule, Directory Density, Banned Filename, and First-Principles & Zero-Trust
-//   Header enforcement suite across the entire repository (`src/`, `tests/`, `extension/`).
-// - Zero-Trust Boundary & Invariants:
-//   Verifies at test time that every `.rs` and `.js` file is `16..=256` lines, starts with
-//   `// SPDX-License-Identifier: GPL-3.0-or-later` on line 1, includes the mandatory
-//   `// First-Principles & Zero-Trust Page Header`, uses zero banned generic filenames,
-//   and that every directory in the repository contains at most 8 visible entries (`<= 8`).
+// Global Page Rule, directory density, banned filename, and 2-line SPDX header test suite.
 
 #![forbid(unsafe_code)]
 #![deny(
@@ -100,21 +92,32 @@ fn every_rs_and_js_file_obeys_page_size_spdx_and_header_invariants() -> Result<(
             ));
         }
 
-        let header_block: String = lines
-            .iter()
-            .take(15)
-            .copied()
-            .collect::<Vec<_>>()
-            .join("\n");
-        for required_marker in [
-            "// First-Principles & Zero-Trust Page Header",
-            "- Page Responsibility / Functional Domain:",
-            "- Zero-Trust Boundary & Invariants:",
-        ] {
-            if !header_block.contains(required_marker) {
+        let second_line = lines.get(1).copied().unwrap_or("");
+        if !second_line.starts_with("// ") || second_line.len() < 12 {
+            return Err(format!(
+                "Missing concise module description on line 2 of {}: found '{second_line}'",
+                file.display()
+            ));
+        }
+
+        for (idx, line) in lines.iter().enumerate() {
+            if line.trim_start().starts_with("//")
+                && (line.contains("First-Principles & Zero-Trust")
+                    || line.contains("NASA JPL Power-of-10"))
+            {
                 return Err(format!(
-                    "Missing '{required_marker}' in first 15 lines of {}",
+                    "Forbidden AI-style header marker on line {} of {}",
+                    idx + 1,
                     file.display()
+                ));
+            }
+            if file.extension().and_then(|s| s.to_str()) == Some("js") && line.chars().count() > 200
+            {
+                return Err(format!(
+                    "Line {} of {} exceeds 200 characters ({} chars)",
+                    idx + 1,
+                    file.display(),
+                    line.chars().count()
                 ));
             }
         }

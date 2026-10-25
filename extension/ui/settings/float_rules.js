@@ -1,22 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   User-configurable and built-in floating window exception matcher (`Config`, `DEFAULT_RULES`)
-//   storing per-WM_CLASS / per-title float overrides at `~/.config/kelp/config.json`.
-// - Zero-Trust Boundary & Invariants:
-//   Enforces OWASP input size cap (`MAX_CONFIG_BYTES = 65536`) before parsing JSON from disk,
-//   validates every rule element's schema (`class` and `title` strings, bounded rule count),
-//   and catches regex syntax errors so a malformed user rule can never crash GNOME Shell.
+// User-configurable and built-in floating window exception matcher (`Config`, `DEFAULT_RULES`).
 
-import GLib from 'gi://GLib';
-import Gio from 'gi://Gio';
 import { Ok, Err } from '../../engine/ecs/events.js';
-import * as log from './log.js';
 
-const CONF_DIR = `${GLib.get_user_config_dir()}/kelp`;
-const CONF_FILE = `${CONF_DIR}/config.json`;
-const LEGACY_CONF_FILE = `${GLib.get_user_config_dir()}/pop-shell/config.json`;
-const MAX_CONFIG_BYTES = 65536;
 const MAX_RULE_COUNT = 512;
 
 export const DEFAULT_RULES = Object.freeze([
@@ -73,6 +59,10 @@ export const DEFAULT_FLOAT_RULES = DEFAULT_RULES;
 const REGEX_CACHE = new Map();
 const MAX_PATTERN_LEN = 256;
 
+export function clear_regex_cache() {
+    REGEX_CACHE.clear();
+}
+
 function safe_regex_match(pattern, target) {
     if (typeof pattern !== 'string' || typeof target !== 'string') return false;
     if (pattern.length === 0 || pattern.length > MAX_PATTERN_LEN) return false;
@@ -113,7 +103,6 @@ export class Config {
             if (r.class === wm_class && r.title === undefined) return;
         }
         this.float.push({ class: String(wm_class), disabled: false });
-        this.sync_to_disk();
     }
 
     add_window_exception(wm_class, wm_title) {
@@ -122,7 +111,6 @@ export class Config {
             if (r.class === wm_class && r.title === wm_title) return;
         }
         this.float.push({ class: String(wm_class), title: String(wm_title), disabled: false });
-        this.sync_to_disk();
     }
 
     window_shall_float(wm_class, wm_title) {
@@ -149,21 +137,17 @@ export class Config {
             for (const value of this.float.values()) {
                 if (value.class === wm_class && value.title === wm_title) {
                     value.disabled = disabled;
-                    this.sync_to_disk();
                     return;
                 }
             }
             this.float.push({ class: wm_class, title: wm_title, disabled });
-            this.sync_to_disk();
             return;
         }
         this.float = this.float.filter((v) => !(v.class === wm_class && v.title === wm_title));
-        this.sync_to_disk();
     }
 
     remove_user_exception(wm_class, wm_title) {
         this.float = this.float.filter((v) => !(v.class === wm_class && v.title === wm_title));
-        this.sync_to_disk();
     }
 
     to_json() {
@@ -196,49 +180,5 @@ export class Config {
         }
     }
 
-    static from_config() {
-        const res = Config.read();
-        return res.kind === 1 ? Config.from_json(res.value) : Err(res.value);
-    }
-
-    static read() {
-        try {
-            const path = GLib.file_test(CONF_FILE, GLib.FileTest.EXISTS)
-                ? CONF_FILE
-                : GLib.file_test(LEGACY_CONF_FILE, GLib.FileTest.EXISTS) ? LEGACY_CONF_FILE : null;
-            if (!path) return Err('config.json not found');
-            const file = Gio.File.new_for_path(path);
-            const info = file.query_info('standard::size', Gio.FileQueryInfoFlags.NONE, null);
-            if (info.get_size() > MAX_CONFIG_BYTES) {
-                return Err(`config.json exceeds maximum allowed size (${MAX_CONFIG_BYTES} bytes)`);
-            }
-            const [ok, data] = file.load_contents(null);
-            return ok ? Ok(new TextDecoder().decode(data)) : Err('failed to read config.json');
-        } catch (e) {
-            return Err(`error reading config.json: ${e}`);
-        }
-    }
-
-    reload() {
-        const conf = Config.from_config();
-        if (conf.kind === 1) {
-            this.float = conf.value.float;
-            this.log_on_focus = Boolean(conf.value.log_on_focus);
-        } else if (conf.value === 'config.json not found') {
-            log.debug(`config reload skipped: ${conf.value}`);
-        } else {
-            log.warn(`config reload failed: ${conf.value}`);
-        }
-    }
-
-    sync_to_disk() {
-        try {
-            GLib.mkdir_with_parents(CONF_DIR, 0o700);
-            const file = Gio.File.new_for_path(CONF_FILE);
-            const raw = new TextEncoder().encode(this.to_json());
-            file.replace_contents(raw, null, false, Gio.FileCreateFlags.NONE, null);
-        } catch (e) {
-            log.error(`failed to write config.json: ${e}`);
-        }
-    }
+    reload() {}
 }

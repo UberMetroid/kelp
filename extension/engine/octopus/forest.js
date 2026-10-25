@@ -1,13 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Multi-monitor / multi-workspace BSP forest (`Forest` extending `Ecs.World`) owning
-//   fork/parent/stack entity storages, window attachment/detachment, and tree traversal.
-// - Zero-Trust Boundary & Invariants:
-//   Before moving any window (`move_window`), verifies `window.actor_exists()` and
-//   `window.meta.get_compositor_private() !== null`, blocking size signals during the
-//   frame move to prevent feedback loops. `iter()` is bounded by `MAX_TREE_NODES` (NASA JPL
-//   Power-of-10 bounded loop rule).
+// Multi-monitor and multi-workspace BSP forest (Forest) owning fork, parent, and stack storages.
 
 import { Arena } from '../ecs/arena.js';
 import * as Ecs from '../ecs/world.js';

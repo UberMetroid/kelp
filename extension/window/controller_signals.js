@@ -1,16 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Mutter display, workspace-manager, overview, and grab-op signal handlers
-//   (`attach_controller_signals`, `on_grab_start`, `on_grab_end`, `on_window_create`, `on_destroy`)
-//   routing compositor events into the ECS event queue.
-// - Zero-Trust Boundary & Invariants:
-//   Stores every connected GObject signal tuple `[object, signal_id]` in `ext.signals` and
-//   cancels `drag_signal` GLib timeout sources before re-registering or on `on_grab_end`,
-//   guaranteeing zero leaked signal handlers or orphan GLib mainloop sources on `disable()`.
+// Mutter display, workspace-manager, overview, and grab-op signal handlers for `Ext`.
 
 import GLib from 'gi://GLib';
-import Meta from 'gi://Meta';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { ExtEvent } from '../engine/ecs/events.js';
@@ -18,7 +9,9 @@ import { GrabOp, is_keyboard_op, is_move_op, is_resize_op } from '../engine/geom
 import { Orientation } from '../engine/geom/rectangle.js';
 import { cursor_placement } from '../engine/octopus/octopus_tiler.js';
 import { set_log_level } from '../ui/settings/log.js';
-import { load_theme, set_gap_inner, set_gap_outer, update_display_configuration, update_scale } from './controller_display.js';
+import {
+    load_theme, set_gap_inner, set_gap_outer, update_display_configuration, update_scale,
+} from './controller_display.js';
 
 export function cancel_drag_signal(ext) {
     if (ext.drag_signal !== null) {
@@ -63,7 +56,9 @@ export function on_grab_start(ext, meta_win, op) {
         if (!fork) return GLib.SOURCE_CONTINUE;
         const windowless = ext.auto_tiler.largest_on_workspace(ext, monitor, workspace) === null;
         if (attach_to === null && fork.left.inner.kind === 2 && fork.right?.inner.kind === 2) {
-            const attaching = fork.left.is_window(win.entity) ? fork.right.inner.entity : fork.left.inner.entity;
+            const attaching = fork.left.is_window(win.entity)
+                ? fork.right.inner.entity
+                : fork.left.inner.entity;
             attach_to = ext.windows.get(attaching);
         }
         let area = null;
@@ -95,6 +90,7 @@ export function on_grab_start(ext, meta_win, op) {
         ext.overlay.visible = true;
         return GLib.SOURCE_CONTINUE;
     });
+    GLib.Source.set_name_by_id(ext.drag_signal, '[kelp] drag-overlay-preview');
 }
 
 export function on_grab_end(ext, meta_win, op) {
@@ -151,10 +147,15 @@ export function attach_controller_signals(ext) {
     const wsm = global.workspace_manager;
     const stage_ctx = St.ThemeContext.get_for_stage(global.stage);
 
-    connect(stage_ctx, 'notify::scale-factor', () => update_scale(ext));
+    connect(stage_ctx, 'notify::scale-factor', () => {
+        update_scale(ext);
+        ext.retile_workspace();
+        ext.show_border_on_focused();
+    });
     connect(display, 'window-created', (_d, win) => ext.register(ExtEvent.WindowCreate(win)));
     connect(display, 'grab-op-begin', (_d, win, op) => on_grab_start(ext, win, op));
     connect(display, 'grab-op-end', (_d, win, op) => on_grab_end(ext, win, op));
+    connect(display, 'restacked', () => ext.focus_window()?.update_border_layout());
     connect(display, 'notify::focus-window', () => {
         ext.register_fn(() => { const win = ext.focus_window(); if (win) ext.on_focused(win); });
     });

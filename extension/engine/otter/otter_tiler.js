@@ -1,13 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Otter floating & edge-snap engine (`cascade_otter_windows`, `snap_otter_window`) restoring
-//   floating window geometry, gently cascading overlapping windows, and snapping windows to
-//   50% left/right (Left/Right), 100% full-screen (Up), or centered floating frames (Down).
-// - Zero-Trust Boundary & Invariants:
-//   Purely process-agnostic JS geometry module (imports ONLY `../geom/rectangle.js` — zero
-//   `gi://` typelibs) so it can be unit-tested headlessly in `gjs -m`. Never calls `show()` on
-//   minimized windows or windows on inactive workspaces.
+// Otter floating and edge-snap engine restoring geometry, cascading, and edge snapping.
 
 import { Rectangle } from '../geom/rectangle.js';
 

@@ -1,14 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Binary Space Partitioning (BSP) tree leaf & branch node (`Node`, `NodeKind`) and
-//   in-place stack array mutations (`stack_find`, `stack_move_left`, `stack_move_right`,
-//   `stack_replace`, `stack_remove`).
-// - Zero-Trust Boundary & Invariants:
-//   Every node is tagged (`FORK = 1`, `WINDOW = 2`, `STACK = 3`). `measure()` clones
-//   the parent rectangle before offsetting stack tab-bar height (`size * 6`) so sibling
-//   forks never share aliased mutable geometry. `stack_find` bounds iteration by
-//   `MAX_STACK_ENTITIES` (NASA JPL Power-of-10 bounded loop rule).
+// Binary Space Partitioning (BSP) tree leaf and branch node (Node, NodeKind) and stack mutations.
 
 import * as Ecs from '../ecs/world.js';
 

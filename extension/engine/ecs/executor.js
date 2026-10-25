@@ -1,13 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   GLib main-loop event scheduler (`GLibExecutor` / `WakeupExecutor`) for non-blocking,
-//   batched execution of compositor layout and window events.
-// - Zero-Trust Boundary & Invariants:
-//   `GLibExecutor` drains queued events in `GLib.PRIORITY_HIGH_IDLE` bounded by
-//   `MAX_EVENTS_PER_TICK` (NASA JPL Power-of-10 bounded loop rule) to prevent an event storm
-//   from freezing the GNOME Shell compositor thread, continuing across ticks until empty.
-//   Every source ID is deterministically removed on `.stop()` during `disable()`.
+// GLib main-loop event scheduler (GLibExecutor / WakeupExecutor) for batched layout events.
 
 import GLib from 'gi://GLib';
 
@@ -38,6 +30,7 @@ export class GLibExecutor {
             this.#event_loop = null;
             return GLib.SOURCE_REMOVE;
         });
+        GLib.Source.set_name_by_id(this.#event_loop, '[kelp] wakeup-executor');
     }
 
     send(event, run_fn) {

@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Interactive modal dialog (`ExceptionDialog`) and pointer window-picker (`SelectWindowDialog`)
-//   for inspecting or adding per-window and per-application floating exception rules.
-// - Zero-Trust Boundary & Invariants:
-//   Passes `destroyOnClose: true` to `ModalDialog.ModalDialog` and explicitly exposes `close()`
-//   so `KelpExtension.disable()` always ungrabs pointer/keyboard focus and destroys the modal
-//   overlay when locking the screen or disabling the extension.
+// Interactive modal dialog and pointer window-picker for floating exception rules.
 
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
@@ -171,6 +164,22 @@ export class ExceptionDialog {
         );
     }
 
+    pick_window_at(x, y) {
+        const actors = global.get_window_actors?.() ?? [];
+        const active_ws = this.ext.active_workspace?.() ?? 0;
+        for (let i = actors.length - 1; i >= 0; i -= 1) {
+            const actor = actors[i];
+            if (!actor || actor.visible === false) continue;
+            const meta = actor.get_meta_window?.();
+            const sw = meta ? this.ext.get_window(meta) : null;
+            if (!sw || sw.meta.minimized || sw.stack_Previously_hidden) continue;
+            if (sw.workspace_id() !== active_ws && !this.ext.should_ignore_workspace(sw.meta.get_monitor())) continue;
+            const r = sw.rect();
+            if (x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height) return sw;
+        }
+        return null;
+    }
+
     start_window_picker() {
         this.close();
         this.dialog = new SelectWindowDialog(
@@ -186,7 +195,7 @@ export class ExceptionDialog {
                         }
                         cur = cur.get_parent();
                     }
-                    const win = picked ?? this.ext.focus_window();
+                    const win = picked ?? this.pick_window_at(x, y) ?? this.ext.focus_window();
                     this.close();
                     if (win) {
                         const wm_class = win.meta.get_wm_class();
@@ -213,12 +222,9 @@ export class ExceptionDialog {
     close() {
         this.cleanup_picker();
         if (this.dialog) {
-            try {
-                this.dialog.close();
-            } catch (_e) {
-                // Dialog may already be closing or destroyed
-            }
+            const dlg = this.dialog;
             this.dialog = null;
+            dlg.close();
         }
     }
 }

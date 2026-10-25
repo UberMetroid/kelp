@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Typed wrapper (`ExtensionSettings`) around `org.gnome.shell.extensions.kelp` and
-//   desktop/mutter GSettings schemas for both GNOME Shell (`extension.js`) and GTK4 (`prefs.js`).
-// - Zero-Trust Boundary & Invariants:
-//   Imports ONLY `gi://Gio` (process-agnostic) and never imports `gi://Meta`, `gi://St`, or
-//   `resource:///org/gnome/shell/*`. Probes external system schemas (`interface`, `wm.preferences`,
-//   `mutter`) defensively via `SettingsSchemaSource` before instantiating `Gio.Settings`.
+// Typed wrapper (ExtensionSettings) around Kelp, desktop, and Mutter GSettings schemas.
 
 import Gio from 'gi://Gio';
 import { parse_rgba, format_rgba } from './color.js';

@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   EGO bundle staging and packaging (`write_staging_tree`, `pack_extension_bundle`) invoking
-//   `gnome-extensions pack` with all modular `--extra-source` directories.
-// - Zero-Trust Boundary & Invariants:
-//   Stages embedded files into a dedicated temporary directory, passes `--extra-source` for
-//   every subdirectory in `EXTENSION_SUBDIRS` (`engine`, `window`, `ui`, `icons`), and cleans
-//   up the temporary staging directory whether `gnome-extensions pack` succeeds or fails.
+// EGO bundle staging and packaging invoking gnome-extensions pack with extra-source subdirs.
 
 use std::env;
 use std::fs;

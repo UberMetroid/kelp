@@ -1,11 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Crate root (`kelp`) re-exporting CLI parsing, embedded extension assets, default rules,
-//   GSettings configuration, file installation, and EGO zip packaging.
-// - Zero-Trust Boundary & Invariants:
-//   Enforces `#![forbid(unsafe_code)]` and denies `unwrap_used`, `expect_used`, `panic`,
-//   `todo`, `unimplemented`, and `dbg_macro` across the entire library crate.
+// Crate root re-exporting CLI parsing, embedded extension assets, GSettings setup, and EGO packing.
 
 #![forbid(unsafe_code)]
 #![deny(

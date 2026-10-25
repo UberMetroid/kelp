@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Tab bar button builder (`create_stack_tab`) and active-tab CSS styling (`style_active_tab`,
-//   `INACTIVE_TAB_STYLE`, `URGENT_TAB_STYLE`) for stacked window containers (`Stack`).
-// - Zero-Trust Boundary & Invariants:
-//   Connects every GSettings `changed::hint-color-rgba` signal handler onto `c.hint_signal`
-//   and disconnects it deterministically in `disconnect_stack_tab(ext, c)` so closing a stacked
-//   window or disabling the extension leaves zero dangling signal handlers on `ext.settings.ext`.
+// Tab bar button builder (create_stack_tab) and active-tab CSS styling for Stack containers.
 
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';

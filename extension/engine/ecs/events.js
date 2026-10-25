@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Typed ECS event tags (`GlobalEvent`, `WindowEvent`) and explicit `Result` (`Ok`, `Err`)
-//   and chained `Error` value types for fallible operations without uncaught exceptions.
-// - Zero-Trust Boundary & Invariants:
-//   Pure value constructors (`Object.freeze` enums and tagged plain objects). `Error.chain()`
-//   is bounded by `MAX_ERROR_CHAIN_DEPTH` (NASA JPL Power-of-10 bounded loop rule). Never
-//   throws across compositor signal boundaries and allocates zero GObjects at import time.
+// Typed ECS event tags (GlobalEvent, WindowEvent) and Result (Ok, Err) value constructors.
 
 export const OK = 1;
 export const ERR = 2;

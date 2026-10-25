@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Octopus 2D Binary Space Partitioning (BSP) auto-tiler (`OctopusTiler` / `AutoTiler`)
-//   managing window attachment, workspace/monitor reflow, sibling swaps, and stacking.
-// - Zero-Trust Boundary & Invariants:
-//   `fetch_mode()` validates that any target window is non-null, distinct, tilable,
-//   unminimized, attached to the tree, and on the same monitor & workspace before splitting.
-//   `destroy()` detaches all windows, destroys all `Stack` actors, and clears `window.stack`.
+// Octopus 2D Binary Space Partitioning (BSP) auto-tiler managing trees, splits, and stacks.
 
 import * as Ecs from '../ecs/world.js';
 import { Ok, Err, ERR } from '../ecs/events.js';
@@ -210,7 +203,7 @@ export class OctopusTiler {
         if (!stack.rect) return;
         const container = this.forest.stacks.get(stack.idx);
         if (!container) return;
-        container.clear();
+        container.clear(false);
         for (const entity of stack.entities) {
             const window = ext.windows.get(entity);
             if (window) { window.stack = stack.idx; container.add(window); }

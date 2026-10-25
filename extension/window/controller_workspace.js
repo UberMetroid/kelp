@@ -1,18 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Workspace indexing (`workspace_id`), active/tab-list window queries (`focus_window`,
-//   `active_window_list`), and geometric directional focus (`focus_selector`) for `Ext`.
-// - Zero-Trust Boundary & Invariants:
-//   Filters out destroyed or unmapped window actors before evaluating directional focus
-//   and ensures stacked tab containers activate the target neighbor tab when focusing left/right.
+// Workspace indexing, active/tab-list window queries, and directional focus helpers for `Ext`.
 
 import Meta from 'gi://Meta';
 import * as Ecs from '../engine/ecs/world.js';
-import { FocusSelector } from '../engine/geom/focus.js';
 import { cursor_rect } from '../engine/geom/movement.js';
-
-export const focus_selector = new FocusSelector();
 
 export function active_workspace() {
     const wsm = global.workspace_manager;
@@ -68,9 +59,16 @@ export function cursor_status() {
 
 export function* windows_at_pointer(ext, cursor, monitor, workspace) {
     for (const entity of ext.monitors.find((m) => m[0] === monitor && m[1] === workspace)) {
-        const win = ext.windows.with(entity, (w) =>
-            w.is_tilable(ext) && w.rect().contains(cursor) ? w : null,
-        );
+        const win = ext.windows.with(entity, (w) => {
+            if (
+                w.stack_Previously_hidden ||
+                w.meta.minimized ||
+                w.meta.get_compositor_private()?.visible === false
+            ) {
+                return null;
+            }
+            return w.is_tilable(ext) && w.rect().contains(cursor) ? w : null;
+        });
         if (win) yield win;
     }
 }
@@ -112,7 +110,7 @@ export function focus_left(ext) {
             }
         }
     }
-    focus_window_in(ext, (e, w) => focus_selector.left(e, w));
+    focus_window_in(ext, (e, w) => e.focus_selector.left(e, w));
 }
 
 export function focus_right(ext) {
@@ -136,7 +134,7 @@ export function focus_right(ext) {
             }
         }
     }
-    focus_window_in(ext, (e, w) => focus_selector.right(e, w));
+    focus_window_in(ext, (e, w) => e.focus_selector.right(e, w));
 }
 
 export function focus_down(ext) {
@@ -144,7 +142,7 @@ export function focus_down(ext) {
         ext.auto_tiler.focus_step(ext, 1);
         return;
     }
-    focus_window_in(ext, (e, w) => focus_selector.down(e, w));
+    focus_window_in(ext, (e, w) => e.focus_selector.down(e, w));
 }
 
 export function focus_up(ext) {
@@ -152,7 +150,7 @@ export function focus_up(ext) {
         ext.auto_tiler.focus_step(ext, -1);
         return;
     }
-    focus_window_in(ext, (e, w) => focus_selector.up(e, w));
+    focus_window_in(ext, (e, w) => e.focus_selector.up(e, w));
 }
 
 function focus_window_in(ext, select) {

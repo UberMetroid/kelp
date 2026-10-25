@@ -1,13 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Directional window focus selection (`FocusSelector`) and pointer warp target presets
-//   (`FocusPosition`) used by both GNOME Shell navigation and the GTK4 preferences dialog.
-// - Zero-Trust Boundary & Invariants:
-//   Process-agnostic pure JS module: imports ONLY `./rectangle.js` and zero `gi://` libraries
-//   so both `extension.js` (Shell process) and `prefs.js` (GTK4 preferences process) can
-//   import `FocusPosition` safely without crossing process boundaries. Filters out minimized
-//   windows before computing Euclidean edge distances.
+// Directional window focus selector (`FocusSelector`) and pointer warp target (`FocusPosition`).
 
 import * as Geom from './rectangle.js';
 
@@ -46,6 +38,14 @@ export class FocusSelector {
     }
 }
 
+function is_visible_candidate(win) {
+    return (
+        !win.meta.minimized &&
+        !win.stack_Previously_hidden &&
+        win.meta.get_compositor_private?.()?.visible !== false
+    );
+}
+
 function select_nearest(windows_fn, focused, window_list) {
     const array = windows_fn(focused, window_list);
     return array.length > 0 ? array[0] : null;
@@ -55,7 +55,7 @@ function window_down(focused, windows) {
     return windows
         .filter(
             (win) =>
-                !win.meta.minimized &&
+                is_visible_candidate(win) &&
                 win.meta.get_frame_rect().y > focused.meta.get_frame_rect().y
         )
         .sort(
@@ -69,7 +69,7 @@ function window_left(focused, windows) {
     return windows
         .filter(
             (win) =>
-                !win.meta.minimized &&
+                is_visible_candidate(win) &&
                 win.meta.get_frame_rect().x < focused.meta.get_frame_rect().x
         )
         .sort(
@@ -83,7 +83,7 @@ function window_right(focused, windows) {
     return windows
         .filter(
             (win) =>
-                !win.meta.minimized &&
+                is_visible_candidate(win) &&
                 win.meta.get_frame_rect().x > focused.meta.get_frame_rect().x
         )
         .sort(
@@ -97,7 +97,7 @@ function window_up(focused, windows) {
     return windows
         .filter(
             (win) =>
-                !win.meta.minimized &&
+                is_visible_candidate(win) &&
                 win.meta.get_frame_rect().y < focused.meta.get_frame_rect().y
         )
         .sort(

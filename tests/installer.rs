@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Integration test suite (`tests/installer.rs`) exercising CLI parsing, config JSON
-//   validation, extension tree extraction, legacy flat-file purging, schema compilation,
-//   and EGO `.shell-extension.zip` bundle creation.
-// - Zero-Trust Boundary & Invariants:
-//   Uses isolated per-test directories under `std::env::temp_dir()` and cleans them up
-//   deterministically so tests never mutate the user's real `~/.local/share` or `~/.config`.
+// Integration test suite for CLI parsing, config validation, extension installation, and EGO zip packing.
 
 #![forbid(unsafe_code)]
 #![deny(

@@ -1,13 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   2D axis-aligned bounding box (`Rectangle`), Euclidean edge/centroid distance math,
-//   `Orientation` (`HORIZONTAL`/`VERTICAL`), and `Side` (`LEFT`/`TOP`/`RIGHT`/`BOTTOM`/`CENTER`)
-//   drop-zone classification for BSP splits and window stacking.
-// - Zero-Trust Boundary & Invariants:
-//   Pure mathematical transforms over `[x, y, width, height]` tuples with zero GObject or
-//   compositor state mutations at import time. `clamp()` bounds coordinates so window
-//   rectangles never overflow monitor workareas.
+// 2D axis-aligned bounding box (Rectangle), distance math, and BSP drop-zone classification.
 
 export const Orientation = Object.freeze({
     HORIZONTAL: 0,

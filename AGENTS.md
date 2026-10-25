@@ -18,15 +18,12 @@ Kelp (`kelp@ubermetroid.github.io`) is built on four uncompromising engineering 
 
 ## 2. The Page Rule & Directory Density (Enforced by `tests/page_rules.rs`)
 
-- **File Line Bounds**: Every `.rs` and `.js` source file in the repository (`src/`, `tests/`, `extension/`) **must** be between **16 and 256 lines** (`16..=256`).
+- **File Line Bounds**: Every `.rs` and `.js` source file in the repository (`src/`, `tests/`, `extension/`) **must** be between **16 and 256 lines** (`16..=256`), and every `.js` line in `extension/` **must** be at most **200 characters** (`<= 200`).
 - **Directory Density**: Every directory in the repository (`root`, `src/`, `tests/`, `extension/`, and all subdirectories) **must** contain **at most 8 visible entries** (`<= 8`).
 - **Banned Generic Names**: Generic grab-bag names (`util`, `utils`, `lib` [except Cargo's mandatory `src/lib.rs`], `helper`, `helpers`, `common`, `misc`, `shared`, `base`, `core`, `types`, `mod`) are strictly forbidden.
-- **SPDX + First-Principles & Zero-Trust Page Header**:
+- **2-Line SPDX + Concise Module Header**:
   - Line 1 of every `.rs` and `.js` file must be `// SPDX-License-Identifier: GPL-3.0-or-later`.
-  - Lines 2–15 must contain the structured header block:
-    - `// First-Principles & Zero-Trust Page Header`
-    - `// - Page Responsibility / Functional Domain:`
-    - `// - Zero-Trust Boundary & Invariants:`
+  - Line 2 of every `.rs` and `.js` file must be a concise single-line module description (`// <Concise module description>`).
 
 ---
 

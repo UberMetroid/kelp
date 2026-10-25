@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Monitor & workspace movement helper (`move_window_to_monitor`, `move_window_to_workspace`,
-//   `workspace_Monitor_bounds`) handling multi-monitor and vertical/horizontal workspace hops.
-// - Zero-Trust Boundary & Invariants:
-//   Validates workspace and monitor indices against `global.workspace_manager` and
-//   `global.display.get_n_monitors()` before moving `Meta.Window` instances, preventing
-//   out-of-bounds monitor/workspace crashes during hotplug events.
+// Multi-monitor and workspace window migration helpers for directional shortcuts.
 
 import Meta from 'gi://Meta';
 

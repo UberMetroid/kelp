@@ -1,13 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Global and modal WM keybinding manager (`Keybindings`) registering and unregistering
-//   GNOME Shell `Main.wm.addKeybinding` shortcuts for directional focus, adjustment mode,
-//   orientation toggling, stacking, and floating overrides.
-// - Zero-Trust Boundary & Invariants:
-//   Tracks every active keybinding name registered with `Main.wm` and removes all of them
-//   deterministically on `disable()` so locking the screen or disabling the extension leaves
-//   zero orphaned WM keybinding handlers in GNOME Shell.
+// Global and modal WM keybinding manager registering and removing GNOME Shell shortcuts.
 
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';

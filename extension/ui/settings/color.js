@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   CSS color parser, sRGB relative luminance calculator, and contrast palette selector
-//   (`RgbaColor`, `parse_rgba`, `is_dark`, `text_color_for_bg`) for active hint and stack tabs.
-// - Zero-Trust Boundary & Invariants:
-//   Process-agnostic pure JS module with zero `gi://` or `resource://` imports. Rejects
-//   malformed CSS color strings gracefully by falling back to the default cyan accent
-//   (`rgba(106, 215, 225, 1)`) without throwing across GSettings change callbacks.
+// CSS color parser, sRGB relative luminance calculator, and contrast palette selector.
 
 const DEFAULT_RGBA = Object.freeze({ red: 106, green: 215, blue: 225, alpha: 1.0 });
 

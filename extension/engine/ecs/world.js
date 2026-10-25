@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Generational Entity-Component-System (`Storage`, `World`, `System`) and entity state
-//   tags (`Tiled`, `Floating`, `Blocked`, `ForceTile`) backing all window and fork entities.
-// - Zero-Trust Boundary & Invariants:
-//   Every entity is a `[slot_index, generation]` tuple (`entity_new`). Accessing or removing
-//   a component checks `slot[0] === generation`, preventing use-after-free bugs when an
-//   entity slot is recycled after a window closes. Zero import-time GObject allocations.
+// Generational Entity-Component-System (Storage, World, System) and entity state tags.
 
 export const Tiled = 0;
 export const Floating = 1;

@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Interactive keyboard & grid tiling controller (`ModalTiler` / `Tiler`, `Direction`) handling
-//   modal adjustment mode (`enter`, `accept`, `exit`), directional moves, and grid snapping.
-// - Zero-Trust Boundary & Invariants:
-//   Schedules directional movements via `ext.register_fn` so rapid key-repeat events execute
-//   synchronously with the ECS wakeup queue. Always restores normal keybindings and hides
-//   `ext.overlay` on `exit()` and `disable()`.
+// Interactive keyboard and grid tiling controller (ModalTiler) for modal adjustment mode.
 
 import Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';

@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Compile-time embedded asset manifest (`EXTENSION_FILES`, `ICON_FILES`, `SCHEMA_XML`,
-//   `KEYBINDING_FILES`) baking every extension JS/CSS/SVG/XML file into the `kelp` binary.
-// - Zero-Trust Boundary & Invariants:
-//   Every relative path in `EXTENSION_FILES` and `ICON_FILES` is a static compile-time literal
-//   with zero `..` traversal components, guaranteeing deterministic extraction into the user's
-//   local GNOME Shell extension directory.
+// Compile-time embedded asset manifest baking extension JS, CSS, SVG, and XML files into kelp.
 
 use crate::default_rules::{KEYBINDING_MOVE_XML, KEYBINDING_NAVIGATION_XML, KEYBINDING_TILING_XML};
 

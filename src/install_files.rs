@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Extension tree extractor (`install_extension_files`), legacy flat-file cleaner, GSettings
-//   schema installer/compiler (`install_schema_files`, `compile_schemas`), and config writer.
-// - Zero-Trust Boundary & Invariants:
-//   Rejects relative paths containing parent traversal (`..`), purges obsolete flat `.js`/`.css`
-//   files from previous installs so they cannot shadow `engine/`/`window/`/`ui/` pages, and
-//   validates `~/.config/kelp/config.json` via `validate_config_json` before writing or keeping it.
+// Extension tree extractor, legacy flat-file cleaner, and GSettings schema compiler.
 
 use std::fs;
 use std::path::{Component, Path, PathBuf};

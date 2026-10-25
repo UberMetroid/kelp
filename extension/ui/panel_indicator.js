@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   GNOME Shell top-bar status area menu (`Indicator`) providing quick toggles for auto-tiling,
-//   keyboard shortcuts, focus-follows-mouse, active border hints, window titlebars, smart gaps,
-//   workspace retiling, gap spinners, and floating exceptions.
-// - Zero-Trust Boundary & Invariants:
-//   Wraps the indicator button inside a `PanelMenu.Button` added to `Main.panel.statusArea` and
-//   removes/destroys all menu actors and GSettings signal handlers cleanly on `destroy()`.
+// GNOME Shell top-bar status area menu and mode switcher indicator for Kelp.
 
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
@@ -181,6 +174,9 @@ export class Indicator {
 
         const is_ffm = () => this.wm_prefs.get_string('focus-mode') !== 'click';
         this.focus_follows_mouse = toggle_item(_('Focus Follows Mouse'), is_ffm(), (state) => {
+            if (ext.saved_focus_mode === undefined) {
+                ext.saved_focus_mode = this.wm_prefs.get_string('focus-mode');
+            }
             this.wm_prefs.set_string('focus-mode', state ? 'sloppy' : 'click');
         });
         this._signals.push([
@@ -244,7 +240,7 @@ export class Indicator {
 
     destroy() {
         for (const [obj, sig] of this._signals) {
-            try { obj.disconnect(sig); } catch (_e) { /* GObject already finalized */ }
+            obj.disconnect(sig);
         }
         this._signals = [];
         this.wm_prefs = null;

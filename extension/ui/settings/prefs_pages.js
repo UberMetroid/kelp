@@ -1,11 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// First-Principles & Zero-Trust Page Header
-// - Page Responsibility / Functional Domain:
-//   Libadwaita Preferences Pages 3 & 4 (`build_shortcuts_page`, `build_about_page`) and
-//   color theme presets (`BORDER_PRESETS`) for `KelpPreferences`.
-// - Zero-Trust Boundary & Invariants:
-//   Runs in the GTK4 `gnome-extensions-app` process. Imports ONLY `gi://Adw`, `gi://Gio`,
-//   and `gi://Gtk` — zero compositor typelibs (`Meta`, `Clutter`, `St`, `Shell`).
+// Libadwaita Preferences Shortcuts and About pages plus border color theme presets.
 
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
@@ -108,57 +102,63 @@ export function build_about_page() {
     });
 
     const header_group = new Adw.PreferencesGroup({
-        title: 'Kelp — Wayland Auto-Tiling for GNOME 45–51',
-        description: 'Three instant kelp-forest tiling modes: Octopus (2D Binary Space Partition), Seahorse (Niri/PaperWM Scrolling Column Strip), and Otter (Manual Floating &amp; Snap).',
+        title: 'Kelp — Wayland Auto-Tiling for GNOME 45–50',
+        description: 'Three instant kelp-forest tiling modes: Octopus (2D Binary Space Partition), ' +
+            'Seahorse (Niri/PaperWM Scrolling Column Strip), and Otter (Manual Floating &amp; Snap).',
     });
 
     const ver_row = new Adw.ActionRow({
         title: 'Kelp Release Version',
         subtitle: 'Zero-subprocess, zero-telemetry Wayland tiling engine &amp; Rust installer',
     });
-    ver_row.add_suffix(new Gtk.Label({ label: 'v1.9.2', valign: Gtk.Align.CENTER, css_classes: ['monospace'] }));
+    ver_row.add_suffix(new Gtk.Label({
+        label: 'v2.0.0', valign: Gtk.Align.CENTER, css_classes: ['monospace'],
+    }));
     header_group.add(ver_row);
 
     const lic_row = new Adw.ActionRow({
         title: 'Open-Source License',
         subtitle: 'Derived from System76 Pop Shell — free software forever',
     });
-    lic_row.add_suffix(new Gtk.Label({ label: 'GPL-3.0-or-later', valign: Gtk.Align.CENTER, css_classes: ['monospace'] }));
+    lic_row.add_suffix(new Gtk.Label({
+        label: 'GPL-3.0-or-later', valign: Gtk.Align.CENTER, css_classes: ['monospace'],
+    }));
     header_group.add(lic_row);
     page.add(header_group);
 
     const support_group = new Adw.PreferencesGroup({
         title: 'Support &amp; Community',
-        description: 'If Kelp improves your daily workflow, starring the repository or sponsoring development helps keep GNOME 45–51 support fast and rock-solid.',
+        description: 'If Kelp improves your daily workflow, starring the repository or sponsoring ' +
+            'development helps keep GNOME 45–50 support fast and rock-solid.',
     });
 
     add_link_row(
         support_group,
-        '⭐ Star Kelp on GitHub',
+        'Star Kelp on GitHub',
         'Star UberMetroid/kelp to help other GNOME &amp; Linux users discover Kelp',
-        '⭐ Star on GitHub',
+        'Star on GitHub',
         'https://github.com/UberMetroid/kelp',
     );
     add_link_row(
         support_group,
-        '🎓 Tuition, Not Coffee — Help send my daughter to college',
+        'Tuition, Not Coffee — Help send my daughter to college',
         "Skip the coffee — 100% of sponsorships go toward my daughter's college &amp; future fund",
-        '🎓 Tuition, Not Coffee',
+        'Tuition, Not Coffee',
         'https://ubermetroid.github.io/tuition-not-coffee',
         'https://github.com/UberMetroid/kelp',
     );
     add_link_row(
         support_group,
-        '🌐 Project Website &amp; Documentation',
+        'Project Website &amp; Documentation',
         'Explore the interactive mode guide, architecture overview, and shortcut reference',
-        '🌐 Open Website',
+        'Open Website',
         'https://ubermetroid.github.io/kelp/',
     );
     add_link_row(
         support_group,
-        '🐞 Report an Issue or Request a Feature',
+        'Report an Issue or Request a Feature',
         'Found a bug or window exception rule to add? Open an issue on GitHub',
-        '🐞 Report Issue',
+        'Report Issue',
         'https://github.com/UberMetroid/kelp/issues',
     );
 
