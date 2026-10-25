@@ -99,9 +99,7 @@ fn installer_extracts_modular_tree_purges_legacy_and_compiles_schemas() -> Resul
     // Plant legacy flat files and legacy icons to verify they get purged during upgrade
     let stale_file = ext_dir.join(LEGACY_FLAT_FILES[0]);
     fs::write(&stale_file, "// stale").map_err(|e| e.to_string())?;
-    let stale_icon = ext_dir
-        .join("icons")
-        .join("pop-shell-auto-on-symbolic.svg");
+    let stale_icon = ext_dir.join("icons").join("pop-shell-auto-on-symbolic.svg");
     fs::create_dir_all(ext_dir.join("icons")).map_err(|e| e.to_string())?;
     fs::write(&stale_icon, "<svg/>").map_err(|e| e.to_string())?;
 
