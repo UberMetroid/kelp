@@ -77,8 +77,11 @@ export const OverviewDialog = GObject.registerClass(
                 add_rule();
             });
 
+            const box_orient = 'orientation' in St.BoxLayout.prototype
+                ? { orientation: Clutter.Orientation.VERTICAL }
+                : { vertical: true };
             this.list = new St.BoxLayout({
-                orientation: Clutter.Orientation.VERTICAL,
+                ...box_orient,
                 style_class: 'pop-shell-exceptions-list',
             });
 

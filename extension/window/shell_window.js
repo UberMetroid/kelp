@@ -127,6 +127,11 @@ export class ShellWindow {
         return !this.meta.is_client_decorated();
     }
 
+    unmaximize() {
+        if (Meta.MaximizeFlags) this.meta.unmaximize(Meta.MaximizeFlags.BOTH);
+        else this.meta.unmaximize();
+    }
+
     move(ext, rect, on_complete) {
         if (!this.actor_exists()) return;
         const clone = Rectangle.from_meta(rect);
@@ -134,14 +139,7 @@ export class ShellWindow {
         if (work_area) clone.clamp(work_area);
         this.hide_border();
 
-        const max_flags = Meta.MaximizeFlags ? Meta.MaximizeFlags.BOTH : 3;
-        if (this.is_maximized()) {
-            if (this.meta.unmaximize.length === 0) {
-                this.meta.unmaximize();
-            } else {
-                this.meta.unmaximize(max_flags);
-            }
-        }
+        if (this.is_maximized()) this.unmaximize();
 
         const apply = () => {
             if (!this.actor_exists()) return;

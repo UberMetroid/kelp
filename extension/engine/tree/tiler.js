@@ -192,7 +192,7 @@ export class Tiler {
         const win = ext.focus_window();
         if (!win) return;
         this.window = win.entity;
-        if (win.is_maximized()) win.meta.unmaximize();
+        if (win.is_maximized()) win.unmaximize();
         ext.set_overlay(win.rect());
         ext.overlay.visible = true;
         if (!ext.auto_tiler || ext.contains_tag(win.entity, Ecs.Floating)) {

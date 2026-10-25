@@ -1,107 +1,117 @@
-# Kelp — GNOME Shell Wayland Auto-Tiling Extension & Self-Contained Rust Installer
+# Kelp
 
-**Kelp** (`kelp@ubermetroid.github.io`) is a fast, zero-dependency, Wayland-first binary space partitioning (BSP) auto-tiling extension for **GNOME Shell 45–51** (Mutter 18/19), bundled inside a single self-contained Rust installer and EGO packager binary (`kelp`).
+[![CI & EGO Bundle Verification](https://github.com/UberMetroid/kelp/actions/workflows/ci.yml/badge.svg)](https://github.com/UberMetroid/kelp/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/UberMetroid/kelp)](https://github.com/UberMetroid/kelp/releases/latest)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](LICENSE)
 
----
+**Kelp** (`kelp@ubermetroid.github.io`) brings Hyprland-style automatic window tiling, window stacking, and active focus borders to **GNOME 45–51 on Wayland**.
 
-## Features
-
-- **Automatic Binary Space Partitioning (BSP) Tiling**: Automatically tiles normal windows across monitors and workspaces with dynamic orientation splits.
-- **Window Stacking**: Group windows into tabbed stacks (`Super + S`) and cycle tabs with directional focus (`Super + H/Left`, `Super + L/Right`).
-- **Interactive Adjustment Mode**: Enter modal keyboard tiling/resize mode (`Super + Return`), move/swap/resize with directional keys, and commit (`Return`) or cancel (`Escape`).
-- **Top-Bar Indicator Controls**: Instant toggles for **Tile Windows**, **Keyboard Shortcuts** (on/off), **Focus Follows Mouse** (`sloppy`/`click` WM focus mode), **Show Window Titles**, **Show Active Hint**, **Smart Gaps**, **Retile Workspace**, **Floating Window Exceptions**, and interactive gap/border-radius spinners.
-- **Unified EGO & GitHub Experience**: Installing the `.shell-extension.zip` from `extensions.gnome.org` or running the `kelp` Rust installer applies identical Hyprland-inspired defaults (`2px` gaps, red `rgb(255,0,0)` active hint border with `2px` radius, titlebars hidden, built-in `steam`/`caligula`/`btm`/`macchina` float rules).
-- **Zero-Runtime-Dependency Rust Installer (`kelp`)**: All 33 ES2022 modules, 3 CSS themes, SVG icons, GSettings schemas, and GNOME Control Center keybinding definitions are embedded at compile time via `include_str!`.
+Built from System76's Pop Shell — stripped of legacy X11 and launcher bloat, and updated for modern GNOME (`45` through `51`, including Ubuntu 24.04+, Fedora, Arch, and Debian).
 
 ---
 
-## Quick Start
+## What You Get Out of the Box
 
-### Build & Install
+- **Automatic Binary Tree Tiling**: Windows automatically split and tile across monitors and workspaces as you open them.
+- **Window Stacking (`Super + S`)**: Group tiled windows into tabbed stacks and switch tabs with directional focus keys.
+- **Hyprland-Style Active Border**: High-contrast `2px` active window border (`rgb(255,0,0)`), `2px` inner/outer gaps, and window titlebars hidden by default.
+- **Top-Bar Quick Menu**: One-click toggles for **Tile Windows**, **Keyboard Shortcuts (On/Off)**, **Focus Follows Mouse (On/Off)**, **Smart Gaps**, **Show Window Titles**, **Show Active Hint**, and **Retile Workspace**.
+- **Built-In Float Rules**: Dialogs, Picture-in-Picture, Steam, `caligula`, `btm`, and `macchina` float automatically; add custom per-app or per-window exceptions in two clicks.
+- **Identical Everywhere**: Installing from [GNOME Extensions](https://extensions.gnome.org/) or GitHub Releases gives you the exact same out-of-the-box configuration.
+
+---
+
+## Install in 10 Seconds
+
+Download the latest release from [**GitHub Releases**](https://github.com/UberMetroid/kelp/releases/latest) and choose either method:
+
+### Option 1: Standard GNOME Extension `.zip` (No compiler needed)
+
+```bash
+gnome-extensions install --force kelp@ubermetroid.github.io.shell-extension.zip
+gnome-extensions enable kelp@ubermetroid.github.io
+```
+
+*(On Wayland, log out and log back in once if this is your first time installing the extension.)*
+
+### Option 2: Standalone `kelp` CLI Installer
+
+The standalone `kelp` binary installs the extension, compiles the GSettings schemas, and automatically clears GNOME's conflicting default `Ctrl + Super + Left/Right` edge-tiling shortcuts so directional tile movement works immediately:
+
+```bash
+chmod +x kelp-linux-x86_64
+./kelp-linux-x86_64
+```
+
+Or build from source with Rust:
 
 ```bash
 cargo install --path . --root ~/.local
 kelp
 ```
 
-Running `kelp` with no arguments:
-1. Purges any obsolete flat extension files and legacy directories from earlier versions.
-2. Extracts the modular extension tree into `~/.local/share/gnome-shell/extensions/kelp@ubermetroid.github.io/`.
-3. Installs and compiles `org.gnome.shell.extensions.kelp.gschema.xml`.
-4. Validates/writes `~/.config/kelp/config.json` and installs GNOME Control Center keybinding entries.
-5. Configures default tiling shortcuts and enables the extension.
-
-### Package an EGO `.shell-extension.zip` Archive
-
-```bash
-kelp --pack /tmp
-```
-
 ---
 
-## Default Keyboard Shortcuts
+## Keyboard Shortcuts
 
 | Shortcut | Action |
 | :--- | :--- |
-| `Super + H / J / K / L` or `Super + Arrow` | Focus window Left / Down / Up / Right |
-| `Super + Shift + H / J / K / L` or `Super + Ctrl + H / J / K / L` | Move tiled window Left / Down / Up / Right |
-| `Super + Return` | Enter interactive adjustment / resize mode |
-| `Super + Y` | Toggle auto-tiling on / off |
+| `Super + Arrow` or `Super + H / J / K / L` | Focus window Left / Down / Up / Right |
+| `Ctrl + Super + Arrow` or `Ctrl + Super + H / J / K / L` | Move tiled window Left / Down / Up / Right |
+| `Super + Shift + Arrow` or `Super + Shift + H / J / K / L` | Move tiled window Left / Down / Up / Right |
+| `Super + O` | Toggle split orientation (Horizontal / Vertical) |
+| `Super + S` | Toggle tabbed stacking on the focused window |
 | `Super + G` | Toggle floating mode for the focused window |
-| `Super + O` | Toggle split orientation (horizontal / vertical) |
-| `Super + S` | Toggle window stacking on the focused window |
-| `Super + Shift + Ctrl + H / J / K / L` or `Arrow` | Move window to adjacent monitor |
-| `Super + Shift + Alt + J / K` or `Page_Down / Page_Up` | Move window to adjacent workspace |
+| `Super + Y` | Toggle auto-tiling on / off globally |
+| `Super + Enter` | Enter interactive adjustment mode (`Arrows/HJKL` to move, `Shift + Arrows/HJKL` to resize, `Enter` to apply, `Esc` to cancel) |
+| `Ctrl + Super + Shift + Arrow / H / J / K / L` | Move window to another monitor |
+| `Super + Shift + Page_Up / Page_Down` | Move window to another workspace |
 
 ---
 
-## Repository Architecture
+## Top-Bar Menu Controls
 
-Every `.rs` and `.js` source file strictly obeys the **Page Rule** (`16..=256` lines per file, `<= 8` entries per directory, SPDX `GPL-3.0-or-later` on line 1, and a structured First-Principles & Zero-Trust Page Header):
+Clicking the Kelp icon in the GNOME top bar gives you instant access to:
 
-```text
-kelp/
-├── AGENTS.md
-├── Cargo.toml
-├── Cargo.lock
-├── LICENSE
-├── README.md
-├── src/                  # 8 Rust pages (16..=256 lines each)
-│   ├── lib.rs
-│   ├── main.rs
-│   ├── cli_options.rs
-│   ├── default_rules.rs
-│   ├── embedded_assets.rs
-│   ├── gsettings_config.rs
-│   ├── install_files.rs
-│   └── pack_bundle.rs
-├── tests/                # 3 Rust integration/lint suites (16..=256 lines each)
-│   ├── installer.rs
-│   ├── lint.rs
-│   └── page_rules.rs
-└── extension/            # 8 top-level entries, 33 ES2022 JS pages (16..=256 lines each)
-    ├── extension.js
-    ├── prefs.js
-    ├── metadata.json
-    ├── icons/
-    ├── schemas/
-    ├── engine/           # ecs/ (4 pages), geom/ (3 pages), tree/ (8 pages)
-    ├── window/           # 8 window & compositor controller pages
-    └── ui/               # 4 UI pages, 3 CSS themes, settings/ (4 pages)
-```
+| Control | Default | Description |
+| :--- | :--- | :--- |
+| **Tile Windows** | **On** | Enable or disable automatic window tiling globally. |
+| **Keyboard Shortcuts** | **On** | Turn all Kelp keyboard shortcuts on or off (useful for full-screen games, VMs, or remote desktop apps). |
+| **Focus Follows Mouse** | **Off** | Switch GNOME's window focus mode between Click-to-Focus (`click`) and Focus-Follows-Mouse (`sloppy`). |
+| **Retile Workspace** | Action | Immediately recalculate and snap all tiled windows on the active workspace into alignment. |
+| **Floating Window Exceptions** | Action | Open the picker to float specific windows or applications. |
+| **Show Window Titles** | **Off** | Show or hide server-side window titlebars. |
+| **Show Active Hint** | **On** | Show or hide the colored border around the focused window. |
+| **Smart Gaps** | **Off** | Hide outer screen gaps when only a single tiled window is open on a workspace. |
+| **Active Hint Border Radius** | **`2` px** | Adjust the corner radius of the active window border (`0–30 px`). |
+| **Gaps** | **`2` px** | Adjust inner and outer window gaps (`0–64 px`). |
+
+All settings are also available in the standard GNOME Extensions **Preferences** window (`gnome-extensions prefs kelp@ubermetroid.github.io`).
 
 ---
 
-## Verification
+## Why Trust Kelp? (Security & Privacy)
 
-```bash
-cargo test --workspace --all-targets
-cargo clippy --workspace --all-targets -- -D warnings -W clippy::pedantic \
-  -D clippy::unwrap_used -D clippy::expect_used -D clippy::panic \
-  -D clippy::todo -D clippy::unimplemented -D clippy::dbg_macro
-cargo fmt --all -- --check
-```
+Because GNOME Shell extensions run inside your Wayland compositor process, Kelp is built to be small, transparent, and verifiable:
+
+- **No background daemons or subprocesses**: Everything runs natively through GNOME Shell's window manager APIs.
+- **No network access or telemetry**: Kelp never connects to the internet.
+- **Zero third-party dependencies**: The extension uses zero `npm` packages, and the Rust installer uses only the Rust standard library (`0` external crates in `Cargo.lock`).
+- **Clean disable & screen-lock behavior**: Disabling the extension or locking your screen cleanly removes all shortcuts, window borders, and signal listeners.
+
+---
+
+## Supported GNOME Versions
+
+| GNOME Version | Distros | Status |
+| :--- | :--- | :--- |
+| **GNOME 50 / 51** | Fedora 44+, Arch Linux, GNOME Nightly | Supported |
+| **GNOME 48 / 49** | Fedora 42 / 43, Ubuntu 25.04 / 25.10, Debian Testing | Supported |
+| **GNOME 45 / 46 / 47** | Ubuntu 24.04 LTS, Debian 13, Fedora 39–41 | Supported |
+
+---
 
 ## License
 
-GPL-3.0-or-later (`// SPDX-License-Identifier: GPL-3.0-or-later`).
+Released under the [GNU General Public License v3.0 or later](LICENSE) (`GPL-3.0-or-later`).
+Derived from [System76 Pop Shell](https://github.com/pop-os/shell).
