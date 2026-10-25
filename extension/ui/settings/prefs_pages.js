@@ -20,7 +20,7 @@ export const BORDER_PRESETS = Object.freeze([
 
 const SHORTCUT_GROUPS = Object.freeze([
     [
-        'Tiling & Mode Control',
+        'Tiling &amp; Mode Control',
         'Switch between Kelp layout engines and adjust window geometry',
         [
             ['Cycle Tiling Mode (Octopus → Seahorse → Otter)', 'Super + Y'],
@@ -31,7 +31,7 @@ const SHORTCUT_GROUPS = Object.freeze([
         ],
     ],
     [
-        'Seahorse Strip & Octopus Stack',
+        'Seahorse Strip &amp; Octopus Stack',
         'Column width cycling in Seahorse and tabbed window stacking in Octopus',
         [
             ['Toggle Split Orientation (Octopus) / Full-Width Column (Seahorse)', 'Super + O'],
@@ -41,7 +41,7 @@ const SHORTCUT_GROUPS = Object.freeze([
         ],
     ],
     [
-        'Workspaces & Monitors (Super+Alt)',
+        'Workspaces &amp; Monitors (Super+Alt)',
         'Navigate and migrate windows across workspaces and multi-monitor setups',
         [
             ['Switch Workspace (Left / Down / Up / Right)', 'Super + Alt + Arrows / H J K L'],
@@ -57,7 +57,7 @@ const SHORTCUT_GROUPS = Object.freeze([
             ['Close Focused Window', 'Super + Q  /  Alt + F4'],
             ['Toggle Maximize Focused Window', 'Super + M'],
             ['Open Web Browser / File Manager / Email', 'Super + B  /  Super + F  /  Super + E'],
-            ['Notification & Calendar Tray / Quick Settings', 'Super + V  /  Super + Ctrl + S'],
+            ['Notification &amp; Calendar Tray / Quick Settings', 'Super + V  /  Super + Ctrl + S'],
             ['Lock Screen / Activate Screensaver', 'Super + Escape'],
         ],
     ],
@@ -120,12 +120,12 @@ export function build_about_page() {
 
     const header_group = new Adw.PreferencesGroup({
         title: 'Kelp — Wayland Auto-Tiling for GNOME 45–51',
-        description: 'Three instant kelp-forest tiling modes: Octopus (2D Binary Space Partition), Seahorse (Niri/PaperWM Scrolling Column Strip), and Otter (Manual Floating & Snap).',
+        description: 'Three instant kelp-forest tiling modes: Octopus (2D Binary Space Partition), Seahorse (Niri/PaperWM Scrolling Column Strip), and Otter (Manual Floating &amp; Snap).',
     });
 
     const ver_row = new Adw.ActionRow({
         title: 'Kelp Release Version',
-        subtitle: 'Zero-subprocess, zero-telemetry Wayland tiling engine & Rust installer',
+        subtitle: 'Zero-subprocess, zero-telemetry Wayland tiling engine &amp; Rust installer',
     });
     ver_row.add_suffix(new Gtk.Label({ label: 'v1.9.0', valign: Gtk.Align.CENTER, css_classes: ['monospace'] }));
     header_group.add(ver_row);
@@ -139,28 +139,28 @@ export function build_about_page() {
     page.add(header_group);
 
     const support_group = new Adw.PreferencesGroup({
-        title: 'Support & Community',
+        title: 'Support &amp; Community',
         description: 'If Kelp improves your daily workflow, starring the repository or sponsoring development helps keep GNOME 45–51 support fast and rock-solid.',
     });
 
     add_link_row(
         support_group,
         '⭐ Star Kelp on GitHub',
-        'Star UberMetroid/kelp to help other GNOME & Linux users discover Kelp',
+        'Star UberMetroid/kelp to help other GNOME &amp; Linux users discover Kelp',
         '⭐ Star on GitHub',
         'https://github.com/UberMetroid/kelp',
     );
     add_link_row(
         support_group,
         '🎓 Tuition, Not Coffee — Help send my daughter to college',
-        "Skip the coffee — 100% of sponsorships go toward my daughter's college & future fund",
+        "Skip the coffee — 100% of sponsorships go toward my daughter's college &amp; future fund",
         '🎓 Tuition, Not Coffee',
         'https://ubermetroid.github.io/tuition-not-coffee',
         'https://github.com/UberMetroid/kelp',
     );
     add_link_row(
         support_group,
-        '🌐 Project Website & Documentation',
+        '🌐 Project Website &amp; Documentation',
         'Explore the interactive mode guide, architecture overview, and shortcut reference',
         '🌐 Open Website',
         'https://ubermetroid.github.io/kelp/',

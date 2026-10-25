@@ -54,7 +54,7 @@ function build_tiling_page(ext_settings, settings, signals) {
     });
 
     const mode_group = new Adw.PreferencesGroup({
-        title: 'Default Tiling Mode & Behavior',
+        title: 'Default Tiling Mode &amp; Behavior',
         description: 'Select your active kelp-forest layout mode and tiling behavior',
     });
     const mode_labels = [
@@ -100,7 +100,7 @@ function build_tiling_page(ext_settings, settings, signals) {
     page.add(mode_group);
 
     const focus_group = new Adw.PreferencesGroup({
-        title: 'Pointer & Focus Navigation',
+        title: 'Pointer &amp; Focus Navigation',
         description: 'Configure mouse focus tracking and cursor warping on keyboard navigation',
     });
     focus_group.add(make_switch_row('Focus Follows Mouse', 'Focus windows automatically when the pointer enters them', settings.focus_follows_mouse(), (v) => settings.set_focus_follows_mouse(v))[0]);
@@ -138,7 +138,7 @@ function build_appearance_page(ext_settings, settings, signals) {
     });
 
     const border_group = new Adw.PreferencesGroup({
-        title: 'Active Window Border & Color Presets',
+        title: 'Active Window Border &amp; Color Presets',
         description: 'Customize the focus border ring and 1-click kelp forest color palettes',
     });
     const [hint_row, hint_sw] = make_switch_row('Show Active Window Border', 'Draw a high-contrast border around the focused window', settings.active_hint(), (v) => settings.set_active_hint(v));
@@ -179,7 +179,7 @@ function build_appearance_page(ext_settings, settings, signals) {
     page.add(border_group);
 
     const gap_group = new Adw.PreferencesGroup({
-        title: 'Workspace Gaps & Window Decorations',
+        title: 'Workspace Gaps &amp; Window Decorations',
         description: 'Configure inner/outer tiling gaps and window titlebars',
     });
     const [in_row, in_spin] = make_spin_row('Inner Gap (px)', 'Gap between adjacent tiled windows (0–64 px)', settings.gap_inner(), 0, 64, 2, (v) => settings.set_gap_inner(v));

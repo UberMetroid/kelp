@@ -164,6 +164,7 @@ fn ego_lifecycle_and_mutter_18_19_invariants_hold() -> Result<(), String> {
             "this.unload_theme()", "this.ext.destroy()", "this.exception_dialog.close()",
             "fillPreferencesWindow(window)", "Adw.PreferencesPage", "close-request",
             "Settings & About…", "openPreferences", "Star on GitHub",
+            "Default Tiling Mode &amp; Behavior", "Support &amp; Community",
             "Tuition, Not Coffee — Help send my daughter to college",
             "https://ubermetroid.github.io/tuition-not-coffee",
             "c.hint_signal", "disconnect(c.hint_signal)", "notify::demands-attention",
