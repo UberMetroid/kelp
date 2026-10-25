@@ -45,7 +45,7 @@ Kelp (`kelp@ubermetroid.github.io`) is built on four uncompromising engineering 
 - [`src/main.rs`](src/main.rs): Binary CLI entrypoint and error-reporting exit-code dispatcher.
 - [`src/cli_options.rs`](src/cli_options.rs): Zero-dependency CLI parser (`--pack [OUT_DIR]`, `--help`, `--version`).
 - [`src/default_rules.rs`](src/default_rules.rs): Default float-exception config JSON, OWASP size/structure validator, and GNOME Control Center keybinding XML definitions.
-- [`src/embedded_assets.rs`](src/embedded_assets.rs): Compile-time `include_str!` manifest of all 33 JS files, 3 CSS themes, 2 SVG icons, and GSettings schema.
+- [`src/embedded_assets.rs`](src/embedded_assets.rs): Compile-time `include_str!` manifest of all 34 JS files, 3 CSS themes, 3 SVG icons, and GSettings schema.
 - [`src/gsettings_config.rs`](src/gsettings_config.rs): GSettings WM conflict clearer, tiling defaults, and shortcut configurator.
 - [`src/install_files.rs`](src/install_files.rs): Path-traversal-safe asset extractor, legacy flat-file purger, and schema compiler.
 - [`src/pack_bundle.rs`](src/pack_bundle.rs): EGO `.shell-extension.zip` staging tree writer and `gnome-extensions pack` runner.
@@ -53,13 +53,13 @@ Kelp (`kelp@ubermetroid.github.io`) is built on four uncompromising engineering 
 - [`tests/lint.rs`](tests/lint.rs): Automated ES2022, process-boundary, and EGO lifecycle lint verification.
 - [`tests/installer.rs`](tests/installer.rs): End-to-end tests for CLI parsing, config validation, legacy cleanup, and EGO bundle creation.
 
-### GNOME Shell Extension (`extension/` — 33 JS pages across 3 domain trees)
+### GNOME Shell Extension (`extension/` — 34 JS pages across 3 domain trees)
 - **Root Entrypoints**:
   - [`extension/extension.js`](extension/extension.js): `KelpExtension extends Extension` EGO lifecycle entrypoint.
   - [`extension/prefs.js`](extension/prefs.js): `KelpPreferences extends ExtensionPreferences` GTK4 preferences UI.
 - **Engine (`extension/engine/`)**:
   - `ecs/`: [`arena.js`](extension/engine/ecs/arena.js), [`world.js`](extension/engine/ecs/world.js), [`executor.js`](extension/engine/ecs/executor.js), [`events.js`](extension/engine/ecs/events.js)
-  - `geom/`: [`rectangle.js`](extension/engine/geom/rectangle.js), [`movement.js`](extension/engine/geom/movement.js), [`focus.js`](extension/engine/geom/focus.js)
+  - `geom/`: [`rectangle.js`](extension/engine/geom/rectangle.js), [`movement.js`](extension/engine/geom/movement.js), [`focus.js`](extension/engine/geom/focus.js), [`seahorse.js`](extension/engine/geom/seahorse.js)
   - `tree/`: [`node.js`](extension/engine/tree/node.js), [`fork.js`](extension/engine/tree/fork.js), [`forest.js`](extension/engine/tree/forest.js), [`forest_resize.js`](extension/engine/tree/forest_resize.js), [`auto_tiler.js`](extension/engine/tree/auto_tiler.js), [`auto_tiler_drop.js`](extension/engine/tree/auto_tiler_drop.js), [`tiler.js`](extension/engine/tree/tiler.js), [`tiler_actions.js`](extension/engine/tree/tiler_actions.js)
 - **Window Management (`extension/window/`)**:
   - [`controller.js`](extension/window/controller.js), [`controller_signals.js`](extension/window/controller_signals.js), [`controller_display.js`](extension/window/controller_display.js), [`controller_workspace.js`](extension/window/controller_workspace.js), [`shell_window.js`](extension/window/shell_window.js), [`window_border.js`](extension/window/window_border.js), [`keybindings.js`](extension/window/keybindings.js), [`overview_tray.js`](extension/window/overview_tray.js)

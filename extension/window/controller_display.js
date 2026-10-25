@@ -50,6 +50,10 @@ export function update_display_configuration(ext, workareas_only) {
         ext.ignore_display_update = false;
         return;
     }
+    if (ext.auto_tiler.is_seahorse) {
+        ext.auto_tiler.retile_all(ext);
+        return;
+    }
     const display = global.display;
     if (!display) return;
 
@@ -75,6 +79,69 @@ export function update_display_configuration(ext, workareas_only) {
         const mon = fork.monitor < n_monitors ? fork.monitor : 0;
         ext.auto_tiler.update_toplevel(ext, fork, mon, smart_gaps);
     }
+}
+
+export function set_edge_tiling(ext, enable) {
+    const m = ext.settings.mutter;
+    if (m && m.settings_schema.has_key('edge-tiling')) {
+        m.set_boolean('edge-tiling', Boolean(enable));
+    }
+}
+
+export function cascade_otter_windows(ext) {
+    let idx = 0;
+    const seen = new Set();
+    for (const [, win] of ext.windows.iter()) {
+        win.meta?.get_compositor_private?.()?.show?.();
+        if (!win.is_tilable(ext) || win.meta.minimized) continue;
+        const mon = win.meta.get_monitor();
+        const saved = win.floating_rect;
+        const sig = saved ? `${mon}:${saved.x}:${saved.y}:${saved.width}:${saved.height}` : null;
+        if (saved && !seen.has(sig)) {
+            seen.add(sig);
+            win.move(ext, saved.clone());
+            continue;
+        }
+        const area = monitor_work_area(ext, mon);
+        const step = (idx % 6) * 28;
+        const w = Math.max(360, Math.round(area.width * 0.68));
+        const h = Math.max(260, Math.round(area.height * 0.72));
+        const x = area.x + Math.round((area.width - w) / 4) + step;
+        const y = area.y + Math.round((area.height - h) / 4) + step;
+        const rect = new Rectangle([x, y, w, h]);
+        win.floating_rect = rect.clone();
+        win.move(ext, rect);
+        idx += 1;
+    }
+}
+
+export function snap_otter_window(ext, dir) {
+    const win = ext.focus_window();
+    if (!win) return;
+    const area = monitor_work_area(ext, win.meta.get_monitor());
+    const g = ext.gap_outer;
+    const hw = Math.floor((area.width - g * 3) / 2);
+    const fh = Math.max(120, area.height - g * 2);
+    if (dir === 0) {
+        win.move(ext, new Rectangle([area.x + g, area.y + g, hw, fh]));
+    } else if (dir === 2) {
+        win.move(ext, new Rectangle([area.x + g * 2 + hw, area.y + g, hw, fh]));
+    } else if (dir === 1) {
+        win.move(ext, new Rectangle([area.x + g, area.y + g, area.width - g * 2, fh]));
+    } else {
+        const w = Math.max(360, Math.round(area.width * 0.68));
+        const h = Math.max(260, Math.round(area.height * 0.72));
+        win.move(
+            ext,
+            new Rectangle([
+                area.x + Math.round((area.width - w) / 2),
+                area.y + Math.round((area.height - h) / 2),
+                w,
+                h,
+            ]),
+        );
+    }
+    ext.register_fn(() => win.activate(ext, true));
 }
 
 export function unload_theme(ext) {

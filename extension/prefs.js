@@ -76,6 +76,16 @@ function build_settings_widget(ext_settings) {
     });
 
     let row = 0;
+    const mode_labels = [
+        'Octopus — 2D Grid (BSP)',
+        'Seahorse — Scrolling Strip',
+        'Otter — Floating',
+    ];
+    const mode_ids = ['octopus', 'seahorse', 'otter'];
+    const current_mode_idx = Math.max(0, mode_ids.indexOf(settings.tiling_mode()));
+    add_combo_row(grid, row++, 'Kelp Tiling Mode', mode_labels, current_mode_idx, (idx) => {
+        if (idx >= 0 && idx < mode_ids.length) settings.set_tiling_mode(mode_ids[idx]);
+    });
     add_toggle_row(grid, row++, 'Tile Windows by Default', settings.tile_by_default(), (v) =>
         settings.set_tile_by_default(v),
     );

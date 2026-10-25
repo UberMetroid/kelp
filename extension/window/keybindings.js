@@ -32,13 +32,13 @@ export class Keybindings {
                     ext.register_fn(() => win.activate(ext, true));
                 }
             },
-            'toggle-floating': () => ext.auto_tiler?.toggle_floating(ext),
+            'toggle-floating': () => ext.toggle_floating(),
             'toggle-tiling': () => ext.toggle_tiling(),
             'toggle-stacking-global': () => ext.auto_tiler?.toggle_stacking(ext),
-            'tile-move-left-global': () => ext.tiler.move_left(ext, ext.focus_window()?.entity),
-            'tile-move-down-global': () => ext.tiler.move_down(ext, ext.focus_window()?.entity),
-            'tile-move-up-global': () => ext.tiler.move_up(ext, ext.focus_window()?.entity),
-            'tile-move-right-global': () => ext.tiler.move_right(ext, ext.focus_window()?.entity),
+            'tile-move-left-global': () => ext.move_global(0),
+            'tile-move-up-global': () => ext.move_global(1),
+            'tile-move-right-global': () => ext.move_global(2),
+            'tile-move-down-global': () => ext.move_global(3),
             'kelp-monitor-left': () => ext.move_monitor(Meta.DisplayDirection.LEFT),
             'kelp-monitor-right': () => ext.move_monitor(Meta.DisplayDirection.RIGHT),
             'kelp-monitor-up': () => ext.move_monitor(Meta.DisplayDirection.UP),
@@ -52,11 +52,7 @@ export class Keybindings {
     sync(ext) {
         if (ext.settings.enable_shortcuts()) {
             this.enable(this.global);
-            if (ext.settings.tile_by_default() || ext.auto_tiler) {
-                this.enable(this.window);
-            } else {
-                this.disable(this.window);
-            }
+            this.enable(this.window);
         } else {
             this.disable(this.global);
             this.disable(this.window);

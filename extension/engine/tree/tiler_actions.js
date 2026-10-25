@@ -208,7 +208,7 @@ export function accept_tile(tiler, ext) {
         let tree_swapped = false;
         const meta_swap = tiler.swap_window ? ext.windows.get(tiler.swap_window) : null;
         if (meta_swap) {
-            if (ext.auto_tiler) {
+            if (ext.auto_tiler && !ext.auto_tiler.is_seahorse) {
                 tree_swapped = true;
                 ext.auto_tiler.attach_swap(ext, tiler.swap_window, tiler.window);
             } else {
@@ -217,7 +217,7 @@ export function accept_tile(tiler, ext) {
             }
             ext.register_fn(() => meta.activate(true));
         }
-        if (!tree_swapped) {
+        if (!tree_swapped && !ext.auto_tiler?.is_seahorse) {
             ext.size_signals_block(meta);
             const meta_entity = tiler.window;
             meta.move(ext, ext.overlay, () => {

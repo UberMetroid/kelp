@@ -92,6 +92,10 @@ export function tab_list(ext, soort, workspace) {
 }
 
 export function focus_left(ext) {
+    if (ext.auto_tiler?.is_seahorse) {
+        ext.auto_tiler.focus_step(ext, -1);
+        return;
+    }
     const win = ext.focus_window();
     if (win && win.stack !== null && ext.auto_tiler) {
         const stack = ext.auto_tiler.forest.stacks.get(win.stack);
@@ -112,6 +116,10 @@ export function focus_left(ext) {
 }
 
 export function focus_right(ext) {
+    if (ext.auto_tiler?.is_seahorse) {
+        ext.auto_tiler.focus_step(ext, 1);
+        return;
+    }
     const win = ext.focus_window();
     if (win && win.stack !== null && ext.auto_tiler) {
         const stack = ext.auto_tiler.forest.stacks.get(win.stack);
@@ -132,10 +140,18 @@ export function focus_right(ext) {
 }
 
 export function focus_down(ext) {
+    if (ext.auto_tiler?.is_seahorse) {
+        ext.auto_tiler.focus_step(ext, 1);
+        return;
+    }
     focus_window_in(ext, (e, w) => focus_selector.down(e, w));
 }
 
 export function focus_up(ext) {
+    if (ext.auto_tiler?.is_seahorse) {
+        ext.auto_tiler.focus_step(ext, -1);
+        return;
+    }
     focus_window_in(ext, (e, w) => focus_selector.up(e, w));
 }
 
@@ -163,6 +179,10 @@ export function on_focused(ext, win) {
     win.show_border(ext);
 
     if (ext.auto_tiler && win.is_tilable(ext)) {
+        if (ext.auto_tiler.is_seahorse) {
+            ext.auto_tiler.on_focused(ext, win);
+            return;
+        }
         const entity = ext.auto_tiler.attached.get(win.entity);
         const fork = entity ? ext.auto_tiler.forest.forks.get(entity) : null;
         if (fork) {

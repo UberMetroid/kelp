@@ -215,6 +215,13 @@ export class ShellWindow {
     }
 
     workspace_changed() {
+        const nw = this.workspace_id();
+        if (nw !== this.known_workspace) {
+            this.known_workspace = nw;
+            if (this.ext.auto_tiler && this.is_tilable(this.ext)) {
+                this.ext.auto_tiler.auto_tile(this.ext, this, false);
+            }
+        }
         this.update_border_layout();
     }
 

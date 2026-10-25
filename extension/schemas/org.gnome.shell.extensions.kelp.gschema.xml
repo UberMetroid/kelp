@@ -69,6 +69,11 @@
             <summary>Tile launched windows by default</summary>
         </key>
 
+        <key type="s" name="tiling-mode">
+            <default>'octopus'</default>
+            <summary>Active Kelp tiling mode: octopus (2D BSP), seahorse (Niri scrolling columns), or otter (floating)</summary>
+        </key>
+
         <key type="b" name="stacking-with-mouse">
             <default>true</default>
             <summary>Allow for stacking windows as a result of dragging a window with mouse</summary>

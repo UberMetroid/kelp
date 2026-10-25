@@ -48,6 +48,7 @@ pub const GSETTINGS_OVERRIDES: &[(&str, &str, &str)] = &[
     ("org.gnome.mutter", "edge-tiling", "false"),
     ("org.gnome.mutter", "workspaces-only-on-primary", "false"),
     (SCHEMA_ID, "tile-by-default", "true"),
+    (SCHEMA_ID, "tiling-mode", "'octopus'"),
     (SCHEMA_ID, "enable-shortcuts", "true"),
     (SCHEMA_ID, "active-hint", "true"),
     (SCHEMA_ID, "active-hint-border-radius", "2"),

@@ -135,14 +135,7 @@ export function on_grab_end(ext, meta_win, op) {
         if (entity && fork) {
             const grab_op = new GrabOp(win.entity, win.prev_rect);
             const crect = win.rect();
-            ext.auto_tiler.forest.resize(
-                ext,
-                entity,
-                fork,
-                win.entity,
-                grab_op.operation(crect),
-                crect,
-            );
+            ext.auto_tiler.forest.resize(ext, entity, fork, win.entity, grab_op.operation(crect), crect);
             ext.auto_tiler.forest.arrange(ext, win.workspace_id());
         }
         win.prev_rect = null;
@@ -194,8 +187,10 @@ export function attach_controller_signals(ext) {
         connect(Main.overview, 'showing', () => {
             ext.exit_modes();
             ext.hide_all_borders();
+            ext.auto_tiler?.overview_show?.(ext, true);
         });
         connect(Main.overview, 'hiding', () => {
+            ext.auto_tiler?.overview_show?.(ext, false);
             const win = ext.focus_window();
             if (win) ext.on_focused(win);
         });
@@ -218,9 +213,15 @@ function attach_settings_signals(ext, connect) {
             ext.indicator.shortcuts.setToggleState(ext.settings.enable_shortcuts());
         }
     });
+    if (s.settings_schema.has_key('tiling-mode')) {
+        connect(s, 'changed::tiling-mode', () => ext.set_mode(ext.settings.tiling_mode()));
+    }
     connect(s, 'changed::tile-by-default', () => {
-        if (ext.settings.tile_by_default()) ext.auto_tile_on();
-        else ext.auto_tile_off();
+        if (ext.settings.tile_by_default()) {
+            if (ext.mode === 'otter') ext.set_mode('octopus');
+        } else if (ext.mode !== 'otter') {
+            ext.set_mode('otter');
+        }
     });
     connect(s, 'changed::gap-inner', () => {
         set_gap_inner(ext, ext.settings.gap_inner());

@@ -51,10 +51,7 @@ export class Tiler {
 
     toggle_orientation(ext) {
         const window = ext.focus_window();
-        if (window && ext.auto_tiler) {
-            ext.auto_tiler.toggle_orientation(ext, window);
-            ext.register_fn(() => window.activate(true));
-        }
+        if (window && ext.auto_tiler) { ext.auto_tiler.toggle_orientation(ext, window); ext.register_fn(() => window.activate(true)); }
     }
 
     toggle_stacking(ext) {
@@ -65,9 +62,7 @@ export class Tiler {
 
     rect(ext, monitor) {
         if (!ext.overlay.visible) return null;
-        const columns = Math.floor(monitor.width / ext.column_size);
-        const rows = Math.floor(monitor.height / ext.row_size);
-        return monitor_rect(monitor, columns, rows);
+        return monitor_rect(monitor, Math.floor(monitor.width / ext.column_size), Math.floor(monitor.height / ext.row_size));
     }
 
     change(overlay, rect, dx, dy, dw, dh) {
@@ -103,6 +98,11 @@ export class Tiler {
     move(ext, window, x, y, w, h, direction, focus) {
         const win = window ? ext.windows.get(window) : null;
         if (!win) return;
+        if (ext.auto_tiler?.is_seahorse && win.is_tilable(ext)) {
+            ext.auto_tiler.move_step(ext, direction === Direction.Left || direction === Direction.Up ? -1 : 1);
+            this.overlay_watch(ext, win);
+            return;
+        }
         const place_pointer = () => ext.register_fn(() => win.activate(true));
         if (ext.auto_tiler && win.is_tilable(ext)) {
             if (this.queue.length === 2) return;
@@ -157,7 +157,10 @@ export class Tiler {
     resize(ext, direction) {
         if (!this.window) return;
         this.resizing_window = true;
-        if (ext.auto_tiler && !ext.contains_tag(this.window, Ecs.Floating)) {
+        if (ext.auto_tiler?.is_seahorse && !ext.contains_tag(this.window, Ecs.Floating)) {
+            const win = ext.windows.get(this.window);
+            if (win) { ext.auto_tiler.toggle_orientation(ext, win); this.overlay_watch(ext, win); }
+        } else if (ext.auto_tiler && !ext.contains_tag(this.window, Ecs.Floating)) {
             resize_auto(this, ext, direction);
         } else {
             const [x, y, w, h] =
@@ -173,10 +176,7 @@ export class Tiler {
         this.resizing_window = false;
     }
 
-    swap(ext, selector) {
-        if (selector) { ext.set_overlay(selector.rect()); this.swap_window = selector.entity; }
-    }
-
+    swap(ext, selector) { if (selector) { ext.set_overlay(selector.rect()); this.swap_window = selector.entity; } }
     swap_left(ext) { this._swap_dir(ext, (w) => ext.focus_selector.left(ext, w)); }
     swap_down(ext) { this._swap_dir(ext, (w) => ext.focus_selector.down(ext, w)); }
     swap_up(ext) { this._swap_dir(ext, (w) => ext.focus_selector.up(ext, w)); }
@@ -205,25 +205,21 @@ export class Tiler {
 
     exit(ext) {
         this.queue.clear();
-        if (this.window) {
-            this.window = null;
-            ext.overlay.visible = false;
-            ext.keybindings.disable(this.keybindings).enable(ext.keybindings.window_focus);
-        }
+        if (!this.window) return;
+        this.window = null;
+        ext.overlay.visible = false;
+        ext.keybindings.disable(this.keybindings).enable(ext.keybindings.window_focus);
     }
 
     disable() { this.queue.stop(); this.window = null; this.swap_window = null; }
 
     snap(ext, win) {
         const mon_geom = ext.monitor_work_area(win.meta.get_monitor());
-        if (mon_geom) {
-            const rect = win.rect();
-            const columns = Math.floor(mon_geom.width / ext.column_size);
-            const rows = Math.floor(mon_geom.height / ext.row_size);
-            this.change(rect, monitor_rect(mon_geom, columns, rows), 0, 0, 0, 0);
-            win.move(ext, rect);
-            ext.snapped.insert(win.entity, true);
-        }
+        if (!mon_geom) return;
+        const rect = win.rect();
+        this.change(rect, monitor_rect(mon_geom, Math.floor(mon_geom.width / ext.column_size), Math.floor(mon_geom.height / ext.row_size)), 0, 0, 0, 0);
+        win.move(ext, rect);
+        ext.snapped.insert(win.entity, true);
     }
 }
 

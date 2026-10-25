@@ -93,144 +93,48 @@ pub const EXTENSION_FILES: &[(&str, &str)] = &[
     ("extension.js", include_str!("../extension/extension.js")),
     ("metadata.json", include_str!("../extension/metadata.json")),
     ("prefs.js", include_str!("../extension/prefs.js")),
-    (
-        "engine/ecs/arena.js",
-        include_str!("../extension/engine/ecs/arena.js"),
-    ),
-    (
-        "engine/ecs/events.js",
-        include_str!("../extension/engine/ecs/events.js"),
-    ),
-    (
-        "engine/ecs/executor.js",
-        include_str!("../extension/engine/ecs/executor.js"),
-    ),
-    (
-        "engine/ecs/world.js",
-        include_str!("../extension/engine/ecs/world.js"),
-    ),
-    (
-        "engine/geom/focus.js",
-        include_str!("../extension/engine/geom/focus.js"),
-    ),
-    (
-        "engine/geom/movement.js",
-        include_str!("../extension/engine/geom/movement.js"),
-    ),
-    (
-        "engine/geom/rectangle.js",
-        include_str!("../extension/engine/geom/rectangle.js"),
-    ),
-    (
-        "engine/tree/auto_tiler.js",
-        include_str!("../extension/engine/tree/auto_tiler.js"),
-    ),
-    (
-        "engine/tree/auto_tiler_drop.js",
-        include_str!("../extension/engine/tree/auto_tiler_drop.js"),
-    ),
-    (
-        "engine/tree/forest.js",
-        include_str!("../extension/engine/tree/forest.js"),
-    ),
-    (
-        "engine/tree/forest_resize.js",
-        include_str!("../extension/engine/tree/forest_resize.js"),
-    ),
-    (
-        "engine/tree/fork.js",
-        include_str!("../extension/engine/tree/fork.js"),
-    ),
-    (
-        "engine/tree/node.js",
-        include_str!("../extension/engine/tree/node.js"),
-    ),
-    (
-        "engine/tree/tiler.js",
-        include_str!("../extension/engine/tree/tiler.js"),
-    ),
-    (
-        "engine/tree/tiler_actions.js",
-        include_str!("../extension/engine/tree/tiler_actions.js"),
-    ),
+    ("engine/ecs/arena.js", include_str!("../extension/engine/ecs/arena.js")),
+    ("engine/ecs/events.js", include_str!("../extension/engine/ecs/events.js")),
+    ("engine/ecs/executor.js", include_str!("../extension/engine/ecs/executor.js")),
+    ("engine/ecs/world.js", include_str!("../extension/engine/ecs/world.js")),
+    ("engine/geom/focus.js", include_str!("../extension/engine/geom/focus.js")),
+    ("engine/geom/movement.js", include_str!("../extension/engine/geom/movement.js")),
+    ("engine/geom/rectangle.js", include_str!("../extension/engine/geom/rectangle.js")),
+    ("engine/geom/seahorse.js", include_str!("../extension/engine/geom/seahorse.js")),
+    ("engine/tree/auto_tiler.js", include_str!("../extension/engine/tree/auto_tiler.js")),
+    ("engine/tree/auto_tiler_drop.js", include_str!("../extension/engine/tree/auto_tiler_drop.js")),
+    ("engine/tree/forest.js", include_str!("../extension/engine/tree/forest.js")),
+    ("engine/tree/forest_resize.js", include_str!("../extension/engine/tree/forest_resize.js")),
+    ("engine/tree/fork.js", include_str!("../extension/engine/tree/fork.js")),
+    ("engine/tree/node.js", include_str!("../extension/engine/tree/node.js")),
+    ("engine/tree/tiler.js", include_str!("../extension/engine/tree/tiler.js")),
+    ("engine/tree/tiler_actions.js", include_str!("../extension/engine/tree/tiler_actions.js")),
     ("ui/dark.css", include_str!("../extension/ui/dark.css")),
-    (
-        "ui/exception_dialog.js",
-        include_str!("../extension/ui/exception_dialog.js"),
-    ),
-    (
-        "ui/highcontrast.css",
-        include_str!("../extension/ui/highcontrast.css"),
-    ),
+    ("ui/exception_dialog.js", include_str!("../extension/ui/exception_dialog.js")),
+    ("ui/highcontrast.css", include_str!("../extension/ui/highcontrast.css")),
     ("ui/light.css", include_str!("../extension/ui/light.css")),
-    (
-        "ui/panel_indicator.js",
-        include_str!("../extension/ui/panel_indicator.js"),
-    ),
-    (
-        "ui/settings/color.js",
-        include_str!("../extension/ui/settings/color.js"),
-    ),
-    (
-        "ui/settings/float_rules.js",
-        include_str!("../extension/ui/settings/float_rules.js"),
-    ),
-    (
-        "ui/settings/gsettings.js",
-        include_str!("../extension/ui/settings/gsettings.js"),
-    ),
-    (
-        "ui/settings/log.js",
-        include_str!("../extension/ui/settings/log.js"),
-    ),
+    ("ui/panel_indicator.js", include_str!("../extension/ui/panel_indicator.js")),
+    ("ui/settings/color.js", include_str!("../extension/ui/settings/color.js")),
+    ("ui/settings/float_rules.js", include_str!("../extension/ui/settings/float_rules.js")),
+    ("ui/settings/gsettings.js", include_str!("../extension/ui/settings/gsettings.js")),
+    ("ui/settings/log.js", include_str!("../extension/ui/settings/log.js")),
     ("ui/stack.js", include_str!("../extension/ui/stack.js")),
-    (
-        "ui/stack_widgets.js",
-        include_str!("../extension/ui/stack_widgets.js"),
-    ),
-    (
-        "window/controller.js",
-        include_str!("../extension/window/controller.js"),
-    ),
-    (
-        "window/controller_display.js",
-        include_str!("../extension/window/controller_display.js"),
-    ),
-    (
-        "window/controller_signals.js",
-        include_str!("../extension/window/controller_signals.js"),
-    ),
-    (
-        "window/controller_workspace.js",
-        include_str!("../extension/window/controller_workspace.js"),
-    ),
-    (
-        "window/keybindings.js",
-        include_str!("../extension/window/keybindings.js"),
-    ),
-    (
-        "window/overview_tray.js",
-        include_str!("../extension/window/overview_tray.js"),
-    ),
-    (
-        "window/shell_window.js",
-        include_str!("../extension/window/shell_window.js"),
-    ),
-    (
-        "window/window_border.js",
-        include_str!("../extension/window/window_border.js"),
-    ),
+    ("ui/stack_widgets.js", include_str!("../extension/ui/stack_widgets.js")),
+    ("window/controller.js", include_str!("../extension/window/controller.js")),
+    ("window/controller_display.js", include_str!("../extension/window/controller_display.js")),
+    ("window/controller_signals.js", include_str!("../extension/window/controller_signals.js")),
+    ("window/controller_workspace.js", include_str!("../extension/window/controller_workspace.js")),
+    ("window/keybindings.js", include_str!("../extension/window/keybindings.js")),
+    ("window/overview_tray.js", include_str!("../extension/window/overview_tray.js")),
+    ("window/shell_window.js", include_str!("../extension/window/shell_window.js")),
+    ("window/window_border.js", include_str!("../extension/window/window_border.js")),
+    ("icons/kelp-seahorse-symbolic.svg", include_str!("../extension/icons/kelp-seahorse-symbolic.svg")),
 ];
 
 pub const ICON_FILES: &[(&str, &str)] = &[
-    (
-        "icons/kelp-auto-on-symbolic.svg",
-        include_str!("../extension/icons/kelp-auto-on-symbolic.svg"),
-    ),
-    (
-        "icons/kelp-auto-off-symbolic.svg",
-        include_str!("../extension/icons/kelp-auto-off-symbolic.svg"),
-    ),
+    ("icons/kelp-auto-on-symbolic.svg", include_str!("../extension/icons/kelp-auto-on-symbolic.svg")),
+    ("icons/kelp-seahorse-symbolic.svg", include_str!("../extension/icons/kelp-seahorse-symbolic.svg")),
+    ("icons/kelp-auto-off-symbolic.svg", include_str!("../extension/icons/kelp-auto-off-symbolic.svg")),
 ];
 
 pub const KEYBINDING_FILES: &[(&str, &str)] = &[

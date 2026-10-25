@@ -33,7 +33,6 @@ const BOOL_KEYS = Object.freeze([
     'smart-gaps',
     'snap-to-grid',
     'stacking-with-mouse',
-    'tile-by-default',
 ]);
 
 const UINT_KEYS = Object.freeze([
@@ -46,6 +45,8 @@ const UINT_KEYS = Object.freeze([
     'mouse-cursor-focus-location',
     'row-size',
 ]);
+
+export const TILING_MODES = Object.freeze(['octopus', 'seahorse', 'otter']);
 
 export class ExtensionSettings {
     constructor(ext_settings) {
@@ -64,6 +65,41 @@ export class ExtensionSettings {
             const prop = key.replace(/-/g, '_');
             this[prop] = () => this.ext.get_uint(key);
             this[`set_${prop}`] = (v) => this.ext.set_uint(key, Math.max(0, Number(v) | 0));
+        }
+    }
+
+    tile_by_default() {
+        return this.ext.get_boolean('tile-by-default');
+    }
+
+    tiling_mode() {
+        if (!this.ext.settings_schema.has_key('tiling-mode')) {
+            return this.tile_by_default() ? 'octopus' : 'otter';
+        }
+        const raw = this.ext.get_string('tiling-mode');
+        return TILING_MODES.includes(raw) ? raw : 'octopus';
+    }
+
+    set_tiling_mode(mode) {
+        const valid = TILING_MODES.includes(mode) ? mode : 'octopus';
+        if (this.ext.settings_schema.has_key('tiling-mode') && this.ext.get_string('tiling-mode') !== valid) {
+            this.ext.set_string('tiling-mode', valid);
+        }
+        const should_tile = valid !== 'otter';
+        if (this.ext.get_boolean('tile-by-default') !== should_tile) {
+            this.ext.set_boolean('tile-by-default', should_tile);
+        }
+    }
+
+    set_tile_by_default(enable) {
+        const b = Boolean(enable);
+        if (this.ext.get_boolean('tile-by-default') !== b) {
+            this.ext.set_boolean('tile-by-default', b);
+        }
+        if (this.ext.settings_schema.has_key('tiling-mode')) {
+            const current = this.tiling_mode();
+            const next = b ? (current === 'otter' ? 'octopus' : current) : 'otter';
+            if (current !== next) this.ext.set_string('tiling-mode', next);
         }
     }
 
