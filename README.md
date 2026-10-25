@@ -41,31 +41,15 @@ Left-clicking the top-bar icon (or pressing `Super + Y`) cycles through all 3 mo
 
 ## Quick Install
 
-Choose any installation method below — all give you the exact same out-of-the-box configuration:
+Choose either installation method below — both give you the exact same out-of-the-box configuration:
 
-### Option 1 — Install from GNOME Extensions (EGO)
+### Option 1 — Install from GNOME Extensions (`extensions.gnome.org`)
 
 Install with one click in your browser or through **Extension Manager**:
 
 👉 [**https://extensions.gnome.org/extension/11479/kelp/**](https://extensions.gnome.org/extension/11479/kelp/)
 
-### Option 2 — One-Line CLI Installer (`kelp` Binary)
-
-Download `kelp-linux-x86_64` from [**GitHub Releases (`v2.0.0`)**](https://github.com/UberMetroid/kelp/releases/latest). The standalone `kelp` binary installs the extension, compiles the GSettings schemas, configures window and workspace management shortcuts (`Super + Q`, `Super + M`, `Super + Alt + Arrows/HJKL`), and automatically clears GNOME's conflicting default `Ctrl + Super + Left/Right` edge-tiling shortcuts so directional tile movement works immediately:
-
-```bash
-chmod +x kelp-linux-x86_64
-./kelp-linux-x86_64
-```
-
-Or build from source with Rust:
-
-```bash
-cargo install --path . --root ~/.local
-kelp
-```
-
-### Option 3 — Standard GNOME Extension `.zip` (No compiler needed)
+### Option 2 — Install from GitHub Release `.zip`
 
 Download `kelp@ubermetroid.github.io.shell-extension.zip` from [**GitHub Releases (`v2.0.0`)**](https://github.com/UberMetroid/kelp/releases/latest):
 
@@ -124,8 +108,8 @@ Because GNOME Shell extensions run inside your Wayland compositor process, Kelp 
 
 - **No background daemons or subprocesses**: Everything runs natively through GNOME Shell's window manager APIs.
 - **No network access or telemetry**: Kelp never connects to the internet.
-- **Zero third-party dependencies**: The extension uses zero `npm` packages, and the Rust installer uses only the Rust standard library (`0` external crates in `Cargo.lock`).
-- **Clean disable & screen-lock behavior**: Disabling the extension or locking your screen cleanly removes all shortcuts, window borders, and signal listeners, and restores your previous Mutter `edge-tiling` setting.
+- **Zero third-party dependencies**: The extension uses zero `npm` packages and zero external runtime dependencies.
+- **Clean disable & screen-lock behavior**: Disabling the extension or locking your screen cleanly removes all shortcuts, window borders, and signal listeners, and restores your previous Mutter `edge-tiling` and `focus-mode` settings.
 
 ---
 

@@ -109,7 +109,7 @@ export function build_about_page() {
 
     const ver_row = new Adw.ActionRow({
         title: 'Kelp Release Version',
-        subtitle: 'Zero-subprocess, zero-telemetry Wayland tiling engine &amp; Rust installer',
+        subtitle: 'Zero-subprocess, zero-telemetry Wayland tiling extension for GNOME Shell',
     });
     ver_row.add_suffix(new Gtk.Label({
         label: 'v2.0.0', valign: Gtk.Align.CENTER, css_classes: ['monospace'],
