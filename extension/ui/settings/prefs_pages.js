@@ -134,6 +134,13 @@ export function build_about_page() {
 
     add_link_row(
         support_group,
+        'GNOME Extensions Page (extensions.gnome.org)',
+        'Install, rate, or review Kelp on the official GNOME Extensions portal',
+        'GNOME Extensions',
+        'https://extensions.gnome.org/extension/11479/kelp/',
+    );
+    add_link_row(
+        support_group,
         'Star Kelp on GitHub',
         'Star UberMetroid/kelp to help other GNOME &amp; Linux users discover Kelp',
         'Star on GitHub',

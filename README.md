@@ -1,6 +1,7 @@
 # <img src="extension/icons/kelp-octopus-symbolic.svg" width="32" height="32" alt="Kelp Tiling Icon" /> Kelp
 
 [![CI & EGO Bundle Verification](https://github.com/UberMetroid/kelp/actions/workflows/ci.yml/badge.svg)](https://github.com/UberMetroid/kelp/actions/workflows/ci.yml)
+[![GNOME Extensions](https://img.shields.io/badge/GNOME%20Extensions-Kelp%20%2311479-4a86cf?logo=gnome&logoColor=white)](https://extensions.gnome.org/extension/11479/kelp/)
 [![Release](https://img.shields.io/github/v/release/UberMetroid/kelp)](https://github.com/UberMetroid/kelp/releases/latest)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](LICENSE)
 [![Sponsor: Tuition, Not Coffee](https://img.shields.io/badge/Sponsor-Tuition%2C%20Not%20Coffee%20%F0%9F%8E%93-2ec27e)](https://ubermetroid.github.io/tuition-not-coffee)
@@ -10,7 +11,7 @@
 
 Built from System76's Pop Shell — stripped of legacy X11 and launcher bloat, and updated for modern GNOME (`45` through `50`, including Ubuntu 24.04+, Fedora, Arch, and Debian).
 
-> 🎓 **Support Kelp — [Tuition, Not Coffee — Help send my daughter to college](https://ubermetroid.github.io/tuition-not-coffee)** · ⭐ [**Star UberMetroid/kelp on GitHub**](https://github.com/UberMetroid/kelp)
+> 🎓 **Support Kelp — [Tuition, Not Coffee — Help send my daughter to college](https://ubermetroid.github.io/tuition-not-coffee)** · 🧩 [**Get Kelp on GNOME Extensions**](https://extensions.gnome.org/extension/11479/kelp/) · ⭐ [**Star UberMetroid/kelp on GitHub**](https://github.com/UberMetroid/kelp)
 
 ---
 
@@ -34,26 +35,23 @@ Left-clicking the top-bar icon (or pressing `Super + Y`) cycles through all 3 mo
 - **4-Tab Libadwaita Settings & About Window**: Right-click the top-bar icon and click **Settings & About…** (or run `gnome-extensions prefs kelp@ubermetroid.github.io`) for dedicated **Tiling & Modes**, **Appearance & Borders**, **Shortcuts**, and **About & Support** pages.
 - **Top-Bar Quick Menu**: Right-click to pick a mode directly or toggle **Keyboard Shortcuts (On/Off)**, **Focus Follows Mouse (On/Off)**, **Smart Gaps**, **Show Active Hint**, **Retile Workspace**, and **Settings & About…**.
 - **Built-In Float Rules**: Dialogs, Picture-in-Picture, Desktop Icons NG (`ding@rastersoft.com`), Steam, `caligula`, `btm`, and `macchina` float automatically; add custom per-app or per-window exceptions in two clicks.
-- **Identical Everywhere**: Installing from [GNOME Extensions](https://extensions.gnome.org/) or GitHub Releases gives you the exact same out-of-the-box configuration.
+- **Identical Everywhere**: Installing from [GNOME Extensions](https://extensions.gnome.org/extension/11479/kelp/) or GitHub Releases gives you the exact same out-of-the-box configuration.
 
 ---
 
-## Install in 10 Seconds
+## Quick Install
 
-Download the latest release (`v2.0.0`) from [**GitHub Releases**](https://github.com/UberMetroid/kelp/releases/latest) and choose either method:
+Choose any installation method below — all give you the exact same out-of-the-box configuration:
 
-### Option 1: Standard GNOME Extension `.zip` (No compiler needed)
+### Option 1 — Install from GNOME Extensions (EGO)
 
-```bash
-gnome-extensions install --force kelp@ubermetroid.github.io.shell-extension.zip
-gnome-extensions enable kelp@ubermetroid.github.io
-```
+Install with one click in your browser or through **Extension Manager**:
 
-*(On Wayland, log out and log back in once if this is your first time installing the extension.)*
+👉 [**https://extensions.gnome.org/extension/11479/kelp/**](https://extensions.gnome.org/extension/11479/kelp/)
 
-### Option 2: Standalone `kelp` CLI Installer
+### Option 2 — One-Line CLI Installer (`kelp` Binary)
 
-The standalone `kelp` binary installs the extension, compiles the GSettings schemas, configures window and workspace management shortcuts (`Super + Q`, `Super + M`, `Super + Alt + Arrows/HJKL`), and automatically clears GNOME's conflicting default `Ctrl + Super + Left/Right` edge-tiling shortcuts so directional tile movement works immediately:
+Download `kelp-linux-x86_64` from [**GitHub Releases (`v2.0.0`)**](https://github.com/UberMetroid/kelp/releases/latest). The standalone `kelp` binary installs the extension, compiles the GSettings schemas, configures window and workspace management shortcuts (`Super + Q`, `Super + M`, `Super + Alt + Arrows/HJKL`), and automatically clears GNOME's conflicting default `Ctrl + Super + Left/Right` edge-tiling shortcuts so directional tile movement works immediately:
 
 ```bash
 chmod +x kelp-linux-x86_64
@@ -66,6 +64,17 @@ Or build from source with Rust:
 cargo install --path . --root ~/.local
 kelp
 ```
+
+### Option 3 — Standard GNOME Extension `.zip` (No compiler needed)
+
+Download `kelp@ubermetroid.github.io.shell-extension.zip` from [**GitHub Releases (`v2.0.0`)**](https://github.com/UberMetroid/kelp/releases/latest):
+
+```bash
+gnome-extensions install --force kelp@ubermetroid.github.io.shell-extension.zip
+gnome-extensions enable kelp@ubermetroid.github.io
+```
+
+*(On Wayland, log out and log back in once if this is your first time installing the extension.)*
 
 ---
 
@@ -135,6 +144,7 @@ Because GNOME Shell extensions run inside your Wayland compositor process, Kelp 
 If Kelp saves you time every day, please consider supporting the project:
 
 - 🎓 **Sponsor / Donate**: [**Tuition, Not Coffee — Help send my daughter to college**](https://ubermetroid.github.io/tuition-not-coffee)
+- 🧩 **GNOME Extensions**: [**extensions.gnome.org/extension/11479/kelp/**](https://extensions.gnome.org/extension/11479/kelp/)
 - ⭐ **Star on GitHub**: [**github.com/UberMetroid/kelp**](https://github.com/UberMetroid/kelp)
 
 ---
