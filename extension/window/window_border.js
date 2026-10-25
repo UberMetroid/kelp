@@ -40,12 +40,15 @@ export class WindowBorder {
             return;
         }
         const meta = this.win.meta;
+        const title = meta.get_title?.() ?? '';
         if (
             meta.minimized ||
             meta.is_fullscreen() ||
             meta.customJS_ding ||
             meta.get_window_type() !== Meta.WindowType.NORMAL ||
-            meta.get_title()?.startsWith('Desktop Icons ') ||
+            title.startsWith('Desktop Icons ') ||
+            title.includes('@!') ||
+            title.endsWith(' ') ||
             (this.win.is_maximized() && ext.settings.smart_gaps())
         ) {
             this.hide();

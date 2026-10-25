@@ -248,5 +248,5 @@ function place_new_fork(place_by, fork) {
 function move_window(ext, window, rect, on_complete) {
     if (!(window.meta instanceof Meta.Window) || !window.meta.get_compositor_private()) return;
     ext.size_signals_block(window);
-    window.move(ext, rect, () => { window.planned_rect = null; on_complete(); ext.size_signals_unblock(window); });
+    window.move(ext, rect, () => { window.planned_rect = null; on_complete(); });
 }

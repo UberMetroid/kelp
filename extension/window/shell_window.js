@@ -66,7 +66,7 @@ export class ShellWindow {
     }
 
     actor_exists() {
-        return this.meta !== null && this.meta.get_compositor_private() !== null;
+        return this.meta !== null && !this.meta.in_destruction?.() && this.meta.get_compositor_private() !== null;
     }
 
     cmdline() {
@@ -177,13 +177,13 @@ export class ShellWindow {
     show_border(ext = this.ext) {
         if (!this.border) return;
         const f = ext.focus_window();
-        if (f === this || (!f && Ecs_entity_eq_opt(ext.focused_window_entity(), this.entity))) this.border.show(ext);
+        if (f === this || Ecs_entity_eq_opt(ext.focused_window_entity(), this.entity)) this.border.show(ext);
     }
 
     update_border_layout() {
         if (!this.border) return;
         const f = this.ext.focus_window();
-        if (f === this || (!f && Ecs_entity_eq_opt(this.ext.focused_window_entity(), this.entity))) this.border.show(this.ext);
+        if (f === this || Ecs_entity_eq_opt(this.ext.focused_window_entity(), this.entity)) this.border.show(this.ext);
         else this.border.hide();
     }
 

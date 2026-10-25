@@ -32,6 +32,15 @@ pub const DEFAULT_CONFIG_JSON: &str = r#"{
     },
     {
       "class": "com.rastersoft.ding"
+    },
+    {
+      "class": "com.rastersoft.dingtest"
+    },
+    {
+      "title": "^Desktop Icons.*$"
+    },
+    {
+      "title": "@!"
     }
   ],
   "skiptaskbarhidden": [],

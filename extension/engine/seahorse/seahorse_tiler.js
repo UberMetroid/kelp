@@ -48,7 +48,7 @@ export class SeahorseTiler {
         if (!entity) return;
         const ekey = this._entity_key(entity), win = ext.windows.get(entity);
         this.attached.remove(entity); this.full_width.delete(ekey); this.ratios.delete(ekey);
-        if (win) { win.ignore_detach = false; if (win.actor_exists?.() !== false) this._show_actor(win, ext); }
+        if (win) { win.ignore_detach = false; if (this._is_alive(win)) this._show_actor(win, ext); }
         for (const [key, strip] of this.strips.entries()) {
             const idx = strip.cols.findIndex((e) => Ecs.entity_eq(e, entity));
             if (idx === -1) continue;
@@ -56,7 +56,7 @@ export class SeahorseTiler {
             if (strip.cols.length === 0) { this.strips.delete(key); ext.sync_seahorse_peeks?.(strip.id, null); continue; }
             strip.active = idx < strip.active ? strip.active - 1 : Math.min(idx, strip.cols.length - 1);
             if (idx < strip.scroll) strip.scroll = Math.max(0, strip.scroll - 1);
-            else if (idx === strip.scroll && idx < strip.cols.length) strip.active = idx;
+            else if (idx < strip.cols.length && idx <= strip.scroll + 2) strip.active = idx;
             this._sync_scroll(strip); this.arrange_strip(ext, strip);
             const next = activate_next ? ext.windows.get(strip.cols[strip.active]) : null;
             if (next && this._is_active_ws(next, ext)) ext.register_fn?.(() => next.activate(ext, true));
@@ -78,7 +78,7 @@ export class SeahorseTiler {
     arrange_strip(ext, strip) {
         strip.cols = strip.cols.filter((e) => {
             const w = ext.windows.get(e), wid = w ? ext.workspace_id(w) : null;
-            if (w && w.actor_exists?.() !== false && w.is_tilable(ext) && !w.meta.minimized && wid[0] === strip.id[0] && wid[1] === strip.id[1]) return true;
+            if (w && this._is_alive(w) && w.is_tilable(ext) && !w.meta.minimized && wid[0] === strip.id[0] && wid[1] === strip.id[1]) return true;
             this.attached.remove(e); this.full_width.delete(this._entity_key(e)); this.ratios.delete(this._entity_key(e));
             return false;
         });
@@ -104,13 +104,13 @@ export class SeahorseTiler {
         if (single_view) strip.scroll = strip.active;
         const cols_avail_w = Math.max(64, avail_w - inner * (vis_count - 1));
         let sum_w = 0, cur_x = x0;
-        for (let i = vis0; i <= vis_end; i += 1) sum_w += this._weight(strip.cols[i]);
+        for (let i = vis0; i <= vis_end; i += 1) sum_w += Math.max(0.35, Math.min(2.85, this._weight(strip.cols[i])));
         for (let i = 0; i < n; i += 1) {
             const win = ext.windows.get(strip.cols[i]);
             if (!win) continue;
             win.smart_gapped = single_view && smart;
             if (i >= vis0 && i <= vis_end) {
-                const frac = Math.max(0.15, Math.min(0.85, this._weight(strip.cols[i]) / Math.max(0.01, sum_w)));
+                const frac = Math.max(0.35, Math.min(2.85, this._weight(strip.cols[i]))) / Math.max(0.01, sum_w);
                 const col_w = i === vis_end ? Math.max(32, x0 + avail_w - cur_x) : Math.max(32, Math.floor(cols_avail_w * frac));
                 this._show_actor(win, ext); this._move_win(ext, win, new Rectangle([cur_x, y0, col_w, avail_h]));
                 cur_x += col_w + inner;
@@ -118,7 +118,8 @@ export class SeahorseTiler {
         }
     }
 
-    _move_win(ext, win, rect) { ext.size_signals_block?.(win); win.move(ext, rect, () => ext.size_signals_unblock?.(win)); }
+    _move_win(ext, win, rect) { ext.size_signals_block?.(win); win.move(ext, rect); }
+    _is_alive(w) { return Boolean(w && w.actor_exists?.() !== false && !w.meta?.in_destruction?.()); }
 
     resize_column(ext, delta, target_win = null) {
         const win = target_win ?? ext.focus_window();
@@ -149,7 +150,7 @@ export class SeahorseTiler {
         if (!win || !this.attached.contains(win.entity)) return;
         const strip = this._strip(ext.workspace_id(win));
         let cleaned = false;
-        for (const e of [...strip.cols]) if (ext.windows.get(e)?.actor_exists?.() === false) { this.detach_window(ext, e, true); cleaned = true; }
+        for (const e of [...strip.cols]) if (!this._is_alive(ext.windows.get(e))) { this.detach_window(ext, e, true); cleaned = true; }
         if (cleaned) return;
         const idx = strip.cols.findIndex((e) => Ecs.entity_eq(e, win.entity));
         if (idx === -1) { this.auto_tile(ext, win, false); return; }
