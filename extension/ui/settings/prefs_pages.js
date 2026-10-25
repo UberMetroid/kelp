@@ -152,10 +152,10 @@ export function build_about_page() {
     );
     add_link_row(
         support_group,
-        "💖 Donate / Sponsor — Help pay for daughter's college",
-        'Contribute directly to her account & support ongoing Kelp GNOME 45–51 development',
-        "💖 Help pay for daughter's college",
-        'https://contribute.trumpaccount.com/scarlel-7d883210/?secret=8YaZnHrYM3NjLmGAmx6H1wr',
+        '🎓 Tuition, Not Coffee — Help send my daughter to college',
+        "Skip the coffee — 100% of sponsorships go toward my daughter's college & future fund",
+        '🎓 Tuition, Not Coffee',
+        'https://ubermetroid.github.io/tuition-not-coffee',
         'https://github.com/UberMetroid/kelp',
     );
     add_link_row(

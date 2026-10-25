@@ -3,14 +3,14 @@
 [![CI & EGO Bundle Verification](https://github.com/UberMetroid/kelp/actions/workflows/ci.yml/badge.svg)](https://github.com/UberMetroid/kelp/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/UberMetroid/kelp)](https://github.com/UberMetroid/kelp/releases/latest)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](LICENSE)
-[![Sponsor: Help pay for daughter's college](https://img.shields.io/badge/Sponsor-Help%20pay%20for%20daughter's%20college-ff69b4?logo=githubsponsors&logoColor=white)](https://contribute.trumpaccount.com/scarlel-7d883210/?secret=8YaZnHrYM3NjLmGAmx6H1wr)
+[![Sponsor: Tuition, Not Coffee](https://img.shields.io/badge/Sponsor-Tuition%2C%20Not%20Coffee%20%F0%9F%8E%93-2ec27e)](https://ubermetroid.github.io/tuition-not-coffee)
 [![Star on GitHub](https://img.shields.io/github/stars/UberMetroid/kelp?style=social)](https://github.com/UberMetroid/kelp)
 
 **Kelp** (`kelp@ubermetroid.github.io`) brings 3 instant window-tiling modes themed after kelp forest animals — **Octopus (2D Grid)**, **Seahorse (Scrolling Strip)**, and **Otter (Floating)** — plus window stacking, active focus borders, and a 4-tab Libadwaita Settings & About dialog to **GNOME 45–51 on Wayland**.
 
 Built from System76's Pop Shell — stripped of legacy X11 and launcher bloat, and updated for modern GNOME (`45` through `51`, including Ubuntu 24.04+, Fedora, Arch, and Debian).
 
-> 💖 **Support Kelp — [Help pay for daughter's college](https://contribute.trumpaccount.com/scarlel-7d883210/?secret=8YaZnHrYM3NjLmGAmx6H1wr)** · ⭐ [**Star UberMetroid/kelp on GitHub**](https://github.com/UberMetroid/kelp)
+> 🎓 **Support Kelp — [Tuition, Not Coffee — Help send my daughter to college](https://ubermetroid.github.io/tuition-not-coffee)** · ⭐ [**Star UberMetroid/kelp on GitHub**](https://github.com/UberMetroid/kelp)
 
 ---
 
@@ -137,11 +137,11 @@ Because GNOME Shell extensions run inside your Wayland compositor process, Kelp 
 
 ---
 
-## 💖 Sponsor / Support
+## 🎓 Sponsor / Support — Tuition, Not Coffee
 
 If Kelp saves you time every day, please consider supporting the project:
 
-- 💖 **Sponsor / Donate**: [**Help pay for daughter's college**](https://contribute.trumpaccount.com/scarlel-7d883210/?secret=8YaZnHrYM3NjLmGAmx6H1wr)
+- 🎓 **Sponsor / Donate**: [**Tuition, Not Coffee — Help send my daughter to college**](https://ubermetroid.github.io/tuition-not-coffee)
 - ⭐ **Star on GitHub**: [**github.com/UberMetroid/kelp**](https://github.com/UberMetroid/kelp)
 
 ---
