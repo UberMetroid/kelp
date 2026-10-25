@@ -303,7 +303,7 @@
           <rect x="8" y="8.8832" width="8" height="4.069333" rx="0.651093" ry="0.651093" fill="#2ee59d"/>
         </svg>
         <span>Kelp</span>
-        <span class="brand-badge">v1.4.0 · GNOME 45–51</span>
+        <span class="brand-badge">v1.5.0 · GNOME 45–51</span>
       </div>
       <nav class="nav-links">
         <a href="#modes">3 Animal Modes</a>
@@ -321,26 +321,26 @@
       <span class="eyebrow">Wayland-Native · Zero Subprocesses · Zero Dependencies</span>
       <h1>Three Kelp Forest Tiling Modes for GNOME 45–51</h1>
       <p class="subtitle">
-        Left-click the top-bar icon to rotate through <strong>Octopus (2D Grid)</strong>, <strong>Seahorse (Scrolling Strip)</strong>, and <strong>Otter (Floating)</strong> — immediately reformatting your workspace with crisp <code>2px</code> active focus borders.
+        Left-click the top-bar icon to rotate through <strong>Octopus (2D Grid)</strong>, <strong>Seahorse (Scrolling Strip)</strong>, and <strong>Otter (Floating)</strong> — immediately reformatting your workspace with crisp <code>2px</code> active focus borders and <code>6px</code> gaps.
       </p>
       <div class="cta-row">
-        <a class="btn btn-primary" href="https://github.com/UberMetroid/kelp/releases/latest">Download v1.4.0 Release</a>
+        <a class="btn btn-primary" href="https://github.com/UberMetroid/kelp/releases/latest">Download v1.5.0 Release</a>
         <a class="btn" href="https://github.com/UberMetroid/kelp">View Source on GitHub</a>
       </div>
 
       <div class="desktop-frame" aria-label="Kelp tiling preview">
         <div class="gnome-bar">
           <span>Activities</span>
-          <span>Oct 24 &nbsp; 17:10</span>
+          <span>Oct 25 &nbsp; 17:10</span>
           <span class="bar-pill">Kelp ▾ &nbsp; [Octopus · Seahorse · Otter] [Shortcuts: ON]</span>
         </div>
         <div class="workspace-grid">
           <div class="win active">
             <div>
-              <span class="win-badge">Focused · 2px rgb(255,0,0) Border · 2px Gaps</span>
+              <span class="win-badge">Focused · 2px rgb(255,0,0) Border · 6px Gaps</span>
               <div style="margin-top:12px; color:#d7e0ea;">
                 $ kelp --version<br>
-                kelp 1.4.0<br><br>
+                kelp 1.5.0<br><br>
                 $ # Left-click top-bar icon or press Super + Y:<br>
                 $ #   1. Octopus  — 2D Binary Tree Grid<br>
                 $ #   2. Seahorse — Niri Scrolling Columns<br>
@@ -389,7 +389,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 16 16"><rect x="0" y="4" width="7" height="8.952532" rx="0.651093" ry="0.651093" fill="#2ee59d"/><rect x="8" y="4" width="8" height="4.069333" rx="0.651093" ry="0.651093" fill="#2ee59d"/><rect x="8" y="8.8832" width="8" height="4.069333" rx="0.651093" ry="0.651093" fill="#2ee59d"/></svg>
             1. Octopus — 2D Grid
           </h3>
-          <p>Hyprland-style 2D Binary Space Partitioning (<code>AutoTiler</code> + <code>Forest</code>). Windows automatically split your screen into balanced 2D tiles with tabbed window stacking (<kbd>Super</kbd> + <kbd>S</kbd>).</p>
+          <p>Hyprland-style 2D Binary Space Partitioning (<code>OctopusTiler</code> + <code>Forest</code>). Windows automatically split your screen into balanced 2D tiles with tabbed window stacking (<kbd>Super</kbd> + <kbd>S</kbd>).</p>
         </div>
         <div class="card">
           <h3 style="display:flex;align-items:center;gap:8px;color:#38bdf8;">
@@ -423,7 +423,7 @@ gnome-extensions enable kelp@ubermetroid.github.io</code></pre>
         </div>
         <div class="card">
           <h3>Option 2: Standalone <code>kelp</code> CLI Installer</h3>
-          <p>Installs the extension, compiles schemas, and automatically clears GNOME's conflicting default <code>Ctrl + Super + Left/Right</code> shortcuts:</p>
+          <p>Installs the extension, compiles schemas, configures desktop launcher/window shortcuts (<code>Super + Q/M/B/F/E/Escape</code>), and clears GNOME's conflicting default <code>Ctrl + Super + Left/Right</code> shortcuts:</p>
           <pre><code>chmod +x kelp-linux-x86_64
 ./kelp-linux-x86_64
 
@@ -497,9 +497,14 @@ cargo install --path . --root ~/.local && kelp</code></pre>
               <td>Hide outer gaps when only a single tiled window is open on a workspace.</td>
             </tr>
             <tr>
-              <td><strong>Border Radius &amp; Gaps</strong></td>
+              <td><strong>Active Hint Border Radius</strong></td>
               <td><strong>2 px</strong></td>
-              <td>Adjust active border corner radius (<code>0–30 px</code>) and window gaps (<code>0–64 px</code>) live.</td>
+              <td>Adjust active border corner radius (<code>0–30 px</code>) live.</td>
+            </tr>
+            <tr>
+              <td><strong>Gaps</strong></td>
+              <td><strong>6 px</strong></td>
+              <td>Adjust inner and outer window gaps (<code>0–64 px</code>) live.</td>
             </tr>
           </tbody>
         </table>
@@ -529,6 +534,30 @@ cargo install --path . --root ~/.local && kelp</code></pre>
             <tr>
               <td><kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>Arrow</kbd> or <kbd>H</kbd>/<kbd>J</kbd>/<kbd>K</kbd>/<kbd>L</kbd></td>
               <td>Move tiled window / swap column / edge-snap floating window (<strong>Otter</strong> mode)</td>
+            </tr>
+            <tr>
+              <td><kbd>Super</kbd> + <kbd>Q</kbd></td>
+              <td>Close focused window (<code>&lt;Super&gt;q</code>, <code>&lt;Alt&gt;F4</code>)</td>
+            </tr>
+            <tr>
+              <td><kbd>Super</kbd> + <kbd>M</kbd></td>
+              <td>Toggle maximize on the focused window</td>
+            </tr>
+            <tr>
+              <td><kbd>Super</kbd> + <kbd>B</kbd></td>
+              <td>Open default web browser</td>
+            </tr>
+            <tr>
+              <td><kbd>Super</kbd> + <kbd>F</kbd></td>
+              <td>Open file manager</td>
+            </tr>
+            <tr>
+              <td><kbd>Super</kbd> + <kbd>E</kbd></td>
+              <td>Open default email client</td>
+            </tr>
+            <tr>
+              <td><kbd>Super</kbd> + <kbd>Escape</kbd></td>
+              <td>Lock screen / activate screensaver</td>
             </tr>
             <tr>
               <td><kbd>Super</kbd> + <kbd>O</kbd></td>
@@ -581,7 +610,7 @@ cargo install --path . --root ~/.local && kelp</code></pre>
     <div class="container">
       <p>
         <strong>Kelp</strong> (<code>kelp@ubermetroid.github.io</code>) · Released under <a href="https://github.com/UberMetroid/kelp/blob/main/LICENSE">GPL-3.0-or-later</a> · Derived from System76 Pop Shell.<br>
-        <a href="https://github.com/UberMetroid/kelp">GitHub Repository</a> · <a href="https://github.com/UberMetroid/kelp/releases/latest">Latest Release (v1.4.0)</a>
+        <a href="https://github.com/UberMetroid/kelp">GitHub Repository</a> · <a href="https://github.com/UberMetroid/kelp/releases/latest">Latest Release (v1.5.0)</a>
       </p>
     </div>
   </footer>
