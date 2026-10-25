@@ -3,10 +3,13 @@
 [![CI & EGO Bundle Verification](https://github.com/UberMetroid/kelp/actions/workflows/ci.yml/badge.svg)](https://github.com/UberMetroid/kelp/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/UberMetroid/kelp)](https://github.com/UberMetroid/kelp/releases/latest)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](LICENSE)
+[![Star on GitHub](https://img.shields.io/github/stars/UberMetroid/kelp?style=social)](https://github.com/UberMetroid/kelp)
 
-**Kelp** (`kelp@ubermetroid.github.io`) brings 3 instant window-tiling modes themed after kelp forest animals — **Octopus (2D Grid)**, **Seahorse (Scrolling Strip)**, and **Otter (Floating)** — plus window stacking and active focus borders to **GNOME 45–51 on Wayland**.
+**Kelp** (`kelp@ubermetroid.github.io`) brings 3 instant window-tiling modes themed after kelp forest animals — **Octopus (2D Grid)**, **Seahorse (Scrolling Strip)**, and **Otter (Floating)** — plus window stacking, active focus borders, and a 4-tab Libadwaita Settings & About dialog to **GNOME 45–51 on Wayland**.
 
 Built from System76's Pop Shell — stripped of legacy X11 and launcher bloat, and updated for modern GNOME (`45` through `51`, including Ubuntu 24.04+, Fedora, Arch, and Debian).
+
+> ⭐ **Enjoying Kelp?** [**Star UberMetroid/kelp on GitHub**](https://github.com/UberMetroid/kelp) or [**Sponsor / Donate**](https://github.com/sponsors/UberMetroid) to support ongoing GNOME 45–51 maintenance!
 
 ---
 
@@ -17,7 +20,7 @@ Left-clicking the top-bar icon (or pressing `Super + Y`) cycles through all 3 mo
 | Top-Bar Icon | Animal Mode | Layout Style | Left-Click / Scroll Action |
 | :---: | :--- | :--- | :--- |
 | <img src="extension/icons/kelp-octopus-symbolic.svg" width="32" height="32" alt="Octopus 2D Grid Icon" /> | **Octopus — 2D Grid** *(Default)* | Hyprland-style 2D Binary Space Partitioning (`OctopusTiler` + `Forest` in `engine/octopus/`) with tabbed stacks (`Super + S`). | Left-click switches to **Seahorse** |
-| <img src="extension/icons/kelp-seahorse-symbolic.svg" width="32" height="32" alt="Seahorse Scrolling Strip Icon" /> | **Seahorse — Scrolling Strip** | Niri/PaperWM-style horizontal scrolling strip of full-height columns (`SeahorseTiler` in `engine/seahorse/`), progressively sizing from **1/1 full width** (1 window) → **1/2 each** (2 windows) → **1/3 each** (3+ windows, up to 3 columns visible at once; `Super + O` for 100% full-width, `Super + Enter` -> `Shift + Left/Right` or mouse drag to resize column widths) with clickable `8px` screen-edge peek slivers when off-screen neighbor columns exist. | Left-click switches to **Otter** · Mouse wheel scrolls columns |
+| <img src="extension/icons/kelp-seahorse-symbolic.svg" width="32" height="32" alt="Seahorse Scrolling Strip Icon" /> | **Seahorse — Scrolling Strip** | Niri/PaperWM-style horizontal scrolling strip of full-height columns (`SeahorseTiler` in `engine/seahorse/`), progressively sizing from **1/1 full width** (1 window) → **1/2 each** (2 windows) → **1/3 each** (3+ windows, up to 3 columns visible at once; `Super + O` for 100% full-width toggle, `Super + Enter` -> `Shift + Left/Right` or mouse drag to resize column widths) with clickable `8px` screen-edge peek slivers that jump directly to off-screen neighbor columns. | Left-click switches to **Otter** · Mouse wheel scrolls columns |
 | <img src="extension/icons/kelp-otter-symbolic.svg" width="32" height="32" alt="Otter Floating Icon" /> | **Otter — Floating** | Standard GNOME / Windows free-floating mode (`engine/otter/otter_tiler.js`) with gently cascaded windows, monitor edge-tiling, and `Ctrl/Shift + Super + Left/Right/Up/Down` 50% edge-snap. | Left-click switches to **Octopus** |
 
 ---
@@ -26,8 +29,9 @@ Left-clicking the top-bar icon (or pressing `Super + Y`) cycles through all 3 mo
 
 - **3 Instant Layout Modes**: Switch seamlessly between **Octopus (2D Grid)**, **Seahorse (Scrolling Strip)**, and **Otter (Floating)** at any time.
 - **Window Stacking (`Super + S`)**: Group tiled windows into tabbed stacks in Octopus mode, or toggle 100% full-width columns in Seahorse mode.
-- **Hyprland-Style Active Border**: High-contrast `2px` active window border (`rgb(255,0,0)`), `6px` inner/outer gaps, and window titlebars hidden by default.
-- **Top-Bar Quick Menu**: Right-click to pick a mode directly or toggle **Keyboard Shortcuts (On/Off)**, **Focus Follows Mouse (On/Off)**, **Smart Gaps**, **Show Active Hint**, and **Retile Workspace**.
+- **Hyprland-Style Active Border**: High-contrast `2px` active window border (`rgb(255,0,0)`), `6px` inner/outer gaps, 1-click color presets (*Gruvbox Amber*, *Kelp Emerald*, *Ocean Cyan*, *Coral Red*), and window titlebars hidden by default.
+- **4-Tab Libadwaita Settings & About Window**: Right-click the top-bar icon and click **Settings & About…** (or run `gnome-extensions prefs kelp@ubermetroid.github.io`) for dedicated **Tiling & Modes**, **Appearance & Borders**, **Shortcuts**, and **About & Support** pages.
+- **Top-Bar Quick Menu**: Right-click to pick a mode directly or toggle **Keyboard Shortcuts (On/Off)**, **Focus Follows Mouse (On/Off)**, **Smart Gaps**, **Show Active Hint**, **Retile Workspace**, and **Settings & About…**.
 - **Built-In Float Rules**: Dialogs, Picture-in-Picture, Desktop Icons NG (`ding@rastersoft.com`), Steam, `caligula`, `btm`, and `macchina` float automatically; add custom per-app or per-window exceptions in two clicks.
 - **Identical Everywhere**: Installing from [GNOME Extensions](https://extensions.gnome.org/) or GitHub Releases gives you the exact same out-of-the-box configuration.
 
@@ -35,7 +39,7 @@ Left-clicking the top-bar icon (or pressing `Super + Y`) cycles through all 3 mo
 
 ## Install in 10 Seconds
 
-Download the latest release (`v1.8.0`) from [**GitHub Releases**](https://github.com/UberMetroid/kelp/releases/latest) and choose either method:
+Download the latest release (`v1.9.0`) from [**GitHub Releases**](https://github.com/UberMetroid/kelp/releases/latest) and choose either method:
 
 ### Option 1: Standard GNOME Extension `.zip` (No compiler needed)
 
@@ -48,7 +52,7 @@ gnome-extensions enable kelp@ubermetroid.github.io
 
 ### Option 2: Standalone `kelp` CLI Installer
 
-The standalone `kelp` binary installs the extension, compiles the GSettings schemas, configures desktop launcher/window shortcuts (`Super + Q`, `Super + M`, `Super + B`, `Super + F`, `Super + E`, `Super + Escape`), and automatically clears GNOME's conflicting default `Ctrl + Super + Left/Right` edge-tiling shortcuts so directional tile movement works immediately:
+The standalone `kelp` binary installs the extension, compiles the GSettings schemas, configures desktop launcher/window shortcuts (`Super + Q`, `Super + M`, `Super + B`, `Super + F`, `Super + E`, `Super + V`, `Super + Ctrl + S`, `Super + Escape`), and automatically clears GNOME's conflicting default `Ctrl + Super + Left/Right` edge-tiling shortcuts so directional tile movement works immediately:
 
 ```bash
 chmod +x kelp-linux-x86_64
@@ -76,9 +80,11 @@ kelp
 | `Super + B` | Open default web browser |
 | `Super + F` | Open file manager |
 | `Super + E` | Open default email client |
+| `Super + V` | Toggle notification & calendar message tray |
+| `Super + Ctrl + S` | Toggle GNOME Quick Settings menu |
 | `Super + Escape` | Lock screen / activate screensaver |
-| `Super + O` | Toggle split orientation (**Octopus**) or 50% / 100% column width (**Seahorse**) |
-| `Super + S` | Toggle tabbed stacking on the focused window |
+| `Super + O` | Toggle split orientation (**Octopus**) or toggle 100% full-width vs progressive `1 -> 1/2 -> 1/3` column width (**Seahorse**) |
+| `Super + S` | Toggle tabbed stacking (**Octopus**) or full-width column (**Seahorse**) |
 | `Super + G` | Toggle floating mode for the focused window |
 | `Super + Y` | Cycle Kelp tiling mode (**Octopus -> Seahorse -> Otter**) |
 | `Super + Enter` | Enter interactive adjustment mode (`Arrows/HJKL` to move, `Shift + Arrows/HJKL` to resize, `Enter` to apply, `Esc` to cancel) |
@@ -88,14 +94,14 @@ kelp
 
 ---
 
-## Right-Click Quick Settings Menu
+## Right-Click Quick Settings Menu & 4-Tab Libadwaita Preferences
 
 Right-clicking the top-bar icon opens the quick settings menu:
 
 | Control | Default | Description |
 | :--- | :--- | :--- |
 | **Octopus (2D Grid)** | **Active** | Hyprland-style 2D binary tree auto-tiling and stacking. |
-| **Seahorse (Scrolling Strip)** | Mode | Niri-style horizontal scrolling strip of full-height vertical columns. |
+| **Seahorse (Scrolling Strip)** | Mode | Niri-style horizontal scrolling strip of full-height vertical columns (`1 -> 1/2 -> 1/3`). |
 | **Otter (Floating)** | Mode | Free-floating windows with edge-tiling and keyboard edge-snap. |
 | **Keyboard Shortcuts** | **On** | Turn all Kelp keyboard shortcuts on or off (useful for full-screen games, VMs, or remote desktop apps). |
 | **Focus Follows Mouse** | **Off** | Switch GNOME's window focus mode between Click-to-Focus (`click`) and Focus-Follows-Mouse (`sloppy`). |
@@ -103,10 +109,9 @@ Right-clicking the top-bar icon opens the quick settings menu:
 | **Floating Window Exceptions** | Action | Open the picker to float specific windows or applications. |
 | **Show Active Hint** | **On** | Show or hide the `2` px colored border around the focused window. |
 | **Smart Gaps** | **Off** | Hide outer screen gaps when only a single tiled window is open on a workspace. |
-| **Active Hint Border Radius** | **`2` px** | Adjust the corner radius of the active window border (`0–30 px`). |
+| **Active Hint Border Radius** | **`2` px** | Adjust the corner radius of the active window border (`0–32 px`). |
 | **Gaps** | **`6` px** | Adjust inner and outer window gaps (`0–64 px`). |
-
-All settings are also available in the standard GNOME 45–51 Libadwaita Extensions **Preferences** window (`gnome-extensions prefs kelp@ubermetroid.github.io`).
+| **Settings & About…** | Action | Open the 4-tab Libadwaita Preferences window (**Tiling & Modes**, **Appearance & Borders**, **Shortcuts**, **About & Support**). |
 
 ---
 

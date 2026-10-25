@@ -104,7 +104,16 @@ export class ExtensionSettings {
     }
 
     active_hint_size() {
-        return 2;
+        return this.ext.settings_schema?.has_key('active-hint-size')
+            ? this.ext.get_uint('active-hint-size')
+            : 2;
+    }
+
+    set_active_hint_size(size) {
+        if (this.ext.settings_schema?.has_key('active-hint-size')) {
+            const v = Math.max(1, Math.min(16, Number(size) | 0));
+            this.ext.set_uint('active-hint-size', v);
+        }
     }
 
     focus_follows_mouse() {

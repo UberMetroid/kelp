@@ -48,8 +48,8 @@ export class WindowBorder {
             meta.get_window_type() !== Meta.WindowType.NORMAL ||
             title.startsWith('Desktop Icons ') ||
             title.includes('@!') ||
-            title.endsWith(' ') ||
-            (this.win.is_maximized() && ext.settings.smart_gaps())
+            this.win.is_maximized() ||
+            (this.win.smart_gapped && ext.settings.smart_gaps())
         ) {
             this.hide();
             return;

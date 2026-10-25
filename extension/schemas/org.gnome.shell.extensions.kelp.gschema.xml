@@ -7,9 +7,15 @@
             <summary>Show a hint around the active window</summary>
         </key>
 
+        <key type="u" name="active-hint-size">
+            <default>2</default>
+            <range min="1" max="16"/>
+            <summary>Border width for active window hint, in pixels</summary>
+        </key>
+
         <key type="u" name="active-hint-border-radius">
             <default>2</default>
-            <range min="0" max="30"/>
+            <range min="0" max="32"/>
             <summary>Border radius for active window hint, in pixels</summary>
         </key>
 
@@ -241,12 +247,12 @@
 
         <!-- Workspace & Monitor Management -->
         <key type="as" name="kelp-workspace-down">
-            <default><![CDATA[['<Super><Shift>Page_Down','<Super><Shift><Alt>Down','<Super><Shift><Alt>j']]]></default>
+            <default><![CDATA[['<Super><Shift>Page_Down','<Super><Ctrl>Down','<Super><Ctrl>j']]]></default>
             <summary>Move window to the lower workspace</summary>
         </key>
 
         <key type="as" name="kelp-workspace-up">
-            <default><![CDATA[['<Super><Shift>Page_Up','<Super><Shift><Alt>Up','<Super><Shift><Alt>k']]]></default>
+            <default><![CDATA[['<Super><Shift>Page_Up','<Super><Ctrl>Up','<Super><Ctrl>k']]]></default>
             <summary>Move window to the upper workspace</summary>
         </key>
 

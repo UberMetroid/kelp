@@ -127,7 +127,7 @@ export function sync_seahorse_peeks(ext, strip_id, rects) {
         }
         if (!pair[side]) {
             const btn = new St.Button({ style_class: 'kelp-seahorse-peek', reactive: true, can_focus: false });
-            btn.connect('clicked', () => ext.auto_tiler?.focus_step?.(ext, delta));
+            btn.connect('clicked', () => ext.auto_tiler?.focus_step?.(ext, delta, true));
             global.window_group.add_child(btn);
             pair[side] = btn;
         }

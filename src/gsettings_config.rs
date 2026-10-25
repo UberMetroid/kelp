@@ -86,6 +86,7 @@ pub const GSETTINGS_OVERRIDES: &[(&str, &str, &str)] = &[
     (SCHEMA_ID, "tiling-mode", "'octopus'"),
     (SCHEMA_ID, "enable-shortcuts", "true"),
     (SCHEMA_ID, "active-hint", "true"),
+    (SCHEMA_ID, "active-hint-size", "2"),
     (SCHEMA_ID, "active-hint-border-radius", "2"),
     (SCHEMA_ID, "hint-color-rgba", "'rgb(255,0,0)'"),
     (SCHEMA_ID, "smart-gaps", "false"),
@@ -135,11 +136,11 @@ pub const KEYBINDINGS: &[(&str, &str)] = &[
     ),
     (
         "kelp-workspace-down",
-        "['<Super><Shift>Page_Down', '<Super><Shift><Alt>Down', '<Super><Shift><Alt>j']",
+        "['<Super><Shift>Page_Down', '<Super><Ctrl>Down', '<Super><Ctrl>j']",
     ),
     (
         "kelp-workspace-up",
-        "['<Super><Shift>Page_Up', '<Super><Shift><Alt>Up', '<Super><Shift><Alt>k']",
+        "['<Super><Shift>Page_Up', '<Super><Ctrl>Up', '<Super><Ctrl>k']",
     ),
     (
         "kelp-monitor-left",

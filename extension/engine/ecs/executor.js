@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // First-Principles & Zero-Trust Page Header
 // - Page Responsibility / Functional Domain:
-//   GLib main-loop event schedulers (`GLibExecutor`, `OnceExecutor`, `ChannelExecutor`)
-//   for non-blocking, batched execution of compositor layout and migration tasks.
+//   GLib main-loop event scheduler (`GLibExecutor` / `WakeupExecutor`) for non-blocking,
+//   batched execution of compositor layout and window events.
 // - Zero-Trust Boundary & Invariants:
 //   `GLibExecutor` drains queued events in `GLib.PRIORITY_HIGH_IDLE` bounded by
 //   `MAX_EVENTS_PER_TICK` (NASA JPL Power-of-10 bounded loop rule) to prevent an event storm
-//   from freezing the GNOME Shell compositor thread. Every source ID is deterministically
-//   removed on `.stop()` during `disable()`.
+//   from freezing the GNOME Shell compositor thread, continuing across ticks until empty.
+//   Every source ID is deterministically removed on `.stop()` during `disable()`.
 
 import GLib from 'gi://GLib';
 
@@ -22,7 +22,6 @@ export class GLibExecutor {
         if (this.#event_loop !== null)
             return;
         this.#event_loop = GLib.idle_add(GLib.PRIORITY_HIGH_IDLE, () => {
-            this.#event_loop = null;
             let processed = 0;
             while (this.#events.length > 0 && processed < MAX_EVENTS_PER_TICK) {
                 const pair = this.#events.shift();
@@ -30,6 +29,9 @@ export class GLibExecutor {
                 if (pair && pair[1])
                     pair[0].run(pair[1]);
             }
+            if (this.#events.length > 0)
+                return GLib.SOURCE_CONTINUE;
+            this.#event_loop = null;
             return GLib.SOURCE_REMOVE;
         });
     }
@@ -48,85 +50,3 @@ export class GLibExecutor {
 }
 
 export { GLibExecutor as WakeupExecutor };
-
-export class OnceExecutor {
-    #iterable;
-    #signal = null;
-    #then_signal = null;
-
-    constructor(iterable) {
-        this.#iterable = iterable;
-    }
-
-    start(delay, apply, then) {
-        this.stop();
-        const iterator = this.#iterable[Symbol.iterator]();
-        this.#signal = GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
-            const next = iterator.next().value;
-            if (typeof next === 'undefined') {
-                this.#signal = null;
-                if (then) {
-                    this.#then_signal = GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
-                        this.#then_signal = null;
-                        then();
-                        return GLib.SOURCE_REMOVE;
-                    });
-                }
-                return GLib.SOURCE_REMOVE;
-            }
-            const keep_going = apply(next);
-            if (!keep_going)
-                this.#signal = null;
-            return keep_going;
-        });
-    }
-
-    stop() {
-        if (this.#signal !== null) {
-            GLib.source_remove(this.#signal);
-            this.#signal = null;
-        }
-        if (this.#then_signal !== null) {
-            GLib.source_remove(this.#then_signal);
-            this.#then_signal = null;
-        }
-    }
-}
-
-export class ChannelExecutor {
-    #channel = [];
-    #signal = null;
-
-    clear() {
-        this.#channel.splice(0);
-    }
-
-    get length() {
-        return this.#channel.length;
-    }
-
-    send(v) {
-        this.#channel.push(v);
-    }
-
-    start(delay, apply) {
-        this.stop();
-        this.#signal = GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
-            const e = this.#channel.shift();
-            if (typeof e === 'undefined')
-                return GLib.SOURCE_CONTINUE;
-            const keep_going = apply(e);
-            if (!keep_going)
-                this.#signal = null;
-            return keep_going;
-        });
-    }
-
-    stop() {
-        this.clear();
-        if (this.#signal !== null) {
-            GLib.source_remove(this.#signal);
-            this.#signal = null;
-        }
-    }
-}

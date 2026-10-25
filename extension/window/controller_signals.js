@@ -210,7 +210,9 @@ function attach_settings_signals(ext, connect) {
         }
     });
     connect(s, 'changed::gap-inner', () => {
-        set_gap_inner(ext, ext.settings.gap_inner());
+        const gap = ext.settings.gap_inner();
+        set_gap_inner(ext, gap);
+        ext.indicator?.entry_gaps?.set_text(String(gap));
         ext.retile_workspace();
     });
     connect(s, 'changed::gap-outer', () => {
@@ -223,8 +225,18 @@ function attach_settings_signals(ext, connect) {
         }
         ext.retile_workspace();
     });
-    for (const key of ['active-hint', 'active-hint-border-radius', 'hint-color-rgba']) {
-        connect(s, `changed::${key}`, () => ext.focus_window()?.update_border_layout());
+    connect(s, 'changed::active-hint', () => {
+        ext.indicator?.active_hint?.setToggleState(ext.settings.active_hint());
+        ext.focus_window()?.update_border_layout();
+    });
+    connect(s, 'changed::active-hint-border-radius', () => {
+        ext.indicator?.border_radius?.set_text(String(ext.settings.active_hint_border_radius()));
+        ext.focus_window()?.update_border_layout();
+    });
+    for (const key of ['active-hint-size', 'hint-color-rgba']) {
+        if (s.settings_schema.has_key(key)) {
+            connect(s, `changed::${key}`, () => ext.focus_window()?.update_border_layout());
+        }
     }
     connect(s, 'changed::log-level', () => set_log_level(ext.settings.log_level()));
     if (ext.settings.int) {

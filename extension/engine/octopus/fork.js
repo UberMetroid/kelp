@@ -2,12 +2,11 @@
 // First-Principles & Zero-Trust Page Header
 // - Page Responsibility / Functional Domain:
 //   Binary Space Partitioning (BSP) internal split node (`Fork`) managing left/right
-//   branch geometry, split ratios, orientation toggling, and monitor/workspace migration.
+//   branch geometry, split ratios, and orientation toggling.
 // - Zero-Trust Boundary & Invariants:
 //   Split ratios are clamped (`min_b = Math.min(256, Math.max(32, floor(fork_len / 4)))`) and
 //   snapped to 32px grid increments within `[min_b, fork_len - min_b]` so degenerate resize drags
-//   cannot collapse a branch to 0px or 1px. `migrate()` blocks window size signals during workspace
-//   reassignment and always unblocks them afterward. Zero top-level GObject calls at import time.
+//   cannot collapse a branch to 0px or 1px. Zero top-level GObject calls at import time.
 
 import * as Ecs from '../ecs/world.js';
 import * as Rect from '../geom/rectangle.js';
@@ -163,56 +162,6 @@ export class Fork {
         } else {
             this.left.measure(tiler, ext, this.entity, this.area, record);
         }
-    }
-
-    migrate(ext, forest, area, monitor, workspace) {
-        if (!ext.auto_tiler || !this.is_toplevel) return;
-        const primary = global.display.get_primary_monitor() === monitor;
-        this.monitor = monitor;
-        this.workspace = workspace;
-        this.on_primary_display = primary;
-        const blocked = [];
-        forest.toplevel.set(forest.string_reps.get(this.entity), [this.entity, [monitor, workspace]]);
-        for (const child of forest.iter(this.entity)) {
-            if (child.inner.kind === node.NodeKind.FORK) {
-                const cfork = forest.forks.get(child.inner.entity);
-                if (!cfork) continue;
-                cfork.workspace = workspace;
-                cfork.monitor = monitor;
-                cfork.on_primary_display = primary;
-            } else if (child.inner.kind === node.NodeKind.WINDOW) {
-                const window = ext.windows.get(child.inner.entity);
-                if (window) {
-                    ext.size_signals_block(window);
-                    window.reassignment = false;
-                    window.known_workspace = workspace;
-                    window.meta.change_workspace_by_index(workspace, true);
-                    ext.monitors.insert(window.entity, [monitor, workspace]);
-                    blocked.push(window);
-                }
-            } else if (child.inner.kind === node.NodeKind.STACK) {
-                for (const entity of child.inner.entities) {
-                    const stack = ext.auto_tiler.forest.stacks.get(child.inner.idx);
-                    if (stack) stack.workspace = workspace;
-                    const window = ext.windows.get(entity);
-                    if (window) {
-                        ext.size_signals_block(window);
-                        window.known_workspace = workspace;
-                        window.meta.change_workspace_by_index(workspace, true);
-                        ext.monitors.insert(window.entity, [monitor, workspace]);
-                        blocked.push(window);
-                    }
-                }
-            }
-        }
-        area.x += ext.gap_outer;
-        area.y += ext.gap_outer;
-        area.width -= ext.gap_outer * 2;
-        area.height -= ext.gap_outer * 2;
-        this.set_area(area.clone());
-        this.measure(forest, ext, area, forest.on_record());
-        forest.arrange(ext, workspace, true);
-        for (const window of blocked) ext.size_signals_unblock(window);
     }
 
     rebalance_orientation() {

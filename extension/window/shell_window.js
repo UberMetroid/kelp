@@ -103,7 +103,7 @@ export class ShellWindow {
     }
 
     is_tilable(ext) {
-        if (ext.contains_tag(this.entity, 1) || this.meta.customJS_ding) return false;
+        if (ext.contains_tag(this.entity, 1) || this.meta.customJS_ding || this.meta.is_on_all_workspaces?.()) return false;
         const wt = this.meta.get_window_type();
         if (wt !== Meta.WindowType.NORMAL) return false;
         if (this.meta.is_override_redirect()) return false;
@@ -113,7 +113,7 @@ export class ShellWindow {
         const wm_class = this.meta.get_wm_class();
         const wm_title = this.meta.get_title();
         if (wm_class === null && wm_title === null) return false;
-        if (typeof wm_title === 'string' && (wm_title.startsWith('Desktop Icons ') || wm_title.includes('@!') || wm_title.endsWith(' '))) return false;
+        if (typeof wm_title === 'string' && (wm_title.startsWith('Desktop Icons ') || wm_title.includes('@!'))) return false;
         if (ext.conf.window_shall_float(wm_class, wm_title)) {
             return ext.contains_tag(this.entity, 3);
         }
@@ -144,15 +144,18 @@ export class ShellWindow {
 
         const apply = () => {
             if (!this.actor_exists()) { ext.size_signals_unblock(this); return; }
-            const actor = this.meta.get_compositor_private();
-            if (actor && typeof actor.remove_all_transitions === 'function') {
-                actor.remove_all_transitions();
+            try {
+                const actor = this.meta.get_compositor_private();
+                if (actor && typeof actor.remove_all_transitions === 'function') {
+                    actor.remove_all_transitions();
+                }
+                this.meta.move_resize_frame(true, x, y, w, h);
+                ext.monitors.insert(this.entity, [this.meta.get_monitor(), this.workspace_id()]);
+                if (on_complete) on_complete();
+                this.show_border(ext);
+            } finally {
+                ext.register_fn(() => ext.size_signals_unblock(this));
             }
-            this.meta.move_resize_frame(true, x, y, w, h);
-            ext.monitors.insert(this.entity, [this.meta.get_monitor(), this.workspace_id()]);
-            if (on_complete) on_complete();
-            this.show_border(ext);
-            ext.register_fn(() => ext.size_signals_unblock(this));
         };
 
         ext.register_fn(apply);

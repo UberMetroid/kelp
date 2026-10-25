@@ -166,8 +166,8 @@ function focus_window_in(ext, select) {
 }
 
 export function on_focused(ext, win) {
-    ext.size_signals_unblock(win);
     if (!win) return;
+    ext.size_signals_unblock(win);
 
     const prev_entity = ext.focused_window_entity();
     if (prev_entity && !Ecs.entity_eq(prev_entity, win.entity)) {

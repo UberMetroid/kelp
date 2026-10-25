@@ -124,7 +124,7 @@ export const OverviewDialog = GObject.registerClass(
                 });
                 del.connect('clicked', () => {
                     this.remove_rule(rule.class, rule.title);
-                    this.list.remove_child(row);
+                    row.destroy();
                 });
                 row.add_child(lbl);
                 row.add_child(del);

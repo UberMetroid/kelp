@@ -128,6 +128,7 @@ pub const EXTENSION_FILES: &[(&str, &str)] = &[
     ext_file!("ui/settings/float_rules.js"),
     ext_file!("ui/settings/gsettings.js"),
     ext_file!("ui/settings/log.js"),
+    ext_file!("ui/settings/prefs_pages.js"),
     ext_file!("ui/stack.js"),
     ext_file!("ui/stack_widgets.js"),
     ext_file!("window/controller.js"),

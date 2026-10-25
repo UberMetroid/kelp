@@ -117,6 +117,7 @@ export class Ext extends Ecs.World {
         if (this._destroyed) return;
         const win = this.windows.get(entity);
         if (!win) return;
+        this.size_signals_unblock(win);
         const idx = win.actor_destroy_sig ? this.signals.indexOf(win.actor_destroy_sig) : -1;
         if (idx !== -1) this.signals.splice(idx, 1);
         win.actor_destroy_sig = null;

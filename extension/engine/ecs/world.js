@@ -82,9 +82,8 @@ export class Storage {
 
     insert(entity, component) {
         const [id, gen] = entity;
-        const length = this.store.length;
-        if (length < id) {
-            this.store.fill(null, length, id);
+        while (this.store.length < id) {
+            this.store.push(null);
         }
         this.store[id] = [gen, component];
     }
@@ -176,6 +175,7 @@ export class World {
     }
 
     delete_entity(entity) {
+        if (!entity || this.free_slots.includes(entity[0])) return;
         this.tags(entity)?.clear();
         for (const storage of this.storages) {
             storage.remove(entity);

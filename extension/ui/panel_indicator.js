@@ -204,7 +204,7 @@ export class Indicator {
 
         const [border_item, border_entry] = number_entry(
             _('Active Hint Border Radius'),
-            { value: ext.settings.active_hint_border_radius(), min: 0, max: 30 },
+            { value: ext.settings.active_hint_border_radius(), min: 0, max: 32 },
             (v) => ext.settings.set_active_hint_border_radius(v),
         );
         this.border_radius = border_entry;
@@ -225,6 +225,14 @@ export class Indicator {
         menu.addMenuItem(this.smart_gaps);
         menu.addMenuItem(border_item);
         menu.addMenuItem(gap_item);
+
+        menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        const prefs_item = new PopupMenu.PopupMenuItem(_('Settings & About…'));
+        prefs_item.connect('activate', () => {
+            menu.close(true);
+            this.ext.extension?.openPreferences?.();
+        });
+        menu.addMenuItem(prefs_item);
 
         this.sync_mode(ext.mode);
         Main.panel.addToStatusArea('kelp', this.button);
