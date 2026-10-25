@@ -1,4 +1,4 @@
-# <img src="extension/icons/kelp-auto-on-symbolic.svg" width="32" height="32" alt="Kelp Tiling Icon" /> Kelp
+# <img src="extension/icons/kelp-octopus-symbolic.svg" width="32" height="32" alt="Kelp Tiling Icon" /> Kelp
 
 [![CI & EGO Bundle Verification](https://github.com/UberMetroid/kelp/actions/workflows/ci.yml/badge.svg)](https://github.com/UberMetroid/kelp/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/UberMetroid/kelp)](https://github.com/UberMetroid/kelp/releases/latest)
@@ -16,9 +16,9 @@ Left-clicking the top-bar icon (or pressing `Super + Y`) cycles through all 3 mo
 
 | Top-Bar Icon | Animal Mode | Layout Style | Left-Click / Scroll Action |
 | :---: | :--- | :--- | :--- |
-| <img src="extension/icons/kelp-auto-on-symbolic.svg" width="32" height="32" alt="Octopus 2D Grid Icon" /> | **Octopus — 2D Grid** *(Default)* | Hyprland-style 2D Binary Space Partitioning (`AutoTiler` + `Forest`) with tabbed stacks (`Super + S`). | Left-click switches to **Seahorse** |
-| <img src="extension/icons/kelp-seahorse-symbolic.svg" width="32" height="32" alt="Seahorse Scrolling Strip Icon" /> | **Seahorse — Scrolling Strip** | Niri-style horizontal scrolling strip of full-height columns (`SeahorseTiler`), showing up to 2 side-by-side columns (`Super + O` for 100% full-width) with off-viewport actors hidden so windows never bleed across monitors. | Left-click switches to **Otter** · Mouse wheel scrolls columns |
-| <img src="extension/icons/kelp-auto-off-symbolic.svg" width="32" height="32" alt="Otter Floating Icon" /> | **Otter — Floating** | Standard GNOME / Windows free-floating mode with gently cascaded windows, monitor edge-tiling, and `Ctrl/Shift + Super + Left/Right/Up/Down` 50% edge-snap. | Left-click switches to **Octopus** |
+| <img src="extension/icons/kelp-octopus-symbolic.svg" width="32" height="32" alt="Octopus 2D Grid Icon" /> | **Octopus — 2D Grid** *(Default)* | Hyprland-style 2D Binary Space Partitioning (`OctopusTiler` + `Forest` in `engine/octopus/`) with tabbed stacks (`Super + S`). | Left-click switches to **Seahorse** |
+| <img src="extension/icons/kelp-seahorse-symbolic.svg" width="32" height="32" alt="Seahorse Scrolling Strip Icon" /> | **Seahorse — Scrolling Strip** | Niri-style horizontal scrolling strip of full-height columns (`SeahorseTiler` in `engine/seahorse/`), showing up to 2 side-by-side columns (`Super + O` for 100% full-width) with off-viewport actors hidden so windows never bleed across monitors. | Left-click switches to **Otter** · Mouse wheel scrolls columns |
+| <img src="extension/icons/kelp-otter-symbolic.svg" width="32" height="32" alt="Otter Floating Icon" /> | **Otter — Floating** | Standard GNOME / Windows free-floating mode (`engine/otter/otter_tiler.js`) with gently cascaded windows, monitor edge-tiling, and `Ctrl/Shift + Super + Left/Right/Up/Down` 50% edge-snap. | Left-click switches to **Octopus** |
 
 ---
 

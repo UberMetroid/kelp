@@ -204,8 +204,10 @@ export class Config {
         if (conf.kind === 1) {
             this.float = conf.value.float;
             this.log_on_focus = Boolean(conf.value.log_on_focus);
-        } else {
+        } else if (conf.value === 'config.json not found') {
             log.debug(`config reload skipped: ${conf.value}`);
+        } else {
+            log.warn(`config reload failed: ${conf.value}`);
         }
     }
 

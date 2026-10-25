@@ -21,11 +21,12 @@ import {
 export const TAB_HEIGHT = 24;
 
 export class Stack {
-    constructor(ext, active_entity, workspace) {
+    constructor(ext, active_entity, workspace, monitor = 0) {
         this.ext = ext;
         this.active = active_entity;
         this.active_id = 0;
         this.workspace = workspace;
+        this.monitor = monitor;
         this.tabs = [];
         this.rect = null;
         this.restack = null;
@@ -47,6 +48,20 @@ export class Stack {
         const display = global.display;
         if (display) {
             this.restack = display.connect('restacked', () => this.restack_tabs());
+        }
+    }
+
+    sync_visibility(overview_visible = false) {
+        if (!this.widgets) return;
+        const on_active_ws =
+            this.ext?.should_ignore_workspace?.(this.monitor) ||
+            !this.ext?.active_workspace ||
+            this.workspace === this.ext.active_workspace();
+        if (overview_visible || !on_active_ws) {
+            this.widgets.tabs.hide();
+        } else {
+            this.widgets.tabs.show();
+            this.restack_tabs();
         }
     }
 
@@ -104,10 +119,14 @@ export class Stack {
         if (!win) return;
         const actor = win.meta.get_compositor_private();
         if (!actor) return;
-        if (show) {
+        const on_active_ws =
+            this.ext?.should_ignore_workspace?.(this.monitor) ||
+            !this.ext?.active_workspace ||
+            this.workspace === this.ext.active_workspace();
+        if (show && !win.meta.minimized && on_active_ws) {
             actor.show();
             win.stack_Previously_hidden = false;
-        } else if (!win.meta.minimized) {
+        } else if (!show && !win.meta.minimized) {
             actor.hide();
             win.stack_Previously_hidden = true;
         }
@@ -175,17 +194,15 @@ export class Stack {
         const tab_h = TAB_HEIGHT * scale;
         this.widgets.tabs.set_position(this.rect.x, this.rect.y - tab_h);
         this.widgets.tabs.set_size(this.rect.width, tab_h);
-        this.restack_tabs();
+        this.sync_visibility();
     }
 
     update_positions(rect) {
-        const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor || 1;
-        const tab_h = TAB_HEIGHT * scale;
         this.rect = {
             x: rect.x,
-            y: rect.y + tab_h,
+            y: rect.y,
             width: rect.width,
-            height: Math.max(1, rect.height - tab_h),
+            height: Math.max(1, rect.height),
         };
         this.reposition();
     }

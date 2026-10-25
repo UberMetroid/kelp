@@ -47,11 +47,11 @@ export function detach_from_forest(forest, ext, fork_entity, window) {
                 fork.right = null;
                 if (parent) {
                     const pfork = reassign_child_to_parent(forest, fork_entity, parent, fork.left);
-                    if (!pfork) return null;
-                    reflow_fork = [parent, pfork];
+                    reflow_fork = pfork ? [parent, pfork] : null;
                 }
             } else {
                 forest.delete_entity(fork.entity);
+                reflow_fork = null;
             }
         });
     } else if (fork.right) {
@@ -73,7 +73,10 @@ export function detach_from_forest(forest, ext, fork_entity, window) {
             stack_detach = true;
             remove_from_stack(forest, ext, fork.right.inner, window, () => {
                 fork.right = null;
-                reassign_to_parent(forest, fork, fork.left);
+                if (parent) {
+                    const pfork = reassign_child_to_parent(forest, fork_entity, parent, fork.left);
+                    reflow_fork = pfork ? [parent, pfork] : null;
+                }
             });
         }
     }
@@ -225,7 +228,7 @@ export function resize_fork_in_forest(forest, ext, child_e, crect, mov, shrunk) 
     if (!child) return;
     const length = child.is_horizontal()
         ? (is_left ? crect.x + crect.width - child.area.x : crect.x - child.area.x)
-        : (is_left ? crect.y + crect.height - child.area.y : child.area.height - crect.height);
+        : (is_left ? crect.y + crect.height - child.area.y : Math.max(32, Math.round(crect.y - child.area.y)));
     child.set_ratio(length);
     child.measure(forest, ext, child.area, forest.on_record());
 }

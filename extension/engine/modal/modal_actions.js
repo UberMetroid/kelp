@@ -16,8 +16,8 @@ import * as geom from '../geom/rectangle.js';
 import { GrabOp } from '../geom/movement.js';
 import * as Log from '../../ui/settings/log.js';
 import { ShellWindow } from '../../window/shell_window.js';
-import * as Node from './node.js';
-import { Direction } from './tiler.js';
+import * as Node from '../octopus/node.js';
+import { Direction } from './modal_tiler.js';
 
 export function unstack_from_fork(ext, stack, focused, fork, left, right, is_left) {
     if (!ext.auto_tiler) return null;

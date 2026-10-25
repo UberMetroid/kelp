@@ -24,7 +24,12 @@ export function move_window_to_monitor(ext, direction) {
     if (next_mon < 0 || next_mon === current_mon) return;
 
     win.meta.move_to_monitor(next_mon);
-    ext.register_fn(() => win.activate(ext, true));
+    ext.register_fn(() => {
+        if (win.meta.get_monitor() !== current_mon && ext.monitors.get(win.entity)?.[0] === current_mon) {
+            win.window_changed();
+        }
+        win.activate(ext, true);
+    });
 }
 
 /**

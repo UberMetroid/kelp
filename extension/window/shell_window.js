@@ -14,14 +14,6 @@ import { Rectangle } from '../engine/geom/rectangle.js';
 import * as log from '../ui/settings/log.js';
 import { WindowBorder, place_cursor_on_rect } from './window_border.js';
 
-let window_tracker = null;
-function get_tracker() {
-    if (!window_tracker) {
-        window_tracker = Shell.WindowTracker.get_default();
-    }
-    return window_tracker;
-}
-
 export class ShellWindow {
     constructor(entity, window, window_type, ext) {
         this.entity = entity;
@@ -84,7 +76,7 @@ export class ShellWindow {
     }
 
     icon(_ext, size) {
-        const app = get_tracker().get_window_app(this.meta);
+        const app = Shell.WindowTracker.get_default().get_window_app(this.meta);
         return app ? app.create_icon_texture(size) : null;
     }
 
@@ -137,6 +129,8 @@ export class ShellWindow {
         const clone = Rectangle.from_meta(rect);
         const work_area = ext.monitor_work_area(this.meta.get_monitor());
         if (work_area) clone.clamp(work_area);
+        const x = Math.round(clone.x), y = Math.round(clone.y);
+        const w = Math.max(1, Math.round(clone.width)), h = Math.max(1, Math.round(clone.height));
         this.hide_border();
 
         if (this.is_maximized()) this.unmaximize();
@@ -147,8 +141,7 @@ export class ShellWindow {
             if (actor && typeof actor.remove_all_transitions === 'function') {
                 actor.remove_all_transitions();
             }
-            this.meta.move_resize_frame(true, clone.x, clone.y, clone.width, clone.height);
-            this.meta.move_frame(true, clone.x, clone.y);
+            this.meta.move_resize_frame(true, x, y, w, h);
             ext.monitors.insert(this.entity, [this.meta.get_monitor(), this.workspace_id()]);
             if (on_complete) on_complete();
             this.show_border(ext);
@@ -157,59 +150,44 @@ export class ShellWindow {
         ext.register_fn(apply);
     }
 
-    name(ext) {
-        return ext.names.get(this.entity) || this.meta.get_wm_class() || 'Application';
-    }
-
-    rect() {
-        return Rectangle.from_meta(this.meta.get_frame_rect());
-    }
-
-    same_monitor(other) {
-        return this.meta.get_monitor() === other.meta.get_monitor();
-    }
-
-    same_workspace(other) {
-        return this.workspace_id() === other.workspace_id();
-    }
+    name(_ext) { return this.meta.get_wm_class() || 'Application'; }
+    rect() { return Rectangle.from_meta(this.meta.get_frame_rect()); }
+    same_monitor(other) { return this.meta.get_monitor() === other.meta.get_monitor(); }
+    same_workspace(other) { return this.workspace_id() === other.workspace_id(); }
 
     swap(ext, other) {
-        const ar = this.rect().clone();
-        const br = other.rect().clone();
+        const ar = this.rect().clone(), br = other.rect().clone();
         this.move(ext, br);
         other.move(ext, ar);
         place_cursor_on_rect(br, ext.settings.mouse_cursor_focus_location());
     }
 
-    title() {
-        return this.meta.get_title() || this.meta.get_wm_class() || '';
-    }
-
-    workspace_id() {
-        const ws = this.meta.get_workspace();
-        return ws ? ws.index() : 0;
-    }
-
-    hide_border() {
-        if (this.border) this.border.hide();
-    }
+    title() { return this.meta.get_title() || this.meta.get_wm_class() || ''; }
+    workspace_id() { const ws = this.meta.get_workspace(); return ws ? ws.index() : 0; }
+    hide_border() { if (this.border) this.border.hide(); }
 
     show_border(ext = this.ext) {
-        if (this.border && Ecs_entity_eq_opt(ext.focused_window_entity(), this.entity)) {
-            this.border.show(ext);
-        }
+        if (this.border && Ecs_entity_eq_opt(ext.focused_window_entity(), this.entity)) this.border.show(ext);
     }
 
     update_border_layout() {
         if (!this.border) return;
-        if (this.ext.focus_window() === this) {
-            this.border.show(this.ext);
-        } else {
-            this.border.hide();
-        }
+        if (this.ext.focus_window() === this) this.border.show(this.ext);
+        else this.border.hide();
     }
 
     window_changed() {
+        const mon = this.meta.get_monitor();
+        const prev_mon = this.ext.monitors.get(this.entity)?.[0];
+        if (prev_mon !== undefined && mon !== prev_mon && !this.grab) {
+            this.ext.monitors.insert(this.entity, [mon, this.workspace_id()]);
+            if (this.ext.auto_tiler && this.is_tilable(this.ext)) {
+                this.ext.auto_tiler.detach_window(this.ext, this.entity);
+                this.ext.auto_tiler.auto_tile(this.ext, this, false);
+                this.update_border_layout();
+                return;
+            }
+        }
         this.ext.on_window_changed(this);
         this.update_border_layout();
     }
@@ -218,6 +196,7 @@ export class ShellWindow {
         const nw = this.workspace_id();
         if (nw !== this.known_workspace) {
             this.known_workspace = nw;
+            this.ext.monitors.insert(this.entity, [this.meta.get_monitor(), nw]);
             if (this.ext.auto_tiler && this.is_tilable(this.ext)) {
                 this.ext.auto_tiler.auto_tile(this.ext, this, false);
             }
@@ -234,22 +213,14 @@ export class ShellWindow {
     destroy() {
         if (this.meta) {
             for (const sig of this.window_signals) {
-                try {
-                    this.meta.disconnect(sig);
-                } catch (_e) {
-                    log.debug('signal already disconnected on Meta.Window');
-                }
+                try { this.meta.disconnect(sig); } catch (_e) { log.debug('signal already disconnected on Meta.Window'); }
             }
         }
         this.window_signals = [];
-        if (this.border) {
-            this.border.destroy();
-            this.border = null;
-        }
+        if (this.border) { this.border.destroy(); this.border = null; }
     }
 }
 
 function Ecs_entity_eq_opt(a, b) {
-    if (!a || !b) return false;
-    return a[0] === b[0] && a[1] === b[1];
+    return Boolean(a && b && a[0] === b[0] && a[1] === b[1]);
 }

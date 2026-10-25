@@ -80,18 +80,10 @@ export class Rectangle {
     }
 
     clamp(other) {
-        this.x = Math.max(other.x, this.x);
-        this.y = Math.max(other.y, this.y);
-        let tend = this.x + this.width;
-        let oend = other.x + other.width;
-        if (tend > oend) {
-            this.width = oend - this.x;
-        }
-        tend = this.y + this.height;
-        oend = other.y + other.height;
-        if (tend > oend) {
-            this.height = oend - this.y;
-        }
+        this.width = Math.max(1, Math.min(this.width, other.width));
+        this.height = Math.max(1, Math.min(this.height, other.height));
+        this.x = Math.max(other.x, Math.min(this.x, other.x + other.width - this.width));
+        this.y = Math.max(other.y, Math.min(this.y, other.y + other.height - this.height));
     }
 
     clone() {

@@ -16,15 +16,9 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { ExtEvent } from '../engine/ecs/events.js';
 import { GrabOp, is_keyboard_op, is_move_op, is_resize_op } from '../engine/geom/movement.js';
 import { Orientation } from '../engine/geom/rectangle.js';
-import { cursor_placement } from '../engine/tree/auto_tiler.js';
+import { cursor_placement } from '../engine/octopus/octopus_tiler.js';
 import { set_log_level } from '../ui/settings/log.js';
-import {
-    load_theme,
-    set_gap_inner,
-    set_gap_outer,
-    update_display_configuration,
-    update_scale,
-} from './controller_display.js';
+import { load_theme, set_gap_inner, set_gap_outer, update_display_configuration, update_scale } from './controller_display.js';
 
 export function cancel_drag_signal(ext) {
     if (ext.drag_signal !== null) {
@@ -44,12 +38,8 @@ export function on_grab_start(ext, meta_win, op) {
     ext.size_signals_block(win);
 
     if (
-        Main.overview.visible ||
-        is_keyboard_op(op) ||
-        is_resize_op(op) ||
-        !is_move_op(op) ||
-        !ext.auto_tiler ||
-        !win.is_tilable(ext)
+        Main.overview.visible || is_keyboard_op(op) || is_resize_op(op) ||
+        !is_move_op(op) || !ext.auto_tiler || ext.auto_tiler.is_seahorse || !win.is_tilable(ext)
     ) {
         return;
     }
@@ -73,19 +63,15 @@ export function on_grab_start(ext, meta_win, op) {
         if (!fork) return GLib.SOURCE_CONTINUE;
         const windowless = ext.auto_tiler.largest_on_workspace(ext, monitor, workspace) === null;
         if (attach_to === null && fork.left.inner.kind === 2 && fork.right?.inner.kind === 2) {
-            const attaching = fork.left.is_window(win.entity)
-                ? fork.right.inner.entity
-                : fork.left.inner.entity;
+            const attaching = fork.left.is_window(win.entity) ? fork.right.inner.entity : fork.left.inner.entity;
             attach_to = ext.windows.get(attaching);
         }
         let area = null;
         let monitor_attachment = false;
         if (windowless) {
             area = ext.monitor_work_area(monitor);
-            area.x += ext.gap_outer;
-            area.y += ext.gap_outer;
-            area.width -= ext.gap_outer * 2;
-            area.height -= ext.gap_outer * 2;
+            area.x += ext.gap_outer; area.y += ext.gap_outer;
+            area.width -= ext.gap_outer * 2; area.height -= ext.gap_outer * 2;
             monitor_attachment = true;
         } else if (attach_to) {
             const is_sibling = ext.auto_tiler.windows_are_siblings(win.entity, attach_to.entity);
@@ -100,8 +86,7 @@ export function on_grab_start(ext, meta_win, op) {
             return GLib.SOURCE_CONTINUE;
         }
         const { orientation, swap } = result;
-        const hw = area.width / 2;
-        const hh = area.height / 2;
+        const hw = Math.floor(area.width / 2), hh = Math.floor(area.height / 2);
         const [ox, oy, ow, oh] =
             orientation === Orientation.HORIZONTAL
                 ? swap ? [area.x, area.y, hw, area.height] : [area.x + hw, area.y, hw, area.height]
@@ -121,10 +106,24 @@ export function on_grab_end(ext, meta_win, op) {
     win.grab = false;
     ext.size_signals_unblock(win);
 
-    if (!ext.auto_tiler || !win.is_tilable(ext)) return;
+    if (!ext.auto_tiler || !win.is_tilable(ext)) {
+        win.floating_rect = win.rect();
+        win.prev_rect = null;
+        return;
+    }
 
     if (is_move_op(op)) {
+        if (win.prev_rect && win.rect().eq(win.prev_rect)) {
+            win.prev_rect = null;
+            return;
+        }
         ext.auto_tiler.on_drop(ext, win, false);
+        win.prev_rect = null;
+        return;
+    }
+
+    if (ext.auto_tiler.is_seahorse) {
+        ext.auto_tiler.reflow(ext, win.entity);
         win.prev_rect = null;
         return;
     }
@@ -144,8 +143,7 @@ export function on_grab_end(ext, meta_win, op) {
 
 export function attach_controller_signals(ext) {
     const connect = (obj, sig, cb) => {
-        if (!obj) return;
-        ext.signals.push([obj, obj.connect(sig, cb)]);
+        if (obj) ext.signals.push([obj, obj.connect(sig, cb)]);
     };
 
     const display = global.display;
@@ -153,32 +151,21 @@ export function attach_controller_signals(ext) {
     const stage_ctx = St.ThemeContext.get_for_stage(global.stage);
 
     connect(stage_ctx, 'notify::scale-factor', () => update_scale(ext));
-
-    connect(display, 'window-created', (_d, win) => {
-        ext.register(ExtEvent.WindowCreate(win));
-    });
-
-    // Mutter 18/19 (GNOME 45–51) passes (display, window, op) on grab-op-begin / grab-op-end
+    connect(display, 'window-created', (_d, win) => ext.register(ExtEvent.WindowCreate(win)));
     connect(display, 'grab-op-begin', (_d, win, op) => on_grab_start(ext, win, op));
     connect(display, 'grab-op-end', (_d, win, op) => on_grab_end(ext, win, op));
-
     connect(display, 'notify::focus-window', () => {
-        ext.register_fn(() => {
-            const win = ext.focus_window();
-            if (win) ext.on_focused(win);
-        });
+        ext.register_fn(() => { const win = ext.focus_window(); if (win) ext.on_focused(win); });
     });
-
     connect(display, 'workareas-changed', () => update_display_configuration(ext, true));
-
     if (Main.layoutManager) {
-        connect(Main.layoutManager, 'monitors-changed', () => {
-            update_display_configuration(ext, false);
-        });
+        connect(Main.layoutManager, 'monitors-changed', () => update_display_configuration(ext, false));
     }
 
     connect(wsm, 'active-workspace-changed', () => {
         ext.hide_all_borders();
+        ext.auto_tiler?.sync_workspace_visibility?.(ext);
+        if (ext.auto_tiler?.is_seahorse) ext.auto_tiler.retile_all(ext);
         const win = ext.focus_window();
         if (win) ext.on_focused(win);
     });
@@ -197,9 +184,7 @@ export function attach_controller_signals(ext) {
     }
 
     if (Main.sessionMode) {
-        connect(Main.sessionMode, 'updated', () => {
-            if (Main.sessionMode.isLocked) ext.exit_modes();
-        });
+        connect(Main.sessionMode, 'updated', () => { if (Main.sessionMode.isLocked) ext.exit_modes(); });
     }
 
     attach_settings_signals(ext, connect);

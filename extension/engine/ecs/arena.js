@@ -15,8 +15,8 @@ export class Arena {
     }
 
     truncate(n) {
-        this.slots.splice(n);
-        this.unused.splice(n);
+        this.slots.length = n;
+        this.unused = this.unused.filter((s) => s < n);
     }
 
     get(n) {

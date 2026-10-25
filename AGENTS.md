@@ -33,7 +33,7 @@ Kelp (`kelp@ubermetroid.github.io`) is built on four uncompromising engineering 
 ## 3. Process-Boundary & GNOME Shell / EGO Lifecycle Invariants (`tests/lint.rs`)
 
 - **ES2022 Strictness**: Zero `var` declarations (`const`/`let` only) and zero loose equality operators (`===`/`!==` only).
-- **Process Boundary Separation**: `extension/prefs.js` runs in the GTK4 `gnome-extensions-app` process. Neither `prefs.js` nor any module in its import chain (`engine/geom/focus.js`, `engine/geom/rectangle.js`, `ui/settings/gsettings.js`, `ui/settings/color.js`, `ui/settings/log.js`) may import compositor-only typelibs (`gi://Meta`, `gi://Clutter`, `gi://St`, `gi://Shell`, `resource:///org/gnome/shell/*`).
+- **Process Boundary Separation**: `extension/prefs.js` runs in the GTK4 `gnome-extensions-app` process. Neither `prefs.js` nor any module in its import chain (`engine/geom/focus.js`, `engine/geom/rectangle.js`, `engine/otter/otter_tiler.js`, `engine/seahorse/seahorse_tiler.js`, `ui/settings/gsettings.js`, `ui/settings/color.js`, `ui/settings/log.js`) may import compositor-only typelibs (`gi://Meta`, `gi://Clutter`, `gi://St`, `gi://Shell`, `resource:///org/gnome/shell/*`).
 - **Deterministic EGO Teardown**: `extension/extension.js` performs zero top-level work at import time and deterministically cleans up all timers, signals, keybindings, borders, stacks, modal dialogs, and themes in `disable()`.
 
 ---
@@ -45,7 +45,7 @@ Kelp (`kelp@ubermetroid.github.io`) is built on four uncompromising engineering 
 - [`src/main.rs`](src/main.rs): Binary CLI entrypoint and error-reporting exit-code dispatcher.
 - [`src/cli_options.rs`](src/cli_options.rs): Zero-dependency CLI parser (`--pack [OUT_DIR]`, `--help`, `--version`).
 - [`src/default_rules.rs`](src/default_rules.rs): Default float-exception config JSON, OWASP size/structure validator, and GNOME Control Center keybinding XML definitions.
-- [`src/embedded_assets.rs`](src/embedded_assets.rs): Compile-time `include_str!` manifest of all 34 JS files, 3 CSS themes, 3 SVG icons, and GSettings schema.
+- [`src/embedded_assets.rs`](src/embedded_assets.rs): Compile-time `include_str!` manifest of all 35 JS files, 3 CSS themes, 3 SVG icons, and GSettings schema.
 - [`src/gsettings_config.rs`](src/gsettings_config.rs): GSettings WM conflict clearer, tiling defaults, and shortcut configurator.
 - [`src/install_files.rs`](src/install_files.rs): Path-traversal-safe asset extractor, legacy flat-file purger, and schema compiler.
 - [`src/pack_bundle.rs`](src/pack_bundle.rs): EGO `.shell-extension.zip` staging tree writer and `gnome-extensions pack` runner.
@@ -53,14 +53,17 @@ Kelp (`kelp@ubermetroid.github.io`) is built on four uncompromising engineering 
 - [`tests/lint.rs`](tests/lint.rs): Automated ES2022, process-boundary, and EGO lifecycle lint verification.
 - [`tests/installer.rs`](tests/installer.rs): End-to-end tests for CLI parsing, config validation, legacy cleanup, and EGO bundle creation.
 
-### GNOME Shell Extension (`extension/` — 34 JS pages across 3 domain trees)
+### GNOME Shell Extension (`extension/` — 35 JS pages across 3 domain trees)
 - **Root Entrypoints**:
   - [`extension/extension.js`](extension/extension.js): `KelpExtension extends Extension` EGO lifecycle entrypoint.
   - [`extension/prefs.js`](extension/prefs.js): `KelpPreferences extends ExtensionPreferences` GTK4 preferences UI.
-- **Engine (`extension/engine/`)**:
+- **Engine (`extension/engine/` — 6 domain subdirectories)**:
   - `ecs/`: [`arena.js`](extension/engine/ecs/arena.js), [`world.js`](extension/engine/ecs/world.js), [`executor.js`](extension/engine/ecs/executor.js), [`events.js`](extension/engine/ecs/events.js)
-  - `geom/`: [`rectangle.js`](extension/engine/geom/rectangle.js), [`movement.js`](extension/engine/geom/movement.js), [`focus.js`](extension/engine/geom/focus.js), [`seahorse.js`](extension/engine/geom/seahorse.js)
-  - `tree/`: [`node.js`](extension/engine/tree/node.js), [`fork.js`](extension/engine/tree/fork.js), [`forest.js`](extension/engine/tree/forest.js), [`forest_resize.js`](extension/engine/tree/forest_resize.js), [`auto_tiler.js`](extension/engine/tree/auto_tiler.js), [`auto_tiler_drop.js`](extension/engine/tree/auto_tiler_drop.js), [`tiler.js`](extension/engine/tree/tiler.js), [`tiler_actions.js`](extension/engine/tree/tiler_actions.js)
+  - `geom/`: [`rectangle.js`](extension/engine/geom/rectangle.js), [`movement.js`](extension/engine/geom/movement.js), [`focus.js`](extension/engine/geom/focus.js)
+  - `octopus/`: [`octopus_tiler.js`](extension/engine/octopus/octopus_tiler.js), [`octopus_drop.js`](extension/engine/octopus/octopus_drop.js), [`forest.js`](extension/engine/octopus/forest.js), [`forest_resize.js`](extension/engine/octopus/forest_resize.js), [`fork.js`](extension/engine/octopus/fork.js), [`node.js`](extension/engine/octopus/node.js)
+  - `seahorse/`: [`seahorse_tiler.js`](extension/engine/seahorse/seahorse_tiler.js)
+  - `otter/`: [`otter_tiler.js`](extension/engine/otter/otter_tiler.js)
+  - `modal/`: [`modal_tiler.js`](extension/engine/modal/modal_tiler.js), [`modal_actions.js`](extension/engine/modal/modal_actions.js)
 - **Window Management (`extension/window/`)**:
   - [`controller.js`](extension/window/controller.js), [`controller_signals.js`](extension/window/controller_signals.js), [`controller_display.js`](extension/window/controller_display.js), [`controller_workspace.js`](extension/window/controller_workspace.js), [`shell_window.js`](extension/window/shell_window.js), [`window_border.js`](extension/window/window_border.js), [`keybindings.js`](extension/window/keybindings.js), [`overview_tray.js`](extension/window/overview_tray.js)
 - **UI & Settings (`extension/ui/`)**:

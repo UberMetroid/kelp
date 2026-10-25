@@ -38,9 +38,7 @@ export function get_log_level() {
 }
 
 export function error(text) {
-    if (current_log_level >= LOG_LEVELS.ERROR) {
-        console.error(`[Kelp] [ERROR] ${text}`);
-    }
+    console.error(`[Kelp] [ERROR] ${text}`);
 }
 
 export function warn(text) {

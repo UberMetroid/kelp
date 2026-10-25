@@ -12,10 +12,11 @@ import St from 'gi://St';
 import * as Ecs from '../engine/ecs/world.js';
 import { WakeupExecutor } from '../engine/ecs/executor.js';
 import { ExtEvent, GlobalEvent } from '../engine/ecs/events.js';
-import { SeahorseTiler } from '../engine/geom/seahorse.js';
-import { Forest } from '../engine/tree/forest.js';
-import { AutoTiler } from '../engine/tree/auto_tiler.js';
-import { Tiler } from '../engine/tree/tiler.js';
+import { ModalTiler } from '../engine/modal/modal_tiler.js';
+import { Forest } from '../engine/octopus/forest.js';
+import { OctopusTiler } from '../engine/octopus/octopus_tiler.js';
+import { cascade_otter_windows, snap_otter_window } from '../engine/otter/otter_tiler.js';
+import { SeahorseTiler } from '../engine/seahorse/seahorse_tiler.js';
 import { ExtensionSettings, TILING_MODES } from '../ui/settings/gsettings.js';
 import { Config } from '../ui/settings/float_rules.js';
 import * as log from '../ui/settings/log.js';
@@ -24,7 +25,7 @@ import { ExceptionDialog } from '../ui/exception_dialog.js';
 import { ShellWindow } from './shell_window.js';
 import { Keybindings } from './keybindings.js';
 import { move_window_to_monitor, move_window_to_workspace } from './overview_tray.js';
-import { cascade_otter_windows, load_theme, monitor_work_area, set_edge_tiling, snap_otter_window, unload_theme, update_scale } from './controller_display.js';
+import { load_theme, monitor_work_area, set_edge_tiling, unload_theme, update_scale } from './controller_display.js';
 import { active_window_list, active_workspace, cursor_status, focus_down, focus_left, focus_right, focus_selector, focus_up, on_focused, previously_focused, should_ignore_workspace, tab_list, windows_at_pointer, workspace_id } from './controller_workspace.js';
 import { attach_controller_signals, cancel_drag_signal } from './controller_signals.js';
 
@@ -40,11 +41,7 @@ export class Ext extends Ecs.World {
         this.conf.reload();
         this.ids = this.register_storage();
         this.monitors = this.register_storage();
-        this.movements = this.register_storage();
-        this.names = this.register_storage();
-        this.snapped = this.register_storage();
         this.windows = this.register_storage();
-
         this.signals = [];
         this.size_signals_blocked = new Set();
         this.prev_focused = [null, null];
@@ -53,22 +50,19 @@ export class Ext extends Ecs.World {
         this.ignore_display_update = false;
         this.current_style = null;
         this.focus_selector = focus_selector;
-
+        this._switching_mode = false;
         this.overlay = new St.BoxLayout({ style_class: 'kelp-overlay', visible: false });
         if (global.window_group) global.window_group.add_child(this.overlay);
         update_scale(this);
         load_theme(this);
-
         this.events = new WakeupExecutor();
-        this.tiler = new Tiler(this);
+        this.tiler = new ModalTiler(this);
         this.mode = this.settings.tiling_mode();
         this.auto_tiler = this._create_tiler_for_mode(this.mode);
         set_edge_tiling(this, this.mode === 'otter');
-
         this.keybindings = new Keybindings(this).sync(this);
         this.exception_dialog = new ExceptionDialog(this);
         this.indicator = new Indicator(this);
-
         attach_controller_signals(this);
         for (const actor of global.get_window_actors()) {
             const win = actor.get_meta_window();
@@ -80,7 +74,7 @@ export class Ext extends Ecs.World {
         const f = new Forest()
             .connect_on_attach((p, c) => this.auto_tiler?.attached.insert(c, p))
             .connect_on_detach((c) => this.auto_tiler?.attached.remove(c));
-        return new AutoTiler(f, this.register_storage());
+        return new OctopusTiler(f, this.register_storage());
     }
 
     _create_tiler_for_mode(mode) {
@@ -88,13 +82,20 @@ export class Ext extends Ecs.World {
         return mode === 'seahorse' ? new SeahorseTiler(this.register_storage()) : null;
     }
 
-    register(event) { this.events.send(event, (ev) => this.run(ev)); }
+    _destroy_auto_tiler() {
+        if (!this.auto_tiler) return;
+        const old_att = this.auto_tiler.attached;
+        this.auto_tiler.destroy(this);
+        this.unregister_storage(old_att);
+        this.auto_tiler = null;
+    }
+
+    register(event) { if (!this._destroyed) this.events.send(event, (ev) => this.run(ev)); }
     register_fn(callback) { this.register(ExtEvent.Callback(callback)); }
 
     run(event) {
-        if (event.kind === GlobalEvent.Changes) {
-            for (const [entity, rect] of this.movements.drain()) this.windows.get(entity)?.move(this, rect);
-        } else if (event.kind === GlobalEvent.Callback) event.callback();
+        if (this._destroyed) return;
+        if (event.kind === GlobalEvent.Callback) event.callback();
         else if (event.kind === GlobalEvent.WindowCreate) this.on_window_create(event.window);
         else if (event.kind === GlobalEvent.WindowMove && this.auto_tiler) event.func();
     }
@@ -170,41 +171,40 @@ export class Ext extends Ecs.World {
     move_workspace(dir) { move_window_to_workspace(this, dir); }
     size_signals_block(win) { this.size_signals_blocked.add(win.entity); }
     size_signals_unblock(win) { if (win) this.size_signals_blocked.delete(win.entity); }
-    update_snapped() {}
     show_border_on_focused() { this.hide_all_borders(); this.focus_window()?.show_border(this); }
     hide_all_borders() { for (const [, win] of this.windows.iter()) win.hide_border(); }
     toggle_floating() { if (this.auto_tiler) this.auto_tiler.toggle_floating(this); }
     toggle_tiling() { this.cycle_mode(); }
-    auto_tile_on() { this.set_mode('octopus'); }
-    auto_tile_off() { this.set_mode('otter'); }
-
-    cycle_mode() {
-        const idx = TILING_MODES.indexOf(this.mode);
-        this.set_mode(TILING_MODES[(idx + 1) % TILING_MODES.length]);
-    }
+    cycle_mode() { this.set_mode(TILING_MODES[(TILING_MODES.indexOf(this.mode) + 1) % TILING_MODES.length]); }
 
     set_mode(mode) {
+        if (this._switching_mode) return;
         const target = TILING_MODES.includes(mode) ? mode : 'octopus';
         if (this.mode === target && Boolean(this.auto_tiler) === (target !== 'otter')) {
             this.indicator?.sync_mode(target);
             return;
         }
-        if (this.mode === 'otter') {
-            for (const [, win] of this.windows.iter()) win.floating_rect = win.rect();
-        }
-        this.mode = target;
-        this.settings.set_tiling_mode(target);
-        if (this.auto_tiler) { this.auto_tiler.destroy(this); this.auto_tiler = null; }
-        this.auto_tiler = this._create_tiler_for_mode(target);
-        set_edge_tiling(this, target === 'otter');
-        this.indicator?.sync_mode(target);
-        this.keybindings.sync(this);
-        if (this.auto_tiler) {
-            for (const [, win] of this.windows.iter()) {
-                if (win.is_tilable(this)) this.auto_tiler.auto_tile(this, win, true);
+        this._switching_mode = true;
+        try {
+            if (this.mode === 'otter') {
+                for (const [, win] of this.windows.iter()) win.floating_rect = win.rect();
             }
-        } else cascade_otter_windows(this);
-        this.show_border_on_focused();
+            this._destroy_auto_tiler();
+            this.mode = target;
+            this.auto_tiler = this._create_tiler_for_mode(target);
+            this.settings.set_tiling_mode(target);
+            set_edge_tiling(this, target === 'otter');
+            this.indicator?.sync_mode(target);
+            this.keybindings.sync(this);
+            if (this.auto_tiler) {
+                for (const [, win] of this.windows.iter()) {
+                    if (win.is_tilable(this)) this.auto_tiler.auto_tile(this, win, true);
+                }
+            } else cascade_otter_windows(this);
+            this.show_border_on_focused();
+        } finally {
+            this._switching_mode = false;
+        }
     }
 
     move_global(dir) {
@@ -234,12 +234,12 @@ export class Ext extends Ecs.World {
             else if (!this.auto_tiler.attached.contains(win.entity)) this.auto_tiler.auto_tile(this, win, false);
         }
     }
-
     exception_drawer() { this.exception_dialog.open(); }
     unload_theme() { unload_theme(this); }
     exit_modes() { this.tiler.exit(this); this.exception_dialog.close(); if (this.overlay) this.overlay.visible = false; }
 
     destroy() {
+        this._destroyed = true;
         this.exit_modes();
         cancel_drag_signal(this);
         this.events.stop();
@@ -247,7 +247,7 @@ export class Ext extends Ecs.World {
         this.keybindings.disable();
         for (const [obj, sig] of this.signals) { try { obj.disconnect(sig); } catch (_e) { /* finalized */ } }
         this.signals = [];
-        if (this.auto_tiler) { this.auto_tiler.destroy(this); this.auto_tiler = null; }
+        this._destroy_auto_tiler();
         for (const [, win] of this.windows.iter()) win.destroy();
         if (this.indicator) { this.indicator.destroy(); this.indicator = null; }
         if (this.overlay) { this.overlay.destroy(); this.overlay = null; }

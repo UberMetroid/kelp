@@ -11,8 +11,8 @@
 
 import * as Ecs from '../ecs/world.js';
 import * as geom from '../geom/rectangle.js';
+import { Direction } from '../modal/modal_tiler.js';
 import * as node from './node.js';
-import { Direction } from './tiler.js';
 
 export function cursor_placement(ext, area, cursor) {
     const { LEFT, RIGHT, TOP, BOTTOM } = geom.Side;

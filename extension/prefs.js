@@ -83,12 +83,20 @@ function build_settings_widget(ext_settings) {
     ];
     const mode_ids = ['octopus', 'seahorse', 'otter'];
     const current_mode_idx = Math.max(0, mode_ids.indexOf(settings.tiling_mode()));
-    add_combo_row(grid, row++, 'Kelp Tiling Mode', mode_labels, current_mode_idx, (idx) => {
+    const mode_combo = add_combo_row(grid, row++, 'Kelp Tiling Mode', mode_labels, current_mode_idx, (idx) => {
         if (idx >= 0 && idx < mode_ids.length) settings.set_tiling_mode(mode_ids[idx]);
     });
-    add_toggle_row(grid, row++, 'Tile Windows by Default', settings.tile_by_default(), (v) =>
+    const tile_toggle = add_toggle_row(grid, row++, 'Tile Windows by Default', settings.tile_by_default(), (v) =>
         settings.set_tile_by_default(v),
     );
+    if (ext_settings.settings_schema?.has_key('tiling-mode')) {
+        ext_settings.connect('changed::tiling-mode', () => {
+            const next_idx = Math.max(0, mode_ids.indexOf(settings.tiling_mode()));
+            if (mode_combo.get_active() !== next_idx) mode_combo.set_active(next_idx);
+            const should_tile = settings.tile_by_default();
+            if (tile_toggle.active !== should_tile) tile_toggle.active = should_tile;
+        });
+    }
     add_toggle_row(grid, row++, 'Keyboard Shortcuts', settings.enable_shortcuts(), (v) =>
         settings.set_enable_shortcuts(v),
     );

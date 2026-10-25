@@ -83,7 +83,7 @@ export class Storage {
     insert(entity, component) {
         const [id, gen] = entity;
         const length = this.store.length;
-        if (length >= id) {
+        if (length < id) {
             this.store.fill(null, length, id);
         }
         this.store[id] = [gen, component];
@@ -164,8 +164,9 @@ export class World {
     create_entity() {
         const slot = this.free_slots.pop();
         if (slot !== undefined) {
-            const entity = this.entities_[slot];
-            entity[1] += 1;
+            const prev = this.entities_[slot];
+            const entity = entity_new(slot, prev[1] + 1);
+            this.entities_[slot] = entity;
             return entity;
         }
         const entity = entity_new(this.capacity, 0);

@@ -87,9 +87,9 @@ const KelpButton = GObject.registerClass(
         _init(ext) {
             super._init(0.0, _('Kelp Auto-Tiler'), false);
             this.ext = ext;
-            this.icon_octopus = Gio.icon_new_for_string(`${ext.path}/icons/kelp-auto-on-symbolic.svg`);
+            this.icon_octopus = Gio.icon_new_for_string(`${ext.path}/icons/kelp-octopus-symbolic.svg`);
             this.icon_seahorse = Gio.icon_new_for_string(`${ext.path}/icons/kelp-seahorse-symbolic.svg`);
-            this.icon_otter = Gio.icon_new_for_string(`${ext.path}/icons/kelp-auto-off-symbolic.svg`);
+            this.icon_otter = Gio.icon_new_for_string(`${ext.path}/icons/kelp-otter-symbolic.svg`);
             this.icon = new St.Icon({
                 gicon: this._icon_for_mode(ext.mode),
                 style_class: 'system-status-icon',
@@ -222,8 +222,6 @@ export class Indicator {
             item.setOrnament(mode_id === mode ? PopupMenu.Ornament.DOT : PopupMenu.Ornament.NONE);
         }
     }
-
-    sync_tiled(is_tiling) { this.sync_mode(is_tiling ? 'octopus' : 'otter'); }
 
     destroy() {
         for (const [obj, sig] of this._signals) {

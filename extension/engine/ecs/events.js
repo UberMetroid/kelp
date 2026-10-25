@@ -58,10 +58,9 @@ export const GlobalEvent = Object.freeze({
     MonitorsChanged: 2,
     OverviewShown: 3,
     OverviewHidden: 4,
-    Changes: 5,
-    Callback: 6,
-    WindowCreate: 7,
-    WindowMove: 8,
+    Callback: 5,
+    WindowCreate: 6,
+    WindowMove: 7,
 });
 
 export const WindowEvent = Object.freeze({
@@ -73,7 +72,6 @@ export const WindowEvent = Object.freeze({
 });
 
 export const ExtEvent = Object.freeze({
-    Changes: () => ({ tag: 1, kind: GlobalEvent.Changes, callback: () => {} }),
     Callback: (callback, name) => ({ tag: 1, kind: GlobalEvent.Callback, callback, name }),
     WindowCreate: (window) => ({ tag: 3, kind: GlobalEvent.WindowCreate, window }),
     WindowMove: (func) => ({ tag: 1, kind: GlobalEvent.WindowMove, callback: func, func }),
@@ -82,11 +80,6 @@ export const ExtEvent = Object.freeze({
 
 export function global(event) {
     return ExtEvent.Global(event);
-}
-
-export function window_move(ext, window, rect) {
-    ext.movements.insert(window.entity, rect);
-    return { tag: 2, window, kind: { tag: 1 } };
 }
 
 export function window_event(window, event) {

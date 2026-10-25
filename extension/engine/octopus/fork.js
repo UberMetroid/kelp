@@ -23,7 +23,7 @@ export class Fork {
         this.is_toplevel = false;
         this.smart_gapped = false;
         this.n_toggled = 0;
-        this.on_primary_display = global.display.get_primary_monitor() === monitor;
+        this.on_primary_display = globalThis.global?.display?.get_primary_monitor?.() === monitor;
         this.area = area;
         this.left = left;
         this.right = right;
@@ -36,21 +36,15 @@ export class Fork {
     }
 
     area_of_left(ext) {
-        return new Rect.Rectangle(this.is_horizontal()
-            ? [this.area.x, this.area.y, this.length_left - ext.gap_inner_half, this.area.height]
-            : [this.area.x, this.area.y, this.area.width, this.length_left - ext.gap_inner_half]);
+        const len = Math.max(1, this.length_left - ext.gap_inner_half);
+        return new Rect.Rectangle(this.is_horizontal() ? [this.area.x, this.area.y, len, this.area.height] : [this.area.x, this.area.y, this.area.width, len]);
     }
 
     area_of_right(ext) {
-        let area;
-        if (this.is_horizontal()) {
-            const width = this.area.width - this.length_left + ext.gap_inner;
-            area = [width, this.area.y, this.area.width - width, this.area.height];
-        } else {
-            const height = this.area.height - this.length_left + ext.gap_inner;
-            area = [this.area.x, height, this.area.width, this.area.height - height];
-        }
-        return new Rect.Rectangle(area);
+        const offset = this.length_left + ext.gap_inner_half;
+        return new Rect.Rectangle(this.is_horizontal()
+            ? [this.area.x + offset, this.area.y, Math.max(1, this.area.width - offset), this.area.height]
+            : [this.area.x, this.area.y + offset, this.area.width, Math.max(1, this.area.height - offset)]);
     }
 
     depth() { return this.is_horizontal() ? this.area.height : this.area.width; }
@@ -112,7 +106,9 @@ export class Fork {
 
     set_ratio(left_length) {
         const fork_len = this.is_horizontal() ? this.area.width : this.area.height;
-        const clamped = Math.round(Math.max(256, Math.min(fork_len - 256, left_length)));
+        const min_b = Math.min(256, Math.max(32, Math.floor(fork_len / 4)));
+        const max_b = Math.max(min_b, fork_len - min_b);
+        const clamped = Math.round(Math.max(min_b, Math.min(max_b, left_length)));
         this.prev_length_left = clamped;
         this.length_left = clamped;
         return this;
@@ -155,10 +151,10 @@ export class Fork {
                 length = this.length_left - diff + (diff > 16 ? 32 : 0);
                 if (length === 0) length = 32;
             }
-            region.array[l] = length - ext.gap_inner_half;
+            region.array[l] = Math.max(1, length - ext.gap_inner_half);
             this.left.measure(tiler, ext, this.entity, region, record);
             region.array[p] = region.array[p] + length + ext.gap_inner_half;
-            region.array[l] = this.area.array[l] - length - ext.gap_inner_half;
+            region.array[l] = Math.max(1, this.area.array[l] - length - ext.gap_inner_half);
             this.right.measure(tiler, ext, this.entity, region, record);
         } else {
             this.left.measure(tiler, ext, this.entity, this.area, record);

@@ -69,13 +69,16 @@ pub const LEGACY_FLAT_FILES: &[&str] = &[
     "utils.js",
     "window.js",
     "xprop.js",
+    "engine/geom/seahorse.js",
     "schemas/org.gnome.shell.extensions.pop-shell.gschema.xml",
     "icons/pop-shell-auto-on-symbolic.svg",
     "icons/pop-shell-auto-off-symbolic.svg",
+    "icons/kelp-auto-on-symbolic.svg",
+    "icons/kelp-auto-off-symbolic.svg",
 ];
 
 /// Legacy subdirectories from older Pop Shell / Kelp releases that must be removed on upgrade.
-pub const LEGACY_DIRS: &[&str] = &["color_dialog", "floating_exceptions"];
+pub const LEGACY_DIRS: &[&str] = &["color_dialog", "floating_exceptions", "engine/tree"];
 
 /// Legacy GNOME Control Center keybinding filenames that must be removed on upgrade.
 pub const LEGACY_KEYBINDING_FILES: &[&str] = &[
@@ -106,15 +109,16 @@ pub const EXTENSION_FILES: &[(&str, &str)] = &[
     ext_file!("engine/geom/focus.js"),
     ext_file!("engine/geom/movement.js"),
     ext_file!("engine/geom/rectangle.js"),
-    ext_file!("engine/geom/seahorse.js"),
-    ext_file!("engine/tree/auto_tiler.js"),
-    ext_file!("engine/tree/auto_tiler_drop.js"),
-    ext_file!("engine/tree/forest.js"),
-    ext_file!("engine/tree/forest_resize.js"),
-    ext_file!("engine/tree/fork.js"),
-    ext_file!("engine/tree/node.js"),
-    ext_file!("engine/tree/tiler.js"),
-    ext_file!("engine/tree/tiler_actions.js"),
+    ext_file!("engine/modal/modal_actions.js"),
+    ext_file!("engine/modal/modal_tiler.js"),
+    ext_file!("engine/octopus/forest.js"),
+    ext_file!("engine/octopus/forest_resize.js"),
+    ext_file!("engine/octopus/fork.js"),
+    ext_file!("engine/octopus/node.js"),
+    ext_file!("engine/octopus/octopus_drop.js"),
+    ext_file!("engine/octopus/octopus_tiler.js"),
+    ext_file!("engine/otter/otter_tiler.js"),
+    ext_file!("engine/seahorse/seahorse_tiler.js"),
     ext_file!("ui/dark.css"),
     ext_file!("ui/exception_dialog.js"),
     ext_file!("ui/highcontrast.css"),
@@ -134,13 +138,12 @@ pub const EXTENSION_FILES: &[(&str, &str)] = &[
     ext_file!("window/overview_tray.js"),
     ext_file!("window/shell_window.js"),
     ext_file!("window/window_border.js"),
-    ext_file!("icons/kelp-seahorse-symbolic.svg"),
 ];
 
 pub const ICON_FILES: &[(&str, &str)] = &[
-    ext_file!("icons/kelp-auto-on-symbolic.svg"),
+    ext_file!("icons/kelp-octopus-symbolic.svg"),
     ext_file!("icons/kelp-seahorse-symbolic.svg"),
-    ext_file!("icons/kelp-auto-off-symbolic.svg"),
+    ext_file!("icons/kelp-otter-symbolic.svg"),
 ];
 
 pub const KEYBINDING_FILES: &[(&str, &str)] = &[
