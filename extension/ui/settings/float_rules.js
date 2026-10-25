@@ -68,11 +68,21 @@ export const DEFAULT_RULES = Object.freeze([
 
 export const DEFAULT_FLOAT_RULES = DEFAULT_RULES;
 
+const REGEX_CACHE = new Map();
+const MAX_PATTERN_LEN = 256;
+
 function safe_regex_match(pattern, target) {
     if (typeof pattern !== 'string' || typeof target !== 'string') return false;
+    if (pattern.length === 0 || pattern.length > MAX_PATTERN_LEN) return false;
     if (pattern.toLowerCase() === target.toLowerCase()) return true;
     try {
-        return new RegExp(pattern, 'i').test(target);
+        let rx = REGEX_CACHE.get(pattern);
+        if (!rx) {
+            if (REGEX_CACHE.size >= MAX_RULE_COUNT) REGEX_CACHE.clear();
+            rx = new RegExp(pattern, 'i');
+            REGEX_CACHE.set(pattern, rx);
+        }
+        return rx.test(target);
     } catch (_e) {
         return false;
     }
@@ -164,12 +174,20 @@ export class Config {
 
     static from_json(json) {
         try {
-            const c = Object.assign(new Config(), JSON.parse(json));
-            c.float = Array.isArray(c.float)
-                ? c.float.slice(0, MAX_RULE_COUNT).filter(
+            const parsed = JSON.parse(json);
+            if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+                return Err('config JSON root must be an object');
+            }
+            const c = new Config();
+            c.float = Array.isArray(parsed.float)
+                ? parsed.float.slice(0, MAX_RULE_COUNT).filter(
                       (r) => r && typeof r === 'object' && (typeof r.class === 'string' || typeof r.title === 'string'),
                   )
                 : [];
+            c.skiptaskbarhidden = Array.isArray(parsed.skiptaskbarhidden)
+                ? parsed.skiptaskbarhidden.slice(0, MAX_RULE_COUNT).filter((s) => typeof s === 'string')
+                : [];
+            c.log_on_focus = Boolean(parsed.log_on_focus);
             return Ok(c);
         } catch (error) {
             return Err(`failed to parse config JSON: ${error}`);

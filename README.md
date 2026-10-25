@@ -99,7 +99,7 @@ Right-clicking the top-bar icon opens the quick settings menu:
 | **Active Hint Border Radius** | **`2` px** | Adjust the corner radius of the active window border (`0–30 px`). |
 | **Gaps** | **`2` px** | Adjust inner and outer window gaps (`0–64 px`). |
 
-All settings are also available in the standard GNOME Extensions **Preferences** window (`gnome-extensions prefs kelp@ubermetroid.github.io`).
+All settings are also available in the standard GNOME 45–51 Libadwaita Extensions **Preferences** window (`gnome-extensions prefs kelp@ubermetroid.github.io`).
 
 ---
 
@@ -110,7 +110,7 @@ Because GNOME Shell extensions run inside your Wayland compositor process, Kelp 
 - **No background daemons or subprocesses**: Everything runs natively through GNOME Shell's window manager APIs.
 - **No network access or telemetry**: Kelp never connects to the internet.
 - **Zero third-party dependencies**: The extension uses zero `npm` packages, and the Rust installer uses only the Rust standard library (`0` external crates in `Cargo.lock`).
-- **Clean disable & screen-lock behavior**: Disabling the extension or locking your screen cleanly removes all shortcuts, window borders, and signal listeners.
+- **Clean disable & screen-lock behavior**: Disabling the extension or locking your screen cleanly removes all shortcuts, window borders, and signal listeners, and restores your previous Mutter `edge-tiling` setting.
 
 ---
 

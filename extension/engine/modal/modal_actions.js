@@ -80,6 +80,7 @@ export function move_from_stack(tiler, ext, [fork, branch, is_left], focused, di
     }
     reset_smart_gap_area(ext, fork);
     const forest = ext.auto_tiler.forest, fentity = focused.entity;
+    if (Node.stack_find(inner, fentity) === null) return;
     const detach = (orient, reverse) => {
         if (!ext.auto_tiler) return;
         focused.stack = null;
@@ -121,7 +122,7 @@ export function move_from_stack(tiler, ext, [fork, branch, is_left], focused, di
 }
 
 export function resize_auto(tiler, ext, direction) {
-    const hrow = 64, hcolumn = 64;
+    const hrow = Math.max(16, Math.round((ext.column_size || 128) / 2)), hcolumn = Math.max(16, Math.round((ext.row_size || 128) / 2));
     const [mov1, mov2] =
         direction === Direction.Left ? [[hrow, 0, -hrow, 0], [0, 0, -hrow, 0]]
         : direction === Direction.Right ? [[0, 0, hrow, 0], [-hrow, 0, hrow, 0]]

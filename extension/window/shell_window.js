@@ -85,7 +85,8 @@ export class ShellWindow {
             return Boolean(this.meta.is_maximized());
         }
         if (typeof this.meta.get_maximized === 'function') {
-            return this.meta.get_maximized() !== 0;
+            const flags = Meta.MaximizeFlags?.BOTH ?? 3;
+            return (this.meta.get_maximized() & flags) === flags;
         }
         return false;
     }

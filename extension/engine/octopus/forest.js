@@ -184,10 +184,12 @@ export class Forest extends Ecs.World {
         const forks = [];
         while (fork && visited < MAX_TREE_NODES) {
             visited += 1;
-            if (fork.left.inner.kind === Node.NodeKind.FORK) forks.push(this.forks.get(fork.left.inner.entity));
+            const lf = fork.left.inner.kind === Node.NodeKind.FORK ? this.forks.get(fork.left.inner.entity) : null;
+            if (lf) forks.push(lf);
             if (kind === null || fork.left.inner.kind === kind) yield fork.left;
             if (fork.right) {
-                if (fork.right.inner.kind === Node.NodeKind.FORK) forks.push(this.forks.get(fork.right.inner.entity));
+                const rf = fork.right.inner.kind === Node.NodeKind.FORK ? this.forks.get(fork.right.inner.entity) : null;
+                if (rf) forks.push(rf);
                 if (kind === null || fork.right.inner.kind === kind) yield fork.right;
             }
             fork = forks.pop();

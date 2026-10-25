@@ -96,7 +96,7 @@ export class SeahorseTiler {
                 win.smart_gapped = smart;
                 if (i === strip.active) {
                     this._show_actor(win, ext);
-                    win.move(ext, new Rectangle([x0, y0, avail_w, avail_h]));
+                    this._move_win(ext, win, new Rectangle([x0, y0, avail_w, avail_h]));
                 } else if (!this.overview_visible) {
                     this._hide_actor(win);
                 }
@@ -112,15 +112,17 @@ export class SeahorseTiler {
             win.smart_gapped = false;
             if (i === vis0) {
                 this._show_actor(win, ext);
-                win.move(ext, new Rectangle([x0, y0, col_w, avail_h]));
+                this._move_win(ext, win, new Rectangle([x0, y0, col_w, avail_h]));
             } else if (i === vis1) {
                 this._show_actor(win, ext);
-                win.move(ext, new Rectangle([x0 + col_w + inner, y0, avail_w - col_w - inner, avail_h]));
+                this._move_win(ext, win, new Rectangle([x0 + col_w + inner, y0, avail_w - col_w - inner, avail_h]));
             } else if (!this.overview_visible) {
                 this._hide_actor(win);
             }
         }
     }
+
+    _move_win(ext, win, rect) { ext.size_signals_block?.(win); win.move(ext, rect, () => ext.size_signals_unblock?.(win)); }
 
     on_focused(ext, win) {
         if (!win || !this.attached.contains(win.entity)) return;
@@ -244,7 +246,7 @@ export class SeahorseTiler {
     }
     _hide_actor(win) { if (!win?.meta?.minimized) win?.meta?.get_compositor_private?.()?.hide?.(); }
     destroy(ext) {
-        for (const [, win] of ext.windows.iter()) this._show_actor(win, ext, true);
+        for (const [, win] of ext.windows.iter()) if (!win?.meta?.minimized) win?.meta?.get_compositor_private?.()?.show?.();
         this.strips.clear();
         this.full_width.clear();
         this.attached.clear();

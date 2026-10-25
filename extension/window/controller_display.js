@@ -70,6 +70,7 @@ export function update_display_configuration(ext, workareas_only) {
 
     const n_monitors = display.get_n_monitors();
     if (n_monitors === 0) return;
+    const n_ws = Math.max(1, global.workspace_manager?.get_n_workspaces?.() ?? 1);
 
     const smart_gaps = ext.settings.smart_gaps();
     for (const [fork_id] of ext.auto_tiler.forest.toplevel.values()) {
@@ -77,6 +78,7 @@ export function update_display_configuration(ext, workareas_only) {
         if (!fork) continue;
         const mon = fork.monitor < n_monitors ? fork.monitor : 0;
         if (!workareas_only) fork.monitor = mon;
+        if (fork.workspace >= n_ws) fork.workspace = n_ws - 1;
         ext.auto_tiler.update_toplevel(ext, fork, mon, smart_gaps);
     }
 }
@@ -84,7 +86,15 @@ export function update_display_configuration(ext, workareas_only) {
 export function set_edge_tiling(ext, enable) {
     const m = ext.settings.mutter;
     if (m && m.settings_schema.has_key('edge-tiling')) {
+        if (ext.saved_edge_tiling === undefined) ext.saved_edge_tiling = m.get_boolean('edge-tiling');
         m.set_boolean('edge-tiling', Boolean(enable));
+    }
+}
+
+export function restore_edge_tiling(ext) {
+    const m = ext.settings?.mutter;
+    if (ext.saved_edge_tiling !== undefined && m && m.settings_schema.has_key('edge-tiling')) {
+        m.set_boolean('edge-tiling', Boolean(ext.saved_edge_tiling));
     }
 }
 

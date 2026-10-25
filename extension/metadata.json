@@ -5,8 +5,8 @@
     "url": "https://github.com/UberMetroid/kelp",
     "settings-schema": "org.gnome.shell.extensions.kelp",
     "gettext-domain": "kelp@ubermetroid.github.io",
-    "version": 3,
-    "version-name": "1.3.0",
+    "version": 4,
+    "version-name": "1.4.0",
     "shell-version": [
         "45",
         "46",

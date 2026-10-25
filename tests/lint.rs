@@ -150,51 +150,23 @@ fn ego_lifecycle_and_mutter_18_19_invariants_hold() -> Result<(), String> {
         ],
     )?;
     check_contains(
-        "ui/stack_widgets.js",
-        &read("ui/stack_widgets.js")?,
-        &["c.hint_signal", "disconnect(c.hint_signal)"],
+        "prefs/stack_widgets/controller_display",
+        &format!("{}\n{}\n{}", read("prefs.js")?, read("ui/stack_widgets.js")?, read("window/controller_display.js")?),
+        &["fillPreferencesWindow(window)", "Adw.PreferencesPage", "c.hint_signal", "disconnect(c.hint_signal)", "notify::demands-attention", "restore_edge_tiling"],
     )?;
-    if !read("ui/exception_dialog.js")?.contains("destroyOnClose: true")
-        || EXTENSION_FILES.len() < 36
-    {
+    if !read("ui/exception_dialog.js")?.contains("destroyOnClose: true") || EXTENSION_FILES.len() < 36 {
         return Err("exception_dialog or EXTENSION_FILES invariant failed".to_string());
     }
-    check_contains(
-        "metadata.json",
-        &read("metadata.json")?,
-        &[
-            "\"45\"", "\"46\"", "\"47\"", "\"48\"", "\"49\"", "\"50\"", "\"51\"",
-        ],
-    )?;
+    check_contains("metadata.json", &read("metadata.json")?, &["\"45\"", "\"46\"", "\"47\"", "\"48\"", "\"49\"", "\"50\"", "\"51\""])?;
     check_contains(
         "schema XML",
         &read("schemas/org.gnome.shell.extensions.kelp.gschema.xml")?,
-        &[
-            "name=\"tiling-mode\"",
-            "'octopus'",
-            "name=\"enable-shortcuts\"",
-            "name=\"tile-move-left-global\"",
-            "name=\"kelp-monitor-left\"",
-            "name=\"kelp-workspace-up\"",
-            "'rgb(255,0,0)'",
-        ],
+        &["name=\"tiling-mode\"", "'octopus'", "name=\"enable-shortcuts\"", "name=\"tile-move-left-global\"", "name=\"kelp-monitor-left\"", "name=\"kelp-workspace-up\"", "'rgb(255,0,0)'"],
     )?;
     check_contains(
         "ui/panel_indicator.js",
         &read("ui/panel_indicator.js")?,
-        &[
-            "Octopus (2D Grid)",
-            "Seahorse (Scrolling Strip)",
-            "Otter (Floating)",
-            "Keyboard Shortcuts",
-            "Focus Follows Mouse",
-            "Retile Workspace",
-            "Smart Gaps",
-            "addToStatusArea('kelp'",
-            "icons/kelp-octopus-symbolic.svg",
-            "icons/kelp-seahorse-symbolic.svg",
-            "icons/kelp-otter-symbolic.svg",
-        ],
+        &["Octopus (2D Grid)", "Seahorse (Scrolling Strip)", "Otter (Floating)", "Keyboard Shortcuts", "Focus Follows Mouse", "Retile Workspace", "Smart Gaps", "addToStatusArea('kelp'", "icons/kelp-octopus-symbolic.svg", "icons/kelp-seahorse-symbolic.svg", "icons/kelp-otter-symbolic.svg"],
     )?;
     run_gjs_runtime_smoke_test(&ext_root)
 }
@@ -224,21 +196,23 @@ fn run_gjs_runtime_smoke_test(ext_root: &Path) -> Result<(), String> {
          s.set_tiling_mode('seahorse'); if (s.tiling_mode() !== 'seahorse' || !s.tile_by_default()) throw new Error('seahorse mode');\n\
          s.set_tiling_mode('otter'); if (s.tiling_mode() !== 'otter' || s.tile_by_default()) throw new Error('otter mode');\n\
          s.set_tile_by_default(true); if (s.tiling_mode() !== 'octopus') throw new Error('restore octopus');\n\
+         const cfg_res = Config.from_json('{{\"__proto__\":{{\"polluted\":true}},\"float\":[{{\"class\":\"test\"}}]}}'); if (cfg_res.kind !== 1 || ({{}}).polluted || cfg_res.value.float.length !== 1) throw new Error('config proto guard');\n\
          if (!s.enable_shortcuts() || !s.stacking_with_mouse() || typeof s.focus_follows_mouse() !== 'boolean') throw new Error('settings'); if (DEFAULT_FLOAT_RULES.length < 5 || !new Config().window_shall_float('steam', 'Steam')) throw new Error('float');\n\
          const w = new Ecs.World(); const e_old = w.create_entity(); w.delete_entity(e_old); const e_reused = w.create_entity(); if (e_old === e_reused || e_old[1] !== 0 || e_reused[1] !== 1) throw new Error('entity tuple immutability');\n\
          const ar = new Arena(); const a0 = ar.insert('x'), a1 = ar.insert('y'); ar.remove(a1); ar.truncate(1); if (ar.unused.length !== 0 || ar.get(a0) !== 'x') throw new Error('arena truncate');\n\
          const fk = new Fork(e_reused, Node.window(e_reused), Node.window(e_old), new Rectangle([100, 200, 800, 600]), 0, 0, Orientation.HORIZONTAL); const r_right = fk.area_of_right({{ gap_inner_half: 2, gap_inner: 4 }}); if (r_right.x !== 502 || r_right.width !== 398 || r_right.y !== 200) throw new Error('fork area_of_right math');\n\
-         const st = w.register_storage(); const sh = new SeahorseTiler(st); const e1 = w.create_entity(), e2 = w.create_entity(), e3 = w.create_entity();\n\
-         const mk = (ent) => ({{ entity: ent, ws: [0, 0], rects: [], shown: true, meta: {{ minimized: false, get_monitor: () => 0, get_compositor_private: () => ({{ show: () => {{ w.windows.get(ent).shown = true; }}, hide: () => {{ w.windows.get(ent).shown = false; }} }}) }}, workspace_id: () => w.windows.get(ent).ws[1], is_tilable: () => true, move: (_x, r) => {{ w.windows.get(ent).rects.push(r); }}, activate: () => {{}} }});\n\
+         const fk_small = new Fork(e_reused, Node.window(e_reused), Node.window(e_old), new Rectangle([15, 0, 128, 128]), 0, 0, Orientation.HORIZONTAL); fk_small.set_ratio(96); const recs = []; fk_small.measure({{ forks: new Map() }}, {{ grab_op: null, tiler: {{ resizing_window: false }}, gap_inner_half: 0 }}, fk_small.area, (_e, _p, r) => recs.push(r)); if (recs[1].width < 32) throw new Error('fork snap right sibling degenerate');\n\
+         const st = w.register_storage(); const sh = new SeahorseTiler(st); const e1 = w.create_entity(), e2 = w.create_entity(), e3 = w.create_entity(); let blocked_moves = 0;\n\
+         const mk = (ent) => ({{ entity: ent, ws: [0, 0], rects: [], shown: true, meta: {{ minimized: false, get_monitor: () => 0, get_compositor_private: () => ({{ show: () => {{ w.windows.get(ent).shown = true; }}, hide: () => {{ w.windows.get(ent).shown = false; }} }}) }}, workspace_id: () => w.windows.get(ent).ws[1], is_tilable: () => true, move: (_x, r, cb) => {{ w.windows.get(ent).rects.push(r); if (cb) cb(); }}, activate: () => {{}} }});\n\
          w.windows = w.register_storage(); w.windows.insert(e1, mk(e1)); w.windows.insert(e2, mk(e2)); w.windows.insert(e3, mk(e3)); let f = w.windows.get(e1); let cur_x = 100, active_ws = 0; const tags = new Set();\n\
-         const fake_ext = {{ windows: w.windows, gap_outer: 2, gap_inner: 2, settings: {{ smart_gaps: () => false }}, conf: {{ window_shall_float: (c) => c === 'steam' }}, cursor_status: () => [{{ x: cur_x, y: 100 }}, 0], active_workspace: () => active_ws, should_ignore_workspace: () => false, workspace_id: (win) => win?.ws ?? [0, active_ws], monitor_work_area: () => new Rectangle([0, 0, 1000, 500]), focus_window: () => f, on_focused: (nw) => {{ f = nw; }}, show_border_on_focused: () => {{}}, register_fn: (cb) => cb(), contains_tag: (e, t) => tags.has(`${{e[0]}}:${{t}}`), add_tag: (e, t) => tags.add(`${{e[0]}}:${{t}}`), delete_tag: (e, t) => tags.delete(`${{e[0]}}:${{t}}`) }};\n\
-         sh.auto_tile(fake_ext, w.windows.get(e1), false); sh.auto_tile(fake_ext, w.windows.get(e2), false); sh.auto_tile(fake_ext, w.windows.get(e3), false); if (w.windows.get(e1).shown || !w.windows.get(e2).shown || !w.windows.get(e3).shown) throw new Error('seahorse viewport hide/show');\n\
+         const fake_ext = {{ windows: w.windows, gap_outer: 2, gap_inner: 2, settings: {{ smart_gaps: () => false }}, conf: {{ window_shall_float: (c) => c === 'steam' }}, cursor_status: () => [{{ x: cur_x, y: 100 }}, 0], active_workspace: () => active_ws, should_ignore_workspace: () => false, workspace_id: (win) => win?.ws ?? [0, active_ws], monitor_work_area: () => new Rectangle([0, 0, 1000, 500]), focus_window: () => f, on_focused: (nw) => {{ f = nw; }}, show_border_on_focused: () => {{}}, size_signals_block: () => {{ blocked_moves += 1; }}, size_signals_unblock: () => {{}}, register_fn: (cb) => cb(), contains_tag: (e, t) => tags.has(`${{e[0]}}:${{t}}`), add_tag: (e, t) => tags.add(`${{e[0]}}:${{t}}`), delete_tag: (e, t) => tags.delete(`${{e[0]}}:${{t}}`) }};\n\
+         sh.auto_tile(fake_ext, w.windows.get(e1), false); sh.auto_tile(fake_ext, w.windows.get(e2), false); sh.auto_tile(fake_ext, w.windows.get(e3), false); if (w.windows.get(e1).shown || !w.windows.get(e2).shown || !w.windows.get(e3).shown || blocked_moves === 0) throw new Error('seahorse viewport hide/show');\n\
          f = w.windows.get(e2); sh.focus_step(fake_ext, -1); if (!w.windows.get(e1).shown || !w.windows.get(e2).shown || w.windows.get(e3).shown) throw new Error('seahorse scroll left');\n\
          sh.toggle_orientation(fake_ext, w.windows.get(e1)); if (!w.windows.get(e1).shown || w.windows.get(e2).shown) throw new Error('seahorse full-width toggle');\n\
          sh.toggle_orientation(fake_ext, w.windows.get(e1)); f = w.windows.get(e2); sh.move_step(fake_ext, -1); if (sh._strip([0, 0]).cols[0] !== e2) throw new Error('seahorse move_step');\n\
          cur_x = 900; sh.on_drop(fake_ext, w.windows.get(e2)); if (sh._strip([0, 0]).cols[1] !== e2) throw new Error('seahorse on_drop');\n\
          w.windows.get(e3).ws = [0, 1]; w.windows.get(e3).shown = false; sh.overview_show(fake_ext, true); if (w.windows.get(e3).shown) throw new Error('inactive ws shown in overview'); sh.overview_show(fake_ext, false);\n\
-         sh.destroy(fake_ext); cascade_otter_windows(fake_ext); snap_otter_window(fake_ext, 0); if (!w.windows.get(e1).floating_rect || w.windows.get(e3).shown) throw new Error('otter cascade/snap'); new WakeupExecutor().stop();\n",
+         sh.destroy(fake_ext); if (!w.windows.get(e3).shown) throw new Error('seahorse destroy must restore hidden actor across workspaces'); cascade_otter_windows(fake_ext); snap_otter_window(fake_ext, 0); if (!w.windows.get(e1).floating_rect) throw new Error('otter cascade/snap'); new WakeupExecutor().stop();\n",
         ext = ext_root.display(),
         schema = dir.display()
     );

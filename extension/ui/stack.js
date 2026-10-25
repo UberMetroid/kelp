@@ -192,7 +192,8 @@ export class Stack {
         if (!this.rect || !this.widgets) return;
         const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor || 1;
         const tab_h = TAB_HEIGHT * scale;
-        this.widgets.tabs.set_position(this.rect.x, this.rect.y - tab_h);
+        const min_y = this.ext?.monitor_work_area?.(this.monitor)?.y ?? 0;
+        this.widgets.tabs.set_position(this.rect.x, Math.max(min_y, this.rect.y - tab_h));
         this.widgets.tabs.set_size(this.rect.width, tab_h);
         this.sync_visibility();
     }
@@ -233,7 +234,11 @@ export class Stack {
         }
         for (const c of this.tabs) {
             this.tab_disconnect(c);
-            this.comp_show(c.entity, true);
+            const win = this.ext?.windows?.get(c.entity);
+            if (win && !win.meta?.minimized) {
+                win.meta?.get_compositor_private?.()?.show?.();
+                win.stack_Previously_hidden = false;
+            }
         }
         this.tabs = [];
         if (this.widgets) {

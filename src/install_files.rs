@@ -139,7 +139,10 @@ pub fn install_default_config(config_dir: &Path) -> Result<(), String> {
             }
             return Ok(());
         }
-        println!("  -> Existing config.json was invalid; restoring default config.json...");
+        println!(
+            "  -> Existing config.json was invalid; backing up to config.json.bak and restoring default..."
+        );
+        let _ = write_verified_rel_path(&kelp_cfg_dir, "config.json.bak", &existing);
     }
 
     write_verified_rel_path(&kelp_cfg_dir, "config.json", DEFAULT_CONFIG_JSON)

@@ -39,6 +39,10 @@ export function disconnect_stack_tab(ext, c) {
             window.meta.disconnect(c.urgency_changed);
             c.urgency_changed = null;
         }
+        if (c.attention_changed) {
+            window.meta.disconnect(c.attention_changed);
+            c.attention_changed = null;
+        }
     }
     if (c.hint_signal && ext.settings && ext.settings.ext) {
         ext.settings.ext.disconnect(c.hint_signal);
@@ -75,6 +79,7 @@ export function create_stack_tab(stack, window, active_style) {
         signals: [],
         window_changed: null,
         urgency_changed: null,
+        attention_changed: null,
         hint_signal: null,
     };
 
@@ -107,6 +112,7 @@ export function create_stack_tab(stack, window, active_style) {
     };
 
     entry.urgency_changed = window.meta.connect('notify::urgent', on_urgency);
+    entry.attention_changed = window.meta.connect('notify::demands-attention', on_urgency);
 
     entry.hint_signal = ext.settings.ext.connect('changed::hint-color-rgba', () => {
         stack.active_style = active_tab_style(ext);

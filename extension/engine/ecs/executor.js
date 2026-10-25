@@ -18,17 +18,17 @@ export class GLibExecutor {
     #events = [];
 
     wake(system, event) {
-        this.#events.push(event);
+        this.#events.push([system, event]);
         if (this.#event_loop !== null)
             return;
         this.#event_loop = GLib.idle_add(GLib.PRIORITY_HIGH_IDLE, () => {
             this.#event_loop = null;
             let processed = 0;
             while (this.#events.length > 0 && processed < MAX_EVENTS_PER_TICK) {
-                const next = this.#events.shift();
+                const pair = this.#events.shift();
                 processed += 1;
-                if (next)
-                    system.run(next);
+                if (pair && pair[1])
+                    pair[0].run(pair[1]);
             }
             return GLib.SOURCE_REMOVE;
         });

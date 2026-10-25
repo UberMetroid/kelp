@@ -4,10 +4,10 @@
 //   Binary Space Partitioning (BSP) internal split node (`Fork`) managing left/right
 //   branch geometry, split ratios, orientation toggling, and monitor/workspace migration.
 // - Zero-Trust Boundary & Invariants:
-//   Split ratios are clamped (`Math.max(256, Math.min(fork_len - 256, left_length))`) and
-//   snapped to 32px grid increments so degenerate resize drags cannot collapse a branch to
-//   0px. `migrate()` blocks window size signals during workspace reassignment and always
-//   unblocks them afterward. Zero top-level GObject/compositor calls at import time.
+//   Split ratios are clamped (`min_b = Math.min(256, Math.max(32, floor(fork_len / 4)))`) and
+//   snapped to 32px grid increments within `[min_b, fork_len - min_b]` so degenerate resize drags
+//   cannot collapse a branch to 0px or 1px. `migrate()` blocks window size signals during workspace
+//   reassignment and always unblocks them afterward. Zero top-level GObject calls at import time.
 
 import * as Ecs from '../ecs/world.js';
 import * as Rect from '../geom/rectangle.js';
@@ -142,19 +142,21 @@ export class Fork {
         if (this.right) {
             const [l, p, startpos] = this.is_horizontal() ? [WIDTH, XPOS, this.area.x] : [HEIGHT, YPOS, this.area.y];
             const region = this.area.clone();
-            const half = this.area.array[l] / 2;
+            const total = this.area.array[l];
+            const half = total / 2;
+            const min_b = Math.min(256, Math.max(32, Math.floor(total / 4)));
             let length;
             if (this.length_left > half - 32 && this.length_left < half + 32) {
                 length = half;
             } else {
                 const diff = (startpos + this.length_left) % 32;
                 length = this.length_left - diff + (diff > 16 ? 32 : 0);
-                if (length === 0) length = 32;
+                length = Math.max(min_b, Math.min(Math.max(min_b, total - min_b), length));
             }
             region.array[l] = Math.max(1, length - ext.gap_inner_half);
             this.left.measure(tiler, ext, this.entity, region, record);
             region.array[p] = region.array[p] + length + ext.gap_inner_half;
-            region.array[l] = Math.max(1, this.area.array[l] - length - ext.gap_inner_half);
+            region.array[l] = Math.max(1, total - length - ext.gap_inner_half);
             this.right.measure(tiler, ext, this.entity, region, record);
         } else {
             this.left.measure(tiler, ext, this.entity, this.area, record);

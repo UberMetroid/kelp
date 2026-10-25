@@ -25,7 +25,7 @@ import { ExceptionDialog } from '../ui/exception_dialog.js';
 import { ShellWindow } from './shell_window.js';
 import { Keybindings } from './keybindings.js';
 import { move_window_to_monitor, move_window_to_workspace } from './overview_tray.js';
-import { load_theme, monitor_work_area, set_edge_tiling, unload_theme, update_scale } from './controller_display.js';
+import { load_theme, monitor_work_area, restore_edge_tiling, set_edge_tiling, unload_theme, update_scale } from './controller_display.js';
 import { active_window_list, active_workspace, cursor_status, focus_down, focus_left, focus_right, focus_selector, focus_up, on_focused, previously_focused, should_ignore_workspace, tab_list, windows_at_pointer, workspace_id } from './controller_workspace.js';
 import { attach_controller_signals, cancel_drag_signal } from './controller_signals.js';
 
@@ -76,12 +76,9 @@ export class Ext extends Ecs.World {
             .connect_on_detach((c) => this.auto_tiler?.attached.remove(c));
         return new OctopusTiler(f, this.register_storage());
     }
-
     _create_tiler_for_mode(mode) {
-        if (mode === 'octopus') return this._create_auto_tiler();
-        return mode === 'seahorse' ? new SeahorseTiler(this.register_storage()) : null;
+        return mode === 'octopus' ? this._create_auto_tiler() : mode === 'seahorse' ? new SeahorseTiler(this.register_storage()) : null;
     }
-
     _destroy_auto_tiler() {
         if (!this.auto_tiler) return;
         const old_att = this.auto_tiler.attached;
@@ -111,12 +108,13 @@ export class Ext extends Ecs.World {
         sw.floating_rect = sw.rect();
         this.windows.insert(entity, sw);
         this.monitors.insert(entity, [window.get_monitor(), sw.workspace_id()]);
-        actor.connect('destroy', () => this.on_destroy(entity));
+        this.signals.push([actor, actor.connect('destroy', () => this.on_destroy(entity))]);
         if (this.auto_tiler && sw.is_tilable(this)) this.auto_tiler.auto_tile(this, sw, false);
         return sw;
     }
 
     on_destroy(entity) {
+        if (this._destroyed) return;
         const win = this.windows.get(entity);
         if (!win) return;
         if (this.auto_tiler) this.auto_tiler.detach_window(this, entity);
@@ -132,7 +130,7 @@ export class Ext extends Ecs.World {
 
     on_window_changed(win) {
         if (!this.auto_tiler) { win.floating_rect = win.rect(); return; }
-        if (this.size_signals_blocked.has(win.entity) || win.grab) return;
+        if (this.size_signals_blocked.has(`${win.entity[0]}:${win.entity[1]}`) || win.grab) return;
         if (this.auto_tiler.is_seahorse) { this.auto_tiler.reflow(this, win.entity); return; }
         const fork_entity = this.auto_tiler.attached.get(win.entity);
         const fork = fork_entity ? this.auto_tiler.forest.forks.get(fork_entity) : null;
@@ -169,8 +167,8 @@ export class Ext extends Ecs.World {
     focus_up() { focus_up(this); }
     move_monitor(dir) { move_window_to_monitor(this, dir); }
     move_workspace(dir) { move_window_to_workspace(this, dir); }
-    size_signals_block(win) { this.size_signals_blocked.add(win.entity); }
-    size_signals_unblock(win) { if (win) this.size_signals_blocked.delete(win.entity); }
+    size_signals_block(win) { if (win) this.size_signals_blocked.add(`${win.entity[0]}:${win.entity[1]}`); }
+    size_signals_unblock(win) { if (win) this.size_signals_blocked.delete(`${win.entity[0]}:${win.entity[1]}`); }
     show_border_on_focused() { this.hide_all_borders(); this.focus_window()?.show_border(this); }
     hide_all_borders() { for (const [, win] of this.windows.iter()) win.hide_border(); }
     toggle_floating() { if (this.auto_tiler) this.auto_tiler.toggle_floating(this); }
@@ -248,7 +246,8 @@ export class Ext extends Ecs.World {
         for (const [obj, sig] of this.signals) { try { obj.disconnect(sig); } catch (_e) { /* finalized */ } }
         this.signals = [];
         this._destroy_auto_tiler();
-        for (const [, win] of this.windows.iter()) win.destroy();
+        restore_edge_tiling(this);
+        for (const [ent, win] of this.windows.iter()) { win.destroy(); this.delete_entity(ent); }
         if (this.indicator) { this.indicator.destroy(); this.indicator = null; }
         if (this.overlay) { this.overlay.destroy(); this.overlay = null; }
         this.unload_theme();

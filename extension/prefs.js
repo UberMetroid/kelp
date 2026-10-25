@@ -8,6 +8,7 @@
 //   `gi://Gdk`), `ExtensionPreferences`, and process-agnostic modules (`FocusPosition`,
 //   `ExtensionSettings`, `LOG_LEVELS`). Never imports `gi://Meta`, `gi://Clutter`, or `gi://St`.
 
+import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
 import Gtk from 'gi://Gtk';
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
@@ -193,6 +194,14 @@ function build_settings_widget(ext_settings) {
 }
 
 export default class KelpPreferences extends ExtensionPreferences {
+    fillPreferencesWindow(window) {
+        const page = new Adw.PreferencesPage();
+        const group = new Adw.PreferencesGroup();
+        group.add(build_settings_widget(this.getSettings()));
+        page.add(group);
+        window.add(page);
+    }
+
     getPreferencesWidget() {
         return build_settings_widget(this.getSettings());
     }
