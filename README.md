@@ -1,4 +1,4 @@
-# <img src="extension/icons/pop-shell-auto-on-symbolic.svg" width="28" height="28" align="top" alt="Kelp icon" /> Kelp
+# <img src="extension/icons/pop-shell-auto-on-symbolic.svg" width="32" height="32" alt="Kelp Tiling Icon" /> Kelp
 
 [![CI & EGO Bundle Verification](https://github.com/UberMetroid/kelp/actions/workflows/ci.yml/badge.svg)](https://github.com/UberMetroid/kelp/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/UberMetroid/kelp)](https://github.com/UberMetroid/kelp/releases/latest)
@@ -71,8 +71,12 @@ kelp
 
 ## Top-Bar Menu Controls
 
-- **Left-Click the Kelp Icon**: Immediately toggles **Tile Windows** between **Tiling ON** (<img src="extension/icons/pop-shell-auto-on-symbolic.svg" width="16" height="16" align="absmiddle" alt="Tiling ON" />) and **Floating / Tiling OFF** (<img src="extension/icons/pop-shell-auto-off-symbolic.svg" width="16" height="16" align="absmiddle" alt="Tiling OFF" />).
-- **Right-Click the Kelp Icon**: Opens the quick settings menu:
+| Top-Bar Icon | Mode | Left-Click Action | Right-Click Action |
+| :---: | :--- | :--- | :--- |
+| <img src="extension/icons/pop-shell-auto-on-symbolic.svg" width="32" height="32" alt="Tiling ON Icon" /> | **Tiling ON** | Switch to Floating (**OFF**) | Open Quick Settings Menu |
+| <img src="extension/icons/pop-shell-auto-off-symbolic.svg" width="32" height="32" alt="Tiling OFF Icon" /> | **Tiling OFF** | Switch to Auto-Tiling (**ON**) | Open Quick Settings Menu |
+
+Right-clicking the top-bar icon opens the quick settings menu:
 
 | Control | Default | Description |
 | :--- | :--- | :--- |
