@@ -8,7 +8,6 @@
 //   Does not retain GObject references or allocate actors; `cursor_rect` and `current_monitor`
 //   query `global` only when invoked at runtime inside an active session.
 
-import Meta from 'gi://Meta';
 import { Rectangle } from './rectangle.js';
 
 export const Movement = Object.freeze({
@@ -69,21 +68,11 @@ export class GrabOp {
 }
 
 export function is_keyboard_op(op) {
-    const window_flag_keyboard = Meta.GrabOp.KEYBOARD_MOVING & ~Meta.GrabOp.WINDOW_BASE;
-    return (op & window_flag_keyboard) !== 0;
+    return (op & 0x0100) !== 0;
 }
 
 export function is_resize_op(op) {
-    const window_dir_mask =
-        (Meta.GrabOp.RESIZING_N |
-            Meta.GrabOp.RESIZING_E |
-            Meta.GrabOp.RESIZING_S |
-            Meta.GrabOp.RESIZING_W) &
-        ~Meta.GrabOp.WINDOW_BASE;
-    return (
-        (op & window_dir_mask) !== 0 ||
-        (op & Meta.GrabOp.KEYBOARD_RESIZING_UNKNOWN) === Meta.GrabOp.KEYBOARD_RESIZING_UNKNOWN
-    );
+    return (op & 0xf000) !== 0 || (op & 0x0101) === 0x0101;
 }
 
 export function is_move_op(op) {

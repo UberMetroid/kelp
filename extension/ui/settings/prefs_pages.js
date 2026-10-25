@@ -116,7 +116,7 @@ export function build_about_page() {
         title: 'Kelp Release Version',
         subtitle: 'Zero-subprocess, zero-telemetry Wayland tiling engine &amp; Rust installer',
     });
-    ver_row.add_suffix(new Gtk.Label({ label: 'v1.9.1', valign: Gtk.Align.CENTER, css_classes: ['monospace'] }));
+    ver_row.add_suffix(new Gtk.Label({ label: 'v1.9.2', valign: Gtk.Align.CENTER, css_classes: ['monospace'] }));
     header_group.add(ver_row);
 
     const lic_row = new Adw.ActionRow({

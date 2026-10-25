@@ -26,12 +26,17 @@ export function is_full_work_area_rect(rect, area, gap = 0) {
     return rect.width >= min_w && rect.height >= min_h;
 }
 
-export function cascade_otter_windows(ext) {
+export function cascade_otter_windows(ext, focused = ext.focus_window?.()) {
     let idx = 0;
-    const seen = new Set();
+    const seen = new Set(), wins = [];
     for (const [, win] of ext.windows.iter()) {
-        if (!win.is_tilable(ext) || win.meta?.minimized) continue;
-        if (!is_on_active_workspace(win, ext)) continue;
+        if (win.is_tilable(ext) && !win.meta?.minimized && is_on_active_workspace(win, ext)) wins.push(win);
+    }
+    if (focused && wins.indexOf(focused) !== -1 && wins.indexOf(focused) < wins.length - 1) {
+        wins.splice(wins.indexOf(focused), 1);
+        wins.push(focused);
+    }
+    for (const win of wins) {
         win.meta?.get_compositor_private?.()?.show?.();
         const mon = win.meta?.get_monitor?.() ?? 0;
         const area = ext.monitor_work_area(mon);

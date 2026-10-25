@@ -4,12 +4,11 @@
 //   Multi-monitor / multi-workspace BSP forest (`Forest` extending `Ecs.World`) owning
 //   fork/parent/stack entity storages, window attachment/detachment, and tree traversal.
 // - Zero-Trust Boundary & Invariants:
-//   Before moving any window (`move_window`), verifies `window.meta instanceof Meta.Window`
-//   and `window.meta.get_compositor_private() !== null`, blocking size signals during the
+//   Before moving any window (`move_window`), verifies `window.actor_exists()` and
+//   `window.meta.get_compositor_private() !== null`, blocking size signals during the
 //   frame move to prevent feedback loops. `iter()` is bounded by `MAX_TREE_NODES` (NASA JPL
 //   Power-of-10 bounded loop rule).
 
-import Meta from 'gi://Meta';
 import { Arena } from '../ecs/arena.js';
 import * as Ecs from '../ecs/world.js';
 import * as Rect from '../geom/rectangle.js';
@@ -198,7 +197,7 @@ export class Forest extends Ecs.World {
             const win = ext.windows.get(e);
             if (win && win.is_tilable(ext)) {
                 const r = this.requested.get(e)?.rect ?? win.planned_rect ?? win.rect(), size = r.width * r.height;
-                if (size > largest_size) { largest_size = size; largest_window = win; }
+                if (size >= largest_size - 64) { largest_size = Math.max(largest_size, size); largest_window = win; }
             }
         };
         for (const node of this.iter(entity)) {
@@ -246,7 +245,7 @@ function place_new_fork(place_by, fork) {
 }
 
 function move_window(ext, window, rect, on_complete) {
-    if (!(window.meta instanceof Meta.Window) || !window.meta.get_compositor_private()) return;
+    if (!window?.actor_exists?.() || !window.meta?.get_compositor_private?.()) return;
     ext.size_signals_block(window);
     window.move(ext, rect, () => { window.planned_rect = null; on_complete(); });
 }

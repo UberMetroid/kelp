@@ -1,6 +1,6 @@
 [package]
 name = "kelp"
-version = "1.9.1"
+version = "1.9.2"
 edition = "2021"
 authors = ["UberMetroid", "System76 <info@system76.com>"]
 license = "GPL-3.0-or-later"

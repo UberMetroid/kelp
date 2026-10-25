@@ -37,32 +37,20 @@ export class Ext extends Ecs.World {
         this.settings = new ExtensionSettings(extension.getSettings());
         log.set_log_level(this.settings.log_level());
 
-        this.conf = new Config();
-        this.conf.reload();
-        this.ids = this.register_storage();
-        this.monitors = this.register_storage();
-        this.windows = this.register_storage();
-        this.signals = [];
-        this.size_signals_blocked = new Set();
-        this.prev_focused = [null, null];
-        this.drag_signal = null;
-        this.grab_op = null;
-        this.ignore_display_update = false;
-        this.current_style = null;
-        this.focus_selector = focus_selector;
-        this._switching_mode = false;
+        this.conf = new Config(); this.conf.reload();
+        this.ids = this.register_storage(); this.monitors = this.register_storage(); this.windows = this.register_storage();
+        this.signals = []; this.size_signals_blocked = new Set();
+        this.prev_focused = [null, null]; this.drag_signal = null; this.grab_op = null;
+        this.ignore_display_update = false; this.current_style = null;
+        this.focus_selector = focus_selector; this._switching_mode = false;
         this.overlay = new St.BoxLayout({ style_class: 'kelp-overlay', visible: false });
         if (global.window_group) global.window_group.add_child(this.overlay);
-        update_scale(this);
-        load_theme(this);
-        this.events = new WakeupExecutor();
-        this.tiler = new ModalTiler(this);
-        this.mode = this.settings.tiling_mode();
-        this.auto_tiler = this._create_tiler_for_mode(this.mode);
+        update_scale(this); load_theme(this);
+        this.events = new WakeupExecutor(); this.tiler = new ModalTiler(this);
+        this.mode = this.settings.tiling_mode(); this.auto_tiler = this._create_tiler_for_mode(this.mode);
         set_edge_tiling(this, this.mode === 'otter');
         this.keybindings = new Keybindings(this).sync(this);
-        this.exception_dialog = new ExceptionDialog(this);
-        this.indicator = new Indicator(this);
+        this.exception_dialog = new ExceptionDialog(this); this.indicator = new Indicator(this);
         attach_controller_signals(this);
         for (const actor of global.get_window_actors()) {
             const win = actor.get_meta_window();
@@ -186,28 +174,32 @@ export class Ext extends Ecs.World {
         if (this.mode === target && Boolean(this.auto_tiler) === (target !== 'otter')) { this.indicator?.sync_mode(target); return; }
         this._switching_mode = true;
         try {
-            const focused = this.focus_window(), ordered = this._ordered_tilable_windows();
+            const focused = this.focus_window(), ordered = this._ordered_tilable_windows(target, focused);
             if (this.mode === 'otter') for (const [, win] of this.windows.iter()) win.floating_rect = win.rect();
             this._destroy_auto_tiler();
             this.mode = target; this.auto_tiler = this._create_tiler_for_mode(target);
             this.settings.set_tiling_mode(target); set_edge_tiling(this, target === 'otter');
             this.indicator?.sync_mode(target); this.keybindings.sync(this);
             if (this.auto_tiler) {
-                for (const win of ordered) if (win.is_tilable(this)) this.auto_tiler.auto_tile(this, win, true);
-                if (focused && this.auto_tiler.is_seahorse) this.auto_tiler.on_focused(this, focused);
-            } else cascade_otter_windows(this);
+                for (const win of ordered) if (win.is_tilable(this) && !win.meta?.minimized) this.auto_tiler.auto_tile(this, win, true);
+                if (focused && !focused.meta?.minimized && this.auto_tiler.is_seahorse) this.auto_tiler.on_focused(this, focused);
+            } else cascade_otter_windows(this, focused);
+            if (focused && !focused.meta?.minimized) this.register_fn(() => focused.activate(this, false));
             this.show_border_on_focused();
         } finally { this._switching_mode = false; }
     }
 
-    _ordered_tilable_windows() {
+    _ordered_tilable_windows(target = null, focused = this.focus_window()) {
+        const order = [];
         if (this.auto_tiler?.is_seahorse) {
-            const out = [], seen = new Set();
-            for (const s of this.auto_tiler.strips.values()) for (const e of s.cols) { const w = this.windows.get(e); if (w) { out.push(w); seen.add(w); } }
-            for (const [, w] of this.windows.iter()) if (!seen.has(w)) out.push(w);
-            return out;
+            const seen = new Set();
+            for (const s of this.auto_tiler.strips.values()) for (const e of s.cols) { const w = this.windows.get(e); if (w) { order.push(w); seen.add(w); } }
+            for (const [, w] of this.windows.iter()) if (!seen.has(w)) order.push(w);
+        } else {
+            order.push(...Array.from(this.windows.values()).sort((a, b) => (a.workspace_id() - b.workspace_id()) || (a.meta.get_monitor() - b.meta.get_monitor()) || (a.rect().x - b.rect().x) || (a.rect().y - b.rect().y)));
         }
-        return Array.from(this.windows.values()).sort((a, b) => (a.workspace_id() - b.workspace_id()) || (a.meta.get_monitor() - b.meta.get_monitor()) || (a.rect().x - b.rect().x) || (a.rect().y - b.rect().y));
+        if (target !== 'seahorse' && focused && order.indexOf(focused) > 0) { order.splice(order.indexOf(focused), 1); order.unshift(focused); }
+        return order;
     }
 
     move_global(dir) {
