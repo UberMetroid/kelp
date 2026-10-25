@@ -56,41 +56,24 @@ export function update_display_configuration(ext, workareas_only) {
     const n_monitors = display.get_n_monitors();
     if (n_monitors === 0) return;
 
-    const monitors = new Map();
-    for (let i = 0; i < n_monitors; i += 1) {
-        const area = monitor_work_area(ext, i);
-        monitors.set(i, {
-            area,
-            ws: ext.active_workspace(),
-        });
-    }
-
+    const smart_gaps = ext.settings.smart_gaps();
     if (!workareas_only) {
-        for (const [entity, [fork_id]] of ext.auto_tiler.forest.toplevel.values()) {
+        for (const [fork_id] of ext.auto_tiler.forest.toplevel.values()) {
             const fork = ext.auto_tiler.forest.forks.get(fork_id);
             if (!fork) continue;
             const mon = fork.monitor < n_monitors ? fork.monitor : 0;
             fork.monitor = mon;
-            const info = monitors.get(mon);
-            if (info) {
-                fork.area = fork.set_area(info.area.clone());
-                fork.length_left = Math.round(fork.ratio * fork.area.width);
-            }
-            ext.auto_tiler.tile(ext, fork, fork.area);
+            ext.auto_tiler.update_toplevel(ext, fork, mon, smart_gaps);
         }
         return;
     }
 
     ext.update_snapped();
-    for (const [entity, [fork_id]] of ext.auto_tiler.forest.toplevel.values()) {
+    for (const [fork_id] of ext.auto_tiler.forest.toplevel.values()) {
         const fork = ext.auto_tiler.forest.forks.get(fork_id);
         if (!fork) continue;
-        const info = monitors.get(fork.monitor);
-        if (info) {
-            fork.area = fork.set_area(info.area.clone());
-            fork.length_left = Math.round(fork.ratio * fork.area.width);
-            ext.auto_tiler.tile(ext, fork, fork.area);
-        }
+        const mon = fork.monitor < n_monitors ? fork.monitor : 0;
+        ext.auto_tiler.update_toplevel(ext, fork, mon, smart_gaps);
     }
 }
 

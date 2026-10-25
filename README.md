@@ -9,7 +9,8 @@
 - **Automatic Binary Space Partitioning (BSP) Tiling**: Automatically tiles normal windows across monitors and workspaces with dynamic orientation splits.
 - **Window Stacking**: Group windows into tabbed stacks (`Super + S`) and cycle tabs with directional focus (`Super + H/Left`, `Super + L/Right`).
 - **Interactive Adjustment Mode**: Enter modal keyboard tiling/resize mode (`Super + Return`), move/swap/resize with directional keys, and commit (`Return`) or cancel (`Escape`).
-- **Smart Gaps & Active Hint Border**: Configurable inner/outer gaps, single-window smart gap elision, and WCAG-luminance-aware active border and stack tab accents.
+- **Top-Bar Indicator Controls**: Instant toggles for **Tile Windows**, **Keyboard Shortcuts** (on/off), **Focus Follows Mouse** (`sloppy`/`click` WM focus mode), **Show Window Titles**, **Show Active Hint**, **Smart Gaps**, **Retile Workspace**, **Floating Window Exceptions**, and interactive gap/border-radius spinners.
+- **Unified EGO & GitHub Experience**: Installing the `.shell-extension.zip` from `extensions.gnome.org` or running the `kelp` Rust installer applies identical Hyprland-inspired defaults (`2px` gaps, red `rgb(255,0,0)` active hint border with `2px` radius, titlebars hidden, built-in `steam`/`caligula`/`btm`/`macchina` float rules).
 - **Zero-Runtime-Dependency Rust Installer (`kelp`)**: All 33 ES2022 modules, 3 CSS themes, SVG icons, GSettings schemas, and GNOME Control Center keybinding definitions are embedded at compile time via `include_str!`.
 
 ---
@@ -24,7 +25,7 @@ kelp
 ```
 
 Running `kelp` with no arguments:
-1. Purges any obsolete flat extension files from earlier versions.
+1. Purges any obsolete flat extension files and legacy directories from earlier versions.
 2. Extracts the modular extension tree into `~/.local/share/gnome-shell/extensions/kelp@ubermetroid.github.io/`.
 3. Installs and compiles `org.gnome.shell.extensions.kelp.gschema.xml`.
 4. Validates/writes `~/.config/kelp/config.json` and installs GNOME Control Center keybinding entries.
@@ -43,13 +44,14 @@ kelp --pack /tmp
 | Shortcut | Action |
 | :--- | :--- |
 | `Super + H / J / K / L` or `Super + Arrow` | Focus window Left / Down / Up / Right |
+| `Super + Shift + H / J / K / L` or `Super + Ctrl + H / J / K / L` | Move tiled window Left / Down / Up / Right |
 | `Super + Return` | Enter interactive adjustment / resize mode |
 | `Super + Y` | Toggle auto-tiling on / off |
 | `Super + G` | Toggle floating mode for the focused window |
 | `Super + O` | Toggle split orientation (horizontal / vertical) |
 | `Super + S` | Toggle window stacking on the focused window |
-| `Super + Shift + H / J / K / L` or `Arrow` | Move window to adjacent monitor |
-| `Super + Ctrl + J / K` or `Up / Down` | Move window to adjacent workspace |
+| `Super + Shift + Ctrl + H / J / K / L` or `Arrow` | Move window to adjacent monitor |
+| `Super + Shift + Alt + J / K` or `Page_Down / Page_Up` | Move window to adjacent workspace |
 
 ---
 

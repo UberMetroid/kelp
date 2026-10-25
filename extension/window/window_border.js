@@ -86,24 +86,29 @@ export function place_cursor_on_rect(rect, focus_position) {
     let x = rect.x + rect.width / 2;
     let y = rect.y + rect.height / 2;
     const pad = 16;
+    const keys = Object.keys(FocusPosition);
+    const resolved = typeof focus_position === 'number'
+        ? FocusPosition[keys[focus_position]]
+        : focus_position;
 
-    if (focus_position === FocusPosition.TopLeft) {
+    if (resolved === FocusPosition.TopLeft) {
         x = rect.x + pad;
         y = rect.y + pad;
-    } else if (focus_position === FocusPosition.TopRight) {
+    } else if (resolved === FocusPosition.TopRight) {
         x = rect.x + Math.max(pad, rect.width - pad);
         y = rect.y + pad;
-    } else if (focus_position === FocusPosition.BottomLeft) {
+    } else if (resolved === FocusPosition.BottomLeft) {
         x = rect.x + pad;
         y = rect.y + Math.max(pad, rect.height - pad);
-    } else if (focus_position === FocusPosition.BottomRight) {
+    } else if (resolved === FocusPosition.BottomRight) {
         x = rect.x + Math.max(pad, rect.width - pad);
         y = rect.y + Math.max(pad, rect.height - pad);
     }
 
     try {
-        const backend = Clutter.get_default_backend();
-        const seat = backend ? backend.get_default_seat() : null;
+        const seat =
+            global.stage?.get_context?.()?.get_backend?.()?.get_default_seat?.() ??
+            Clutter.get_default_backend?.()?.get_default_seat?.();
         if (seat && typeof seat.warp_pointer === 'function') {
             seat.warp_pointer(Math.round(x), Math.round(y));
         }

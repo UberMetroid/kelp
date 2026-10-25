@@ -15,85 +15,62 @@ import * as log from './log.js';
 
 const CONF_DIR = `${GLib.get_user_config_dir()}/kelp`;
 const CONF_FILE = `${CONF_DIR}/config.json`;
+const LEGACY_CONF_FILE = `${GLib.get_user_config_dir()}/pop-shell/config.json`;
 const MAX_CONFIG_BYTES = 65536;
 const MAX_RULE_COUNT = 512;
 
 export const DEFAULT_RULES = Object.freeze([
-    { class: 'Arandr' },
-    { class: 'Bitwarden' },
-    { class: 'Blueman-manager' },
-    { class: 'Enpass' },
-    { class: 'File-roller' },
-    { class: 'Firstrun' },
-    { class: 'Gdm-settings' },
-    { class: 'Gnome-abrt' },
-    { class: 'Gnome-calculator' },
-    { class: 'Gnome-calendar' },
-    { class: 'Gnome-characters' },
-    { class: 'Gnome-clocks' },
-    { class: 'Gnome-Custom-Shortcut-Dialog' },
-    { class: 'Gnome-disks' },
-    { class: 'Gnome-font-viewer' },
-    { class: 'Gnome-initial-setup' },
-    { class: 'Gnome-logs' },
-    { class: 'Gnome-network-displays' },
-    { class: 'Gnome-power-statistics' },
-    { class: 'Gnome-screenshot' },
-    { class: 'Gnome-session-properties' },
-    { class: 'Gnome-Shell-Extension-Prefs' },
-    { class: 'Gnome-software' },
-    { class: 'Gnome-system-monitor' },
-    { class: 'Gnome-terminal', title: 'Preferences – General' },
-    { class: 'Gnome-tweaks' },
-    { class: 'Gucharmap' },
-    { class: 'Io.elementary.sideload' },
-    { class: 'KotatogramDesktop', title: 'Media viewer' },
-    { class: 'KeePassXC' },
-    { class: 'Lutris' },
-    { class: 'Nm-connection-editor' },
-    { class: 'org.gnome.Calculator' },
-    { class: 'org.gnome.Calendar' },
-    { class: 'org.gnome.Characters' },
-    { class: 'org.gnome.Clocks' },
-    { class: 'org.gnome.FileRoller' },
-    { class: 'org.gnome.FontViewer' },
-    { class: 'org.gnome.Loupe' },
-    { class: 'org.gnome.NautilusPreviewer' },
-    { class: 'org.gnome.Screenshot' },
-    { class: 'org.gnome.Settings' },
-    { class: 'org.gnome.Shell.Extensions' },
-    { class: 'org.gnome.Snapshot' },
-    { class: 'org.gnome.SystemMonitor' },
-    { class: 'org.gnome.Tweaks' },
-    { class: 'org.gnome.Weather' },
-    { class: 'Pavucontrol' },
-    { class: 'Pinentry' },
-    { class: 'Polkit-gnome-authentication-agent-1' },
-    { class: ' ProtonUp-Qt' },
-    { class: ' Seahorse' },
-    { class: 'Signal', title: '^$' },
-    { class: ' Simple-scan' },
-    { class: 'Solaar' },
-    { class: 'Spotify', title: 'Spotify Free' },
-    { class: 'Steam', title: '^(?!Steam$).*$' },
-    { class: 'System-config-printer' },
-    { class: 'TelegramDesktop', title: 'Media viewer' },
-    { class: 'Totem' },
-    { class: 'Transmission-gtk' },
-    { class: 'Update-manager' },
-    { class: 'VirtualBox Manager' },
-    { class: 'Wine' },
-    { class: 'Winetricks' },
-    { class: 'Xdg-desktop-portal-gtk' },
-    { class: 'Zenity' },
+    { class: 'steam' }, { class: 'caligula', title: 'caligula' },
+    { class: 'btm', title: 'btm' }, { class: 'macchina', title: 'macchina' },
+    { class: 'Authy Desktop' }, { class: 'Bitwarden' }, { class: 'Blueman-manager' },
+    { class: 'Com.github.amezin.ddterm' }, { class: 'Com.github.donadigo.eddy' },
+    { class: 'Conky' }, { title: 'Discord Updater' },
+    { class: 'Enpass', title: 'Enpass Assistant' }, { class: 'File-roller' },
+    { class: 'Firstrun' }, { class: 'Floating Window Exceptions' },
+    { class: 'Gdm-settings' }, { class: 'Gjs', title: 'Settings' },
+    { class: 'Gnome-abrt' }, { class: 'Gnome-calculator' }, { class: 'Gnome-calendar' },
+    { class: 'Gnome-characters' }, { class: 'Gnome-clocks' },
+    { class: 'Gnome-Custom-Shortcut-Dialog' }, { class: 'Gnome-disks' },
+    { class: 'Gnome-font-viewer' }, { class: 'Gnome-initial-setup' },
+    { class: 'Gnome-logs' }, { class: 'Gnome-network-displays' },
+    { class: 'Gnome-power-statistics' }, { class: 'Gnome-screenshot' },
+    { class: 'Gnome-session-properties' }, { class: 'Gnome-Shell-Extension-Prefs' },
+    { class: 'Gnome-software' }, { class: 'Gnome-system-monitor' },
+    { class: 'Gnome-terminal', title: 'Preferences – General' }, { class: 'Gnome-tweaks' },
+    { class: 'Guake' }, { class: 'Io.elementary.sideload' }, { title: 'JavaEmbeddedFrame' },
+    { class: 'KeePassXC' }, { class: 'KotatogramDesktop', title: 'Media viewer' },
+    { class: 'Lutris' }, { class: 'Mozilla VPN' }, { class: 'Nm-connection-editor' },
+    { class: 'org.gnome.Calculator' }, { class: 'org.gnome.Characters' },
+    { class: 'org.gnome.Clocks' }, { class: 'org.gnome.FileRoller' },
+    { class: 'org.gnome.FontViewer' }, { class: 'org.gnome.Loupe' },
+    { class: 'org.gnome.NautilusPreviewer' }, { class: 'org.gnome.Screenshot' },
+    { class: 'org.gnome.Settings' }, { class: 'org.gnome.Shell.Extensions' },
+    { class: 'org.gnome.Snapshot' }, { class: 'org.gnome.SystemMonitor' },
+    { class: 'org.gnome.Tweaks' }, { class: 'org.gnome.Weather' },
+    { class: 'Pavucontrol' }, { class: 'Pinentry' },
+    { class: 'Polkit-gnome-authentication-agent-1' }, { class: 'ProtonUp-Qt' },
+    { class: 'Seahorse' }, { class: 'Signal', title: '^$' }, { class: 'Simple-scan' },
+    { class: 'Solaar' }, { class: 'Spotify', title: 'Spotify Free' },
+    { class: 'Steam', title: '^(?!Steam$).*$' }, { class: 'System-config-printer' },
+    { class: 'TelegramDesktop', title: 'Media viewer' }, { class: 'Totem' },
+    { class: 'Transmission-gtk' }, { class: 'update-manager', title: 'Software Updater' },
+    { class: 'VirtualBox Manager' }, { class: 'Wine' }, { class: 'Winetricks' },
+    { class: 'Xdg-desktop-portal-gtk' }, { class: 'Zenity' },
+    { class: 'Zotero', title: 'Quick Format Citation' },
+    { class: 'firefox', title: '^(?!.*Mozilla Firefox).*$' }, { class: 'ibus-.*' },
+    { class: 'jetbrains-toolbox' }, { class: 'krunner' }, { class: 'pritunl' },
+    { class: 're.sonny.Junction' }, { class: 'system76-driver' }, { class: 'tilda' },
+    { class: 'zoom' }, { class: '^.*action=join.*$' }, { class: 'gjs' },
     { title: '^.*(Bitwarden|KeePassXC).*Password.*$' },
     { title: '^(?:Open|Save|Select|Choose) (?:File|Folder|Directory|Image|As).*$' },
     { title: '^Picture-in-Picture$' },
 ]);
 
+export const DEFAULT_FLOAT_RULES = DEFAULT_RULES;
+
 function safe_regex_match(pattern, target) {
     if (typeof pattern !== 'string' || typeof target !== 'string') return false;
-    if (pattern === target) return true;
+    if (pattern.toLowerCase() === target.toLowerCase()) return true;
     try {
         return new RegExp(pattern, 'i').test(target);
     } catch (_e) {
@@ -114,7 +91,8 @@ function rule_matches(rule, wm_class, wm_title) {
 export class Config {
     constructor() {
         this.float = [];
-        this.log_on_Change = false;
+        this.skiptaskbarhidden = [];
+        this.log_on_focus = false;
     }
 
     add_app_exception(wm_class) {
@@ -139,23 +117,17 @@ export class Config {
         const cls = String(wm_class ?? '');
         const title = String(wm_title ?? '');
         for (const rule of this.float) {
-            if (rule_matches(rule, cls, title)) {
-                return !rule.disabled;
-            }
+            if (rule_matches(rule, cls, title)) return !rule.disabled;
         }
         for (const rule of DEFAULT_RULES) {
-            if (rule_matches(rule, cls, title)) {
-                return true;
-            }
+            if (rule_matches(rule, cls, title)) return true;
         }
         return false;
     }
 
     rule_disabled(rule) {
         for (const value of this.float.values()) {
-            if (value.disabled && rule.class === value.class && rule.title === value.title) {
-                return true;
-            }
+            if (value.disabled && rule.class === value.class && rule.title === value.title) return true;
         }
         return false;
     }
@@ -173,8 +145,7 @@ export class Config {
             this.sync_to_disk();
             return;
         }
-        const filtered = this.float.filter((v) => !(v.class === wm_class && v.title === wm_title));
-        this.float = filtered;
+        this.float = this.float.filter((v) => !(v.class === wm_class && v.title === wm_title));
         this.sync_to_disk();
     }
 
@@ -184,20 +155,21 @@ export class Config {
     }
 
     to_json() {
-        return JSON.stringify({ float: this.float, log_on_Change: this.log_on_Change }, null, 2);
+        return JSON.stringify(
+            { float: this.float, skiptaskbarhidden: this.skiptaskbarhidden, log_on_focus: this.log_on_focus },
+            null,
+            2,
+        );
     }
 
     static from_json(json) {
         try {
             const c = Object.assign(new Config(), JSON.parse(json));
-            if (!Array.isArray(c.float)) {
-                c.float = [];
-            } else {
-                c.float = c.float
-                    .slice(0, MAX_RULE_COUNT)
-                    .filter((r) => r && typeof r === 'object' &&
-                        (typeof r.class === 'string' || typeof r.title === 'string'));
-            }
+            c.float = Array.isArray(c.float)
+                ? c.float.slice(0, MAX_RULE_COUNT).filter(
+                      (r) => r && typeof r === 'object' && (typeof r.class === 'string' || typeof r.title === 'string'),
+                  )
+                : [];
             return Ok(c);
         } catch (error) {
             return Err(`failed to parse config JSON: ${error}`);
@@ -206,27 +178,22 @@ export class Config {
 
     static from_config() {
         const res = Config.read();
-        if (res.kind === 1) {
-            return Config.from_json(res.value);
-        }
-        return Err(res.value);
+        return res.kind === 1 ? Config.from_json(res.value) : Err(res.value);
     }
 
     static read() {
         try {
-            if (!GLib.file_test(CONF_FILE, GLib.FileTest.EXISTS)) {
-                return Err('config.json not found');
-            }
-            const file = Gio.File.new_for_path(CONF_FILE);
+            const path = GLib.file_test(CONF_FILE, GLib.FileTest.EXISTS)
+                ? CONF_FILE
+                : GLib.file_test(LEGACY_CONF_FILE, GLib.FileTest.EXISTS) ? LEGACY_CONF_FILE : null;
+            if (!path) return Err('config.json not found');
+            const file = Gio.File.new_for_path(path);
             const info = file.query_info('standard::size', Gio.FileQueryInfoFlags.NONE, null);
             if (info.get_size() > MAX_CONFIG_BYTES) {
                 return Err(`config.json exceeds maximum allowed size (${MAX_CONFIG_BYTES} bytes)`);
             }
             const [ok, data] = file.load_contents(null);
-            if (ok) {
-                return Ok(new TextDecoder().decode(data));
-            }
-            return Err('failed to read config.json');
+            return ok ? Ok(new TextDecoder().decode(data)) : Err('failed to read config.json');
         } catch (e) {
             return Err(`error reading config.json: ${e}`);
         }
@@ -236,7 +203,7 @@ export class Config {
         const conf = Config.from_config();
         if (conf.kind === 1) {
             this.float = conf.value.float;
-            this.log_on_Change = Boolean(conf.value.log_on_Change);
+            this.log_on_focus = Boolean(conf.value.log_on_focus);
         } else {
             log.debug(`config reload skipped: ${conf.value}`);
         }

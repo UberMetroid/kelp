@@ -58,6 +58,10 @@ export const GlobalEvent = Object.freeze({
     MonitorsChanged: 2,
     OverviewShown: 3,
     OverviewHidden: 4,
+    Changes: 5,
+    Callback: 6,
+    WindowCreate: 7,
+    WindowMove: 8,
 });
 
 export const WindowEvent = Object.freeze({
@@ -68,8 +72,16 @@ export const WindowEvent = Object.freeze({
     Fullscreen: 4,
 });
 
+export const ExtEvent = Object.freeze({
+    Changes: () => ({ tag: 1, kind: GlobalEvent.Changes, callback: () => {} }),
+    Callback: (callback, name) => ({ tag: 1, kind: GlobalEvent.Callback, callback, name }),
+    WindowCreate: (window) => ({ tag: 3, kind: GlobalEvent.WindowCreate, window }),
+    WindowMove: (func) => ({ tag: 1, kind: GlobalEvent.WindowMove, callback: func, func }),
+    Global: (event) => ({ tag: 4, kind: event, event }),
+});
+
 export function global(event) {
-    return { tag: 4, event };
+    return ExtEvent.Global(event);
 }
 
 export function window_move(ext, window, rect) {

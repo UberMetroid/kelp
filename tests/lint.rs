@@ -74,7 +74,7 @@ fn all_js_files_use_strict_es2022_and_zero_legacy_imports() -> Result<(), String
             let trimmed = code.trim_start();
             if trimmed.starts_with("var ") || code.contains(" var ") || code.contains("(var ") {
                 return Err(format!(
-                    "Forbidden `var` declaration in {}:{} -> {raw_line}",
+                    "Forbidden `var` in {}:{} -> {raw_line}",
                     file.display(),
                     line_idx + 1
                 ));
@@ -87,21 +87,21 @@ fn all_js_files_use_strict_es2022_and_zero_legacy_imports() -> Result<(), String
                     let next_ok = i + 2 < bytes.len() && bytes[i + 2] == b'=';
                     if !prev_ok && !next_ok {
                         return Err(format!(
-                            "Loose `==` operator in {}:{} -> {raw_line}",
+                            "Loose `==` in {}:{} -> {raw_line}",
                             file.display(),
                             line_idx + 1
                         ));
                     }
                 }
-                if bytes[i] == b'!' && bytes[i + 1] == b'=' {
-                    let next_ok = i + 2 < bytes.len() && bytes[i + 2] == b'=';
-                    if !next_ok {
-                        return Err(format!(
-                            "Loose `!=` operator in {}:{} -> {raw_line}",
-                            file.display(),
-                            line_idx + 1
-                        ));
-                    }
+                if bytes[i] == b'!'
+                    && bytes[i + 1] == b'='
+                    && (i + 2 >= bytes.len() || bytes[i + 2] != b'=')
+                {
+                    return Err(format!(
+                        "Loose `!=` in {}:{} -> {raw_line}",
+                        file.display(),
+                        line_idx + 1
+                    ));
                 }
             }
         }
@@ -112,19 +112,16 @@ fn all_js_files_use_strict_es2022_and_zero_legacy_imports() -> Result<(), String
 #[test]
 fn prefs_and_shared_settings_never_import_compositor_only_typelibs() -> Result<(), String> {
     let ext_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("extension");
-    let prefs_chain = [
+    for rel in [
         "prefs.js",
         "engine/geom/focus.js",
         "engine/geom/rectangle.js",
         "ui/settings/gsettings.js",
         "ui/settings/color.js",
         "ui/settings/log.js",
-    ];
-
-    for rel in prefs_chain {
+    ] {
         let path = ext_root.join(rel);
-        let content = fs::read_to_string(&path)
-            .map_err(|e| format!("failed to read {}: {e}", path.display()))?;
+        let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
         for raw_line in content.lines() {
             let code = raw_line.split("//").next().unwrap_or("");
             for forbidden in [
@@ -136,7 +133,7 @@ fn prefs_and_shared_settings_never_import_compositor_only_typelibs() -> Result<(
             ] {
                 if code.contains(forbidden) {
                     return Err(format!(
-                        "Process-boundary violation: {rel} imports compositor-only '{forbidden}'"
+                        "Process-boundary violation: {rel} imports '{forbidden}'"
                     ));
                 }
             }
@@ -148,9 +145,8 @@ fn prefs_and_shared_settings_never_import_compositor_only_typelibs() -> Result<(
 #[test]
 fn ego_lifecycle_and_mutter_18_19_invariants_hold() -> Result<(), String> {
     let ext_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("extension");
-    let ext_js = fs::read_to_string(ext_root.join("extension.js"))
-        .map_err(|e| format!("failed to read extension.js: {e}"))?;
-    for required in [
+    let ext_js = fs::read_to_string(ext_root.join("extension.js")).map_err(|e| e.to_string())?;
+    for req in [
         "export default class KelpExtension extends Extension",
         "enable()",
         "disable()",
@@ -158,42 +154,99 @@ fn ego_lifecycle_and_mutter_18_19_invariants_hold() -> Result<(), String> {
         "this.ext.destroy()",
         "this.exception_dialog.close()",
     ] {
-        if !ext_js.contains(required) {
-            return Err(format!(
-                "extension.js missing required lifecycle construct: {required}"
-            ));
+        if !ext_js.contains(req) {
+            return Err(format!("extension.js missing: {req}"));
         }
     }
 
-    let stack_widgets = fs::read_to_string(ext_root.join("ui/stack_widgets.js"))
-        .map_err(|e| format!("failed to read ui/stack_widgets.js: {e}"))?;
-    if !stack_widgets.contains("c.hint_signal")
-        || !stack_widgets.contains("disconnect(c.hint_signal)")
-    {
-        return Err("ui/stack_widgets.js must track and disconnect c.hint_signal".to_string());
+    let sw = fs::read_to_string(ext_root.join("ui/stack_widgets.js")).map_err(|e| e.to_string())?;
+    if !sw.contains("c.hint_signal") || !sw.contains("disconnect(c.hint_signal)") {
+        return Err("ui/stack_widgets.js must disconnect c.hint_signal".to_string());
     }
-
-    let exc_dialog = fs::read_to_string(ext_root.join("ui/exception_dialog.js"))
-        .map_err(|e| format!("failed to read ui/exception_dialog.js: {e}"))?;
-    if !exc_dialog.contains("destroyOnClose: true") {
-        return Err("ui/exception_dialog.js must set destroyOnClose: true".to_string());
+    let ed =
+        fs::read_to_string(ext_root.join("ui/exception_dialog.js")).map_err(|e| e.to_string())?;
+    if !ed.contains("destroyOnClose: true") || EXTENSION_FILES.len() < 35 {
+        return Err("exception_dialog or EXTENSION_FILES invariant failed".to_string());
     }
-
-    let meta_json = fs::read_to_string(ext_root.join("metadata.json"))
-        .map_err(|e| format!("failed to read metadata.json: {e}"))?;
+    let meta = fs::read_to_string(ext_root.join("metadata.json")).map_err(|e| e.to_string())?;
     for ver in [
         "\"45\"", "\"46\"", "\"47\"", "\"48\"", "\"49\"", "\"50\"", "\"51\"",
     ] {
-        if !meta_json.contains(ver) {
-            return Err(format!("metadata.json missing shell-version {ver}"));
+        if !meta.contains(ver) {
+            return Err(format!("metadata.json missing {ver}"));
         }
     }
+    let schema =
+        fs::read_to_string(ext_root.join("schemas/org.gnome.shell.extensions.kelp.gschema.xml"))
+            .map_err(|e| e.to_string())?;
+    for req in [
+        "name=\"enable-shortcuts\"",
+        "name=\"tile-move-left-global\"",
+        "'rgb(255,0,0)'",
+    ] {
+        if !schema.contains(req) {
+            return Err(format!("schema XML missing {req}"));
+        }
+    }
+    let ind =
+        fs::read_to_string(ext_root.join("ui/panel_indicator.js")).map_err(|e| e.to_string())?;
+    for req in [
+        "Keyboard Shortcuts",
+        "Focus Follows Mouse",
+        "Retile Workspace",
+        "Smart Gaps",
+    ] {
+        if !ind.contains(req) {
+            return Err(format!("ui/panel_indicator.js missing {req}"));
+        }
+    }
+    run_gjs_runtime_smoke_test(&ext_root)
+}
 
-    if EXTENSION_FILES.len() < 35 {
-        return Err(format!(
-            "expected EXTENSION_FILES to embed >= 35 files, found {}",
-            EXTENSION_FILES.len()
-        ));
+fn run_gjs_runtime_smoke_test(ext_root: &Path) -> Result<(), String> {
+    let dir = std::env::temp_dir().join(format!("kelp-gjs-schema-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    fs::copy(
+        ext_root.join("schemas/org.gnome.shell.extensions.kelp.gschema.xml"),
+        dir.join("org.gnome.shell.extensions.kelp.gschema.xml"),
+    )
+    .map_err(|e| e.to_string())?;
+    if !std::process::Command::new("glib-compile-schemas")
+        .arg(&dir)
+        .status()
+        .map_err(|e| e.to_string())?
+        .success()
+    {
+        return Err("glib-compile-schemas failed".to_string());
+    }
+    let script_path = dir.join("smoke.js");
+    let script = format!(
+        "import Gio from 'gi://Gio';\n\
+         import {{ ExtensionSettings }} from 'file://{ext}/ui/settings/gsettings.js';\n\
+         import {{ Config, DEFAULT_FLOAT_RULES }} from 'file://{ext}/ui/settings/float_rules.js';\n\
+         import {{ ExtEvent, GlobalEvent }} from 'file://{ext}/engine/ecs/events.js';\n\
+         import {{ WakeupExecutor }} from 'file://{ext}/engine/ecs/executor.js';\n\
+         import * as Ecs from 'file://{ext}/engine/ecs/world.js';\n\
+         const src = Gio.SettingsSchemaSource.new_from_directory('{schema}', Gio.SettingsSchemaSource.get_default(), false);\n\
+         const s = new ExtensionSettings(new Gio.Settings({{ settings_schema: src.lookup('org.gnome.shell.extensions.kelp', true) }}));\n\
+         if (!s.enable_shortcuts() || !s.stacking_with_mouse() || typeof s.focus_follows_mouse() !== 'boolean') throw new Error('settings');\n\
+         if (DEFAULT_FLOAT_RULES.length < 5 || !new Config().window_shall_float('steam', 'Steam')) throw new Error('float');\n\
+         const w = new Ecs.World(); const st = w.register_storage(); st.insert(w.create_entity(), 42);\n\
+         if ([...st.drain()].length !== 1 || ExtEvent.Changes().kind !== GlobalEvent.Changes) throw new Error('ecs');\n\
+         new WakeupExecutor().stop();\n",
+        ext = ext_root.display(),
+        schema = dir.display()
+    );
+    fs::write(&script_path, script).map_err(|e| e.to_string())?;
+    let status = std::process::Command::new("gjs")
+        .arg("-m")
+        .arg(&script_path)
+        .status()
+        .map_err(|e| e.to_string())?;
+    let _ = fs::remove_dir_all(&dir);
+    if !status.success() {
+        return Err(format!("gjs -m smoke test failed: {status}"));
     }
     Ok(())
 }

@@ -79,6 +79,12 @@ function build_settings_widget(ext_settings) {
     add_toggle_row(grid, row++, 'Tile Windows by Default', settings.tile_by_default(), (v) =>
         settings.set_tile_by_default(v),
     );
+    add_toggle_row(grid, row++, 'Keyboard Shortcuts', settings.enable_shortcuts(), (v) =>
+        settings.set_enable_shortcuts(v),
+    );
+    add_toggle_row(grid, row++, 'Focus Follows Mouse', settings.focus_follows_mouse(), (v) =>
+        settings.set_focus_follows_mouse(v),
+    );
     add_toggle_row(grid, row++, 'Show Window Titles', settings.show_title(), (v) =>
         settings.set_show_title(v),
     );
@@ -112,14 +118,15 @@ function build_settings_widget(ext_settings) {
     grid.attach(color_label, 0, row, 1, 1);
     grid.attach(color_button, 1, row++, 1, 1);
 
-    add_spin_row(
-        grid, row++, 'Active Hint Border Width (px)',
-        settings.active_hint_size(), 1, 16, 1,
-        (v) => settings.set_active_hint_size(v),
+    add_toggle_row(grid, row++, 'Allow Stacking with Mouse', settings.stacking_with_mouse(), (v) =>
+        settings.set_stacking_with_mouse(v),
+    );
+    add_toggle_row(grid, row++, 'Show Minimize to Tray Windows', settings.show_skip_taskbar(), (v) =>
+        settings.set_show_skip_taskbar(v),
     );
     add_spin_row(
         grid, row++, 'Active Hint Border Radius (px)',
-        settings.active_hint_border_radius(), 0, 32, 1,
+        settings.active_hint_border_radius(), 0, 30, 1,
         (v) => settings.set_active_hint_border_radius(v),
     );
     add_spin_row(
@@ -131,6 +138,11 @@ function build_settings_widget(ext_settings) {
         grid, row++, 'Outer Workspace Gap (px)',
         settings.gap_outer(), 0, 64, 2,
         (v) => settings.set_gap_outer(v),
+    );
+    add_spin_row(
+        grid, row++, 'Max Window Width (px, 0 = disabled)',
+        settings.max_window_width(), 0, 7680, 64,
+        (v) => settings.set_max_window_width(v),
     );
     add_toggle_row(
         grid, row++, 'Mouse Cursor Follows Active Window',

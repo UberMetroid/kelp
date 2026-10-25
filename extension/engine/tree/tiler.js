@@ -212,6 +212,8 @@ export class Tiler {
         }
     }
 
+    disable() { this.queue.stop(); this.window = null; this.swap_window = null; }
+
     snap(ext, win) {
         const mon_geom = ext.monitor_work_area(win.meta.get_monitor());
         if (mon_geom) {

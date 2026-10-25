@@ -18,7 +18,6 @@ export class Keybindings {
         this.ext = ext;
         this.active_bindings = new Set();
         this.global = {
-            'activate-launcher': () => Main.overview.toggle(),
             'tile-enter': () => ext.tiler.enter(ext),
         };
         this.window_focus = {
@@ -34,14 +33,12 @@ export class Keybindings {
                 }
             },
             'toggle-floating': () => ext.auto_tiler?.toggle_floating(ext),
-            'toggle-tiling': () => {
-                if (ext.auto_tiler) {
-                    ext.auto_tile_off();
-                } else {
-                    ext.auto_tile_on();
-                }
-            },
+            'toggle-tiling': () => ext.toggle_tiling(),
             'toggle-stacking-global': () => ext.auto_tiler?.toggle_stacking(ext),
+            'tile-move-left-global': () => ext.tiler.move_left(ext, ext.focus_window()?.entity),
+            'tile-move-down-global': () => ext.tiler.move_down(ext, ext.focus_window()?.entity),
+            'tile-move-up-global': () => ext.tiler.move_up(ext, ext.focus_window()?.entity),
+            'tile-move-right-global': () => ext.tiler.move_right(ext, ext.focus_window()?.entity),
             'pop-monitor-left': () => ext.move_monitor(Meta.DisplayDirection.LEFT),
             'pop-monitor-right': () => ext.move_monitor(Meta.DisplayDirection.RIGHT),
             'pop-monitor-up': () => ext.move_monitor(Meta.DisplayDirection.UP),
@@ -49,6 +46,22 @@ export class Keybindings {
             'pop-workspace-up': () => ext.move_workspace(Meta.MotionDirection.UP),
             'pop-workspace-down': () => ext.move_workspace(Meta.MotionDirection.DOWN),
         };
+        this.window = this.window_focus;
+    }
+
+    sync(ext) {
+        if (ext.settings.enable_shortcuts()) {
+            this.enable(this.global);
+            if (ext.settings.tile_by_default() || ext.auto_tiler) {
+                this.enable(this.window);
+            } else {
+                this.disable(this.window);
+            }
+        } else {
+            this.disable(this.global);
+            this.disable(this.window);
+        }
+        return this;
     }
 
     enable(keybindings) {

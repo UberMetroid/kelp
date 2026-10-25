@@ -8,9 +8,7 @@
 //   with zero `..` traversal components, guaranteeing deterministic extraction into the user's
 //   local GNOME Shell extension directory.
 
-use crate::default_rules::{
-    KEYBINDING_LAUNCHERS_XML, KEYBINDING_NAVIGATION_XML, KEYBINDING_TILING_XML,
-};
+use crate::default_rules::{KEYBINDING_MOVE_XML, KEYBINDING_NAVIGATION_XML, KEYBINDING_TILING_XML};
 
 pub const EXTENSION_UUID: &str = "kelp@ubermetroid.github.io";
 pub const SCHEMA_ID: &str = "org.gnome.shell.extensions.kelp";
@@ -32,6 +30,7 @@ pub const LEGACY_FLAT_FILES: &[&str] = &[
     "config.js",
     "context.js",
     "dark.css",
+    "dbus_service.js",
     "dialog_add_exception.js",
     "dialog_launcher.js",
     "ecs.js",
@@ -43,22 +42,49 @@ pub const LEGACY_FLAT_FILES: &[&str] = &[
     "forest.js",
     "fork.js",
     "geom.js",
+    "grab_op.js",
     "highcontrast.css",
     "keybindings.js",
+    "launcher.js",
     "launcher_service.js",
     "lib.js",
     "light.css",
     "log.js",
     "movement.js",
     "node.js",
+    "once_cell.js",
     "panel_settings.js",
+    "paths.js",
     "rectangle.js",
+    "result.js",
+    "scheduler.js",
+    "search.js",
     "settings.js",
+    "shell.js",
+    "shortcut_overlay.js",
     "stack.js",
+    "tags.js",
     "tiler.js",
+    "tiling.js",
     "utils.js",
     "window.js",
     "xprop.js",
+    "schemas/org.gnome.shell.extensions.pop-shell.gschema.xml",
+];
+
+/// Legacy subdirectories from older Pop Shell / Kelp releases that must be removed on upgrade.
+pub const LEGACY_DIRS: &[&str] = &["color_dialog", "floating_exceptions"];
+
+/// Legacy GNOME Control Center keybinding filenames that must be removed on upgrade.
+pub const LEGACY_KEYBINDING_FILES: &[&str] = &[
+    "50-kelp-launchers.xml",
+    "50-kelp-navigation.xml",
+    "50-kelp-tiling.xml",
+    "50-org.gnome.shell.extensions.pop-shell.xml",
+    "10-pop-shell-launchers.xml",
+    "10-pop-shell-move.xml",
+    "10-pop-shell-navigate.xml",
+    "10-pop-shell-tile.xml",
 ];
 
 pub const EXTENSION_FILES: &[(&str, &str)] = &[
@@ -206,7 +232,7 @@ pub const ICON_FILES: &[(&str, &str)] = &[
 ];
 
 pub const KEYBINDING_FILES: &[(&str, &str)] = &[
-    ("50-kelp-launchers.xml", KEYBINDING_LAUNCHERS_XML),
-    ("50-kelp-navigation.xml", KEYBINDING_NAVIGATION_XML),
-    ("50-kelp-tiling.xml", KEYBINDING_TILING_XML),
+    ("10-kelp-move.xml", KEYBINDING_MOVE_XML),
+    ("10-kelp-navigate.xml", KEYBINDING_NAVIGATION_XML),
+    ("10-kelp-tile.xml", KEYBINDING_TILING_XML),
 ];

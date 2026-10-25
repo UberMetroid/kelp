@@ -2,7 +2,8 @@
 // First-Principles & Zero-Trust Page Header
 // - Page Responsibility / Functional Domain:
 //   GNOME Shell top-bar status area menu (`Indicator`) providing quick toggles for auto-tiling,
-//   active window border hints, window titlebars, smart gaps, gap spinners, and float exceptions.
+//   keyboard shortcuts, focus-follows-mouse, active border hints, window titlebars, smart gaps,
+//   workspace retiling, gap spinners, and floating exceptions.
 // - Zero-Trust Boundary & Invariants:
 //   Wraps the indicator button inside a `PanelMenu.Button` added to `Main.panel.statusArea` and
 //   removes/destroys all menu actors and GSettings signal handlers cleanly on `destroy()`.
@@ -11,6 +12,7 @@ import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
+import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
@@ -49,9 +51,7 @@ function number_entry(label, value_or_options, callback) {
     text.set_max_length(3);
     entry.connect('key-release-event', (_actor, event) => {
         const code = event.get_key_code();
-        if (code === 36 || code === 104) {
-            emit_change();
-        }
+        if (code === 36 || code === 104) emit_change();
     });
     text.connect('key-focus-out', emit_change);
 
@@ -103,7 +103,7 @@ function toggle_item(label, active, connect) {
 const KelpButton = GObject.registerClass(
     class KelpButton extends PanelMenu.Button {
         _init(ext) {
-            super._init(0.0, 'Kelp Auto-Tiler', false);
+            super._init(0.0, _('Kelp Auto-Tiler'), false);
             this.ext = ext;
             this.icon = new St.Icon({
                 gicon: Gio.icon_new_for_string(`${ext.path}/icons/pop-shell-auto-on-symbolic.svg`),
@@ -118,26 +118,45 @@ export class Indicator {
     constructor(ext) {
         this.ext = ext;
         this.button = new KelpButton(ext);
+        this.wm_prefs = new Gio.Settings({ schema_id: 'org.gnome.desktop.wm.preferences' });
+        this._signals = [];
 
-        this.tiled = toggle_item('Tile Windows', ext.auto_tiler !== null, (enable) => {
+        this.tiled = toggle_item(_('Tile Windows'), ext.auto_tiler !== null, (enable) => {
             if (enable) ext.auto_tile_on();
             else ext.auto_tile_off();
         });
 
-        this.titlebars = toggle_item('Show Window Titles', ext.settings.show_title(), (enable) => {
+        this.shortcuts = toggle_item(
+            _('Keyboard Shortcuts'),
+            ext.settings.enable_shortcuts(),
+            (enable) => ext.settings.set_enable_shortcuts(enable),
+        );
+
+        const is_ffm = () => this.wm_prefs.get_string('focus-mode') !== 'click';
+        this.focus_follows_mouse = toggle_item(_('Focus Follows Mouse'), is_ffm(), (state) => {
+            this.wm_prefs.set_string('focus-mode', state ? 'sloppy' : 'click');
+        });
+        this._signals.push([
+            this.wm_prefs,
+            this.wm_prefs.connect('changed::focus-mode', () => {
+                this.focus_follows_mouse.setToggleState(is_ffm());
+            }),
+        ]);
+
+        this.titlebars = toggle_item(_('Show Window Titles'), ext.settings.show_title(), (enable) => {
             ext.settings.set_show_title(enable);
         });
 
-        this.active_hint = toggle_item('Show Active Hint', ext.settings.active_hint(), (enable) => {
+        this.active_hint = toggle_item(_('Show Active Hint'), ext.settings.active_hint(), (enable) => {
             ext.settings.set_active_hint(enable);
         });
 
-        this.smart_gaps = toggle_item('Smart Gaps', ext.settings.smart_gaps(), (enable) => {
+        this.smart_gaps = toggle_item(_('Smart Gaps'), ext.settings.smart_gaps(), (enable) => {
             ext.settings.set_smart_gaps(enable);
         });
 
         const [gap_item, gap_entry] = number_entry(
-            'Gaps',
+            _('Gaps'),
             { value: ext.settings.gap_inner(), min: 0, max: 64 },
             (value) => {
                 ext.settings.set_gap_inner(value);
@@ -147,16 +166,25 @@ export class Indicator {
         this.entry_gaps = gap_entry;
 
         const [border_item, border_entry] = number_entry(
-            'Active Hint Border Radius',
-            { value: ext.settings.active_hint_border_radius(), min: 0, max: 32 },
+            _('Active Hint Border Radius'),
+            { value: ext.settings.active_hint_border_radius(), min: 0, max: 30 },
             (value) => ext.settings.set_active_hint_border_radius(value),
         );
         this.border_radius = border_entry;
 
         const menu = this.button.menu;
         menu.addMenuItem(this.tiled);
+        menu.addMenuItem(this.shortcuts);
+        menu.addMenuItem(this.focus_follows_mouse);
 
-        const float_item = new PopupMenu.PopupMenuItem('Floating Window Exceptions');
+        const retile_item = new PopupMenu.PopupMenuItem(_('Retile Workspace'));
+        retile_item.connect('activate', () => {
+            menu.close(true);
+            ext.retile_workspace();
+        });
+        menu.addMenuItem(retile_item);
+
+        const float_item = new PopupMenu.PopupMenuItem(_('Floating Window Exceptions'));
         float_item.connect('activate', () => {
             menu.close(true);
             ext.exception_drawer();
@@ -178,6 +206,15 @@ export class Indicator {
     }
 
     destroy() {
+        for (const [obj, sig] of this._signals) {
+            try {
+                obj.disconnect(sig);
+            } catch (_e) {
+                /* GObject already finalized */
+            }
+        }
+        this._signals = [];
+        this.wm_prefs = null;
         if (this.button) {
             this.button.destroy();
             this.button = null;

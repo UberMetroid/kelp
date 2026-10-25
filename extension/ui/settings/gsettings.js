@@ -26,31 +26,25 @@ function settings_new_schema(schema) {
 
 const BOOL_KEYS = Object.freeze([
     'active-hint',
-    'fullscreen-launcher',
-    'gap-inner-even',
-    'gap-outer-even',
+    'enable-shortcuts',
     'mouse-cursor-follows-active-window',
     'show-skip-taskbar',
     'show-title',
     'smart-gaps',
     'snap-to-grid',
+    'stacking-with-mouse',
     'tile-by-default',
 ]);
 
 const UINT_KEYS = Object.freeze([
     'active-hint-border-radius',
-    'active-hint-size',
     'column-size',
     'gap-inner',
-    'gap-inner-horizontal',
-    'gap-inner-vertical',
     'gap-outer',
-    'gap-outer-horizontal',
-    'gap-outer-vertical',
     'log-level',
+    'max-window-width',
     'mouse-cursor-focus-location',
     'row-size',
-    'stacking-with-mouse',
 ]);
 
 export class ExtensionSettings {
@@ -71,6 +65,18 @@ export class ExtensionSettings {
             this[prop] = () => this.ext.get_uint(key);
             this[`set_${prop}`] = (v) => this.ext.set_uint(key, Math.max(0, Number(v) | 0));
         }
+    }
+
+    active_hint_size() {
+        return 2;
+    }
+
+    focus_follows_mouse() {
+        return this.wm ? this.wm.get_string('focus-mode') !== 'click' : false;
+    }
+
+    set_focus_follows_mouse(enable) {
+        if (this.wm) this.wm.set_string('focus-mode', enable ? 'sloppy' : 'click');
     }
 
     is_high_contrast() {
@@ -95,7 +101,7 @@ export class ExtensionSettings {
     }
 
     workspaces_only_on_primary() {
-        return this.mutter ? this.mutter.get_boolean(WORKSPACES_ONLY_ON_PRIMARY) : true;
+        return this.mutter ? this.mutter.get_boolean(WORKSPACES_ONLY_ON_PRIMARY) : false;
     }
 
     hint_color_rgba() {
@@ -110,14 +116,10 @@ export class ExtensionSettings {
     set_gap_inner(gap) {
         const v = Math.max(0, Number(gap) | 0);
         this.ext.set_uint('gap-inner', v);
-        this.ext.set_uint('gap-inner-horizontal', v);
-        this.ext.set_uint('gap-inner-vertical', v);
     }
 
     set_gap_outer(gap) {
         const v = Math.max(0, Number(gap) | 0);
         this.ext.set_uint('gap-outer', v);
-        this.ext.set_uint('gap-outer-horizontal', v);
-        this.ext.set_uint('gap-outer-vertical', v);
     }
 }

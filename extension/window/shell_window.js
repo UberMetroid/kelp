@@ -54,13 +54,17 @@ export class ShellWindow {
         connect('notify::fullscreen', () => this.update_border_layout());
     }
 
-    activate(ext, move_mouse = true) {
+    activate(ext_or_move = true, maybe_move = true) {
+        const move_mouse = typeof ext_or_move === 'boolean' ? ext_or_move : maybe_move;
+        const ext = this.ext;
         const ws = this.meta.get_workspace();
+        this.meta.unminimize();
         if (ws) {
             ws.activate_with_focus(this.meta, global.get_current_time());
         } else {
             this.meta.activate(global.get_current_time());
         }
+        this.meta.raise();
         if (move_mouse && ext.settings.mouse_cursor_follows_active_window()) {
             place_cursor_on_rect(this.rect(), ext.settings.mouse_cursor_focus_location());
         }
@@ -72,14 +76,11 @@ export class ShellWindow {
 
     cmdline() {
         const pid = this.meta.get_pid();
-        if (pid <= 0) return null;
-        return String(pid);
+        return pid <= 0 ? null : String(pid);
     }
 
     decoration(_ext, callback) {
-        if (this.actor_exists()) {
-            callback();
-        }
+        if (this.actor_exists()) callback();
     }
 
     icon(_ext, size) {
@@ -92,7 +93,7 @@ export class ShellWindow {
             return Boolean(this.meta.is_maximized());
         }
         if (typeof this.meta.get_maximized === 'function') {
-            return this.meta.get_maximized() === Meta.MaximizeFlags.BOTH;
+            return this.meta.get_maximized() !== 0;
         }
         return false;
     }
@@ -106,6 +107,7 @@ export class ShellWindow {
     }
 
     is_tilable(ext) {
+        if (ext.contains_tag(this.entity, 1)) return false;
         const wt = this.meta.get_window_type();
         if (wt !== Meta.WindowType.NORMAL) return false;
         if (this.meta.is_override_redirect()) return false;
@@ -115,9 +117,9 @@ export class ShellWindow {
         const wm_class = this.meta.get_wm_class();
         const wm_title = this.meta.get_title();
         if (wm_class === null && wm_title === null) return false;
-        if (ext.conf.window_shall_float(wm_class, wm_title)) return false;
-        if (ext.contains_tag(this.entity, 1)) return false;
-
+        if (ext.conf.window_shall_float(wm_class, wm_title)) {
+            return ext.contains_tag(this.entity, 3);
+        }
         return true;
     }
 
@@ -128,7 +130,8 @@ export class ShellWindow {
     move(ext, rect, on_complete) {
         if (!this.actor_exists()) return;
         const clone = Rectangle.from_meta(rect);
-        clone.clamp();
+        const work_area = ext.monitor_work_area(this.meta.get_monitor());
+        if (work_area) clone.clamp(work_area);
         this.hide_border();
 
         const max_flags = Meta.MaximizeFlags ? Meta.MaximizeFlags.BOTH : 3;
@@ -142,7 +145,13 @@ export class ShellWindow {
 
         const apply = () => {
             if (!this.actor_exists()) return;
+            const actor = this.meta.get_compositor_private();
+            if (actor && typeof actor.remove_all_transitions === 'function') {
+                actor.remove_all_transitions();
+            }
             this.meta.move_resize_frame(true, clone.x, clone.y, clone.width, clone.height);
+            this.meta.move_frame(true, clone.x, clone.y);
+            ext.monitors.insert(this.entity, [this.meta.get_monitor(), this.workspace_id()]);
             if (on_complete) on_complete();
             this.show_border(ext);
         };
@@ -187,8 +196,8 @@ export class ShellWindow {
         if (this.border) this.border.hide();
     }
 
-    show_border(ext) {
-        if (this.border && Ecs.entity_eq_opt(ext.focused_window_entity(), this.entity)) {
+    show_border(ext = this.ext) {
+        if (this.border && Ecs_entity_eq_opt(ext.focused_window_entity(), this.entity)) {
             this.border.show(ext);
         }
     }
@@ -239,4 +248,3 @@ function Ecs_entity_eq_opt(a, b) {
     if (!a || !b) return false;
     return a[0] === b[0] && a[1] === b[1];
 }
-const Ecs = { entity_eq_opt: Ecs_entity_eq_opt };

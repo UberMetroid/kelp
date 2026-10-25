@@ -17,43 +17,37 @@ pub const DEFAULT_CONFIG_JSON: &str = r#"{
     {
       "class": "pop-shell-example",
       "title": "pop-shell-example"
+    },
+    {
+      "class": "steam"
+    },
+    {
+      "class": "caligula"
+    },
+    {
+      "class": "btm"
+    },
+    {
+      "class": "macchina"
     }
   ],
-  "log_on_Change": false
+  "skiptaskbarhidden": [],
+  "log_on_focus": false
 }
 "#;
 
-/// GNOME Control Center `50-kelp-launchers.xml` keybinding category definition.
-pub const KEYBINDING_LAUNCHERS_XML: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
+/// GNOME Control Center `10-kelp-move.xml` window move keybinding definitions.
+pub const KEYBINDING_MOVE_XML: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 <KeyListEntries schema="org.gnome.shell.extensions.kelp"
                 group="system"
-                name="Search and Launch"
+                name="Move, resize, and swap windows"
                 wm_name="Kelp">
 
-    <KeyListEntry name="activate-launcher"
-                  description="Activate Launcher"/>
+    <KeyListEntry name="pop-workspace-down"
+                  description="Move window to lower workspace"/>
 
-</KeyListEntries>
-"#;
-
-/// GNOME Control Center `50-kelp-navigation.xml` directional focus and monitor shortcuts.
-pub const KEYBINDING_NAVIGATION_XML: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
-<KeyListEntries schema="org.gnome.shell.extensions.kelp"
-                group="system"
-                name="Window Navigation"
-                wm_name="Kelp">
-
-    <KeyListEntry name="focus-left"
-                  description="Focus window left"/>
-
-    <KeyListEntry name="focus-down"
-                  description="Focus window down"/>
-
-    <KeyListEntry name="focus-up"
-                  description="Focus window up"/>
-
-    <KeyListEntry name="focus-right"
-                  description="Focus window right"/>
+    <KeyListEntry name="pop-workspace-up"
+                  description="Move window to upper workspace"/>
 
     <KeyListEntry name="pop-monitor-left"
                   description="Move window to left monitor"/>
@@ -67,36 +61,52 @@ pub const KEYBINDING_NAVIGATION_XML: &str = r#"<?xml version="1.0" encoding="UTF
     <KeyListEntry name="pop-monitor-down"
                   description="Move window to lower monitor"/>
 
-    <KeyListEntry name="pop-workspace-up"
-                  description="Move window to upper workspace"/>
+</KeyListEntries>
+"#;
 
-    <KeyListEntry name="pop-workspace-down"
-                  description="Move window to lower workspace"/>
+/// GNOME Control Center `10-kelp-navigate.xml` directional focus shortcuts.
+pub const KEYBINDING_NAVIGATION_XML: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
+<KeyListEntries schema="org.gnome.shell.extensions.kelp"
+                group="system"
+                name="Navigate applications and windows"
+                wm_name="Kelp">
+
+    <KeyListEntry name="focus-left"
+                  description="Focus left window"/>
+
+    <KeyListEntry name="focus-down"
+                  description="Focus down window"/>
+
+    <KeyListEntry name="focus-up"
+                  description="Focus up window"/>
+
+    <KeyListEntry name="focus-right"
+                  description="Focus right window"/>
 
 </KeyListEntries>
 "#;
 
-/// GNOME Control Center `50-kelp-tiling.xml` tiling management shortcuts.
+/// GNOME Control Center `10-kelp-tile.xml` tiling management shortcuts.
 pub const KEYBINDING_TILING_XML: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 <KeyListEntries schema="org.gnome.shell.extensions.kelp"
                 group="system"
-                name="Window Tiling"
+                name="Manage tiling"
                 wm_name="Kelp">
 
     <KeyListEntry name="tile-enter"
-                  description="Enter window tiling adjustment mode"/>
+                  description="Enter tiling mode"/>
 
     <KeyListEntry name="toggle-tiling"
                   description="Toggle auto-tiling"/>
 
     <KeyListEntry name="toggle-floating"
-                  description="Toggle floating mode for active window"/>
+                  description="Toggle a window between floating and tiling"/>
 
     <KeyListEntry name="tile-orientation"
                   description="Toggle tiling orientation"/>
 
     <KeyListEntry name="toggle-stacking-global"
-                  description="Toggle window stacking"/>
+                  description="Toggle stacking mode"/>
 
 </KeyListEntries>
 "#;

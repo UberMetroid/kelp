@@ -10,23 +10,69 @@
 import Meta from 'gi://Meta';
 import * as Ecs from '../engine/ecs/world.js';
 import { FocusSelector } from '../engine/geom/focus.js';
-import * as node from '../engine/tree/node.js';
+import { cursor_rect } from '../engine/geom/movement.js';
 
-const focus_selector = new FocusSelector();
+export const focus_selector = new FocusSelector();
 
 export function active_workspace() {
     const wsm = global.workspace_manager;
     return wsm ? wsm.get_active_workspace_index() : 0;
 }
 
-export function workspace_id(ext, window) {
+export function should_ignore_workspace(ext, monitor) {
+    return (
+        ext.settings.workspaces_only_on_primary() &&
+        monitor !== global.display.get_primary_monitor()
+    );
+}
+
+export function workspace_id(ext, window = null) {
     const id = window
         ? [window.meta.get_monitor(), window.workspace_id()]
         : [ext.active_monitor(), active_workspace()];
-    if (ext.settings.workspaces_only_on_primary() && id[0] !== global.display.get_primary_monitor()) {
+    if (should_ignore_workspace(ext, id[0])) {
         id[1] = 0;
     }
+    id[0] = Math.max(0, id[0]);
+    id[1] = Math.max(0, id[1]);
     return id;
+}
+
+export function previously_focused(ext, active) {
+    for (const idx of [1, 0]) {
+        const prev = ext.prev_focused[idx];
+        if (prev && !Ecs.entity_eq(active.entity, prev)) {
+            return prev;
+        }
+    }
+    return null;
+}
+
+export function cursor_status() {
+    const cursor = cursor_rect();
+    const n_monitors = global.display ? global.display.get_n_monitors() : 0;
+    for (let i = 0; i < n_monitors; i += 1) {
+        const geom = global.display.get_monitor_geometry(i);
+        if (
+            geom &&
+            cursor.x >= geom.x &&
+            cursor.x < geom.x + geom.width &&
+            cursor.y >= geom.y &&
+            cursor.y < geom.y + geom.height
+        ) {
+            return [cursor, i];
+        }
+    }
+    return [cursor, global.display ? global.display.get_current_monitor() : 0];
+}
+
+export function* windows_at_pointer(ext, cursor, monitor, workspace) {
+    for (const entity of ext.monitors.find((m) => m[0] === monitor && m[1] === workspace)) {
+        const win = ext.windows.with(entity, (w) =>
+            w.is_tilable(ext) && w.rect().contains(cursor) ? w : null,
+        );
+        if (win) yield win;
+    }
 }
 
 export function active_window_list(ext) {
@@ -62,7 +108,7 @@ export function focus_left(ext) {
             }
         }
     }
-    focus_window_in(ext, (f, w) => focus_selector.left(f, w));
+    focus_window_in(ext, (e, w) => focus_selector.left(e, w));
 }
 
 export function focus_right(ext) {
@@ -82,29 +128,21 @@ export function focus_right(ext) {
             }
         }
     }
-    focus_window_in(ext, (f, w) => focus_selector.right(f, w));
+    focus_window_in(ext, (e, w) => focus_selector.right(e, w));
 }
 
 export function focus_down(ext) {
-    focus_window_in(ext, (f, w) => focus_selector.down(f, w));
+    focus_window_in(ext, (e, w) => focus_selector.down(e, w));
 }
 
 export function focus_up(ext) {
-    focus_window_in(ext, (f, w) => focus_selector.up(f, w));
+    focus_window_in(ext, (e, w) => focus_selector.up(e, w));
 }
 
 function focus_window_in(ext, select) {
     const focused = ext.focus_window();
     if (!focused) return;
-    const candidates = active_window_list(ext).filter((w) => {
-        if (Ecs.entity_eq(w.entity, focused.entity)) return false;
-        if (w.stack !== null && ext.auto_tiler) {
-            const stack = ext.auto_tiler.forest.stacks.get(w.stack);
-            if (stack && !Ecs.entity_eq(stack.active, w.entity)) return false;
-        }
-        return true;
-    });
-    const target = select(focused, candidates);
+    const target = select(ext, focused);
     if (target) {
         target.activate(ext, true);
         ext.on_focused(target);
@@ -126,18 +164,15 @@ export function on_focused(ext, win) {
 
     if (ext.auto_tiler && win.is_tilable(ext)) {
         const entity = ext.auto_tiler.attached.get(win.entity);
-        if (entity) {
-            const fork = ext.auto_tiler.forest.forks.get(entity);
-            if (fork) {
-                const n = fork.left.is_in_stack(win.entity)
-                    ? fork.left
-                    : fork.right && fork.right.is_in_stack(win.entity)
-                      ? fork.right
-                      : null;
-                if (n && n.inner.kind === 3) {
-                    const stack = ext.auto_tiler.forest.stacks.get(n.inner.idx);
-                    if (stack) stack.activate(win.entity);
-                }
+        const fork = entity ? ext.auto_tiler.forest.forks.get(entity) : null;
+        if (fork) {
+            const n = fork.left.is_in_stack(win.entity)
+                ? fork.left
+                : fork.right && fork.right.is_in_stack(win.entity)
+                  ? fork.right
+                  : null;
+            if (n && n.inner.kind === 3) {
+                ext.auto_tiler.forest.stacks.get(n.inner.idx)?.activate(win.entity);
             }
         }
     }

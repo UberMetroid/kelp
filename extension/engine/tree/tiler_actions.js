@@ -215,7 +215,7 @@ export function accept_tile(tiler, ext) {
                 ext.size_signals_block(meta_swap);
                 meta_swap.move(ext, meta.rect(), () => ext.size_signals_unblock(meta_swap));
             }
-            ext.register_fn(() => meta.activate(ext, true));
+            ext.register_fn(() => meta.activate(true));
         }
         if (!tree_swapped) {
             ext.size_signals_block(meta);

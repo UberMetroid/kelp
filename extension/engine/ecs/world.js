@@ -109,6 +109,16 @@ export class Storage {
         this.store.splice(0);
     }
 
+    *drain() {
+        for (let idx = 0; idx < this.store.length; idx += 1) {
+            const slot = this.store[idx];
+            if (slot) {
+                this.store[idx] = null;
+                yield [entity_new(idx, slot[0]), slot[1]];
+            }
+        }
+    }
+
     take_with(entity, func) {
         const component = this.remove(entity);
         return component ? func(component) : null;

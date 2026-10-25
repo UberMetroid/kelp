@@ -14,7 +14,8 @@ use std::process::Command;
 
 use crate::default_rules::{validate_config_json, DEFAULT_CONFIG_JSON};
 use crate::embedded_assets::{
-    EXTENSION_FILES, ICON_FILES, KEYBINDING_FILES, LEGACY_FLAT_FILES, SCHEMA_FILENAME, SCHEMA_XML,
+    EXTENSION_FILES, ICON_FILES, KEYBINDING_FILES, LEGACY_DIRS, LEGACY_FLAT_FILES,
+    LEGACY_KEYBINDING_FILES, SCHEMA_FILENAME, SCHEMA_XML,
 };
 
 fn write_verified_rel_path(base_dir: &Path, rel_path: &str, contents: &str) -> Result<(), String> {
@@ -41,6 +42,12 @@ fn purge_legacy_flat_files(ext_dir: &Path) {
         let candidate = ext_dir.join(legacy);
         if candidate.is_file() {
             let _ = fs::remove_file(candidate);
+        }
+    }
+    for &legacy_dir in LEGACY_DIRS {
+        let candidate = ext_dir.join(legacy_dir);
+        if candidate.is_dir() {
+            let _ = fs::remove_dir_all(candidate);
         }
     }
 }
@@ -100,6 +107,12 @@ pub fn install_keybinding_files(data_dir: &Path) -> Result<(), String> {
         "  -> Installing GNOME Control Center keybinding definitions to {}...",
         kb_dir.display()
     );
+    for &legacy in LEGACY_KEYBINDING_FILES {
+        let candidate = kb_dir.join(legacy);
+        if candidate.is_file() {
+            let _ = fs::remove_file(candidate);
+        }
+    }
     for &(filename, contents) in KEYBINDING_FILES {
         write_verified_rel_path(&kb_dir, filename, contents)?;
     }

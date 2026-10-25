@@ -48,44 +48,78 @@ pub const GSETTINGS_OVERRIDES: &[(&str, &str, &str)] = &[
     ("org.gnome.mutter", "edge-tiling", "false"),
     ("org.gnome.mutter", "workspaces-only-on-primary", "false"),
     (SCHEMA_ID, "tile-by-default", "true"),
+    (SCHEMA_ID, "enable-shortcuts", "true"),
     (SCHEMA_ID, "active-hint", "true"),
-    (SCHEMA_ID, "smart-gaps", "true"),
+    (SCHEMA_ID, "active-hint-border-radius", "2"),
+    (SCHEMA_ID, "hint-color-rgba", "'rgb(255,0,0)'"),
+    (SCHEMA_ID, "smart-gaps", "false"),
+    (SCHEMA_ID, "show-title", "false"),
     (SCHEMA_ID, "gap-inner", "2"),
     (SCHEMA_ID, "gap-outer", "2"),
+    (SCHEMA_ID, "log-level", "0"),
+    (SCHEMA_ID, "mouse-cursor-follows-active-window", "false"),
 ];
 
 pub const KEYBINDINGS: &[(&str, &str)] = &[
-    ("focus-left", "['<Super>Left', '<Super>h']"),
-    ("focus-down", "['<Super>Down', '<Super>j']"),
-    ("focus-up", "['<Super>Up', '<Super>k']"),
-    ("focus-right", "['<Super>Right', '<Super>l']"),
-    ("tile-enter", "['<Super>Return']"),
-    ("tile-accept", "['Return']"),
+    (
+        "focus-left",
+        "['<Super>Left', '<Super>KP_Left', '<Super>h']",
+    ),
+    (
+        "focus-down",
+        "['<Super>Down', '<Super>KP_Down', '<Super>j']",
+    ),
+    ("focus-up", "['<Super>Up', '<Super>KP_Up', '<Super>k']"),
+    (
+        "focus-right",
+        "['<Super>Right', '<Super>KP_Right', '<Super>l']",
+    ),
+    ("tile-enter", "['<Super>Return', '<Super>KP_Enter']"),
+    ("tile-accept", "['Return', 'KP_Enter']"),
     ("tile-reject", "['Escape']"),
     ("toggle-tiling", "['<Super>y']"),
     ("toggle-floating", "['<Super>g']"),
     ("tile-orientation", "['<Super>o']"),
     ("toggle-stacking-global", "['<Super>s']"),
     (
+        "tile-move-left-global",
+        "['<Primary><Super>Left', '<Primary><Super>KP_Left', '<Primary><Super>h', '<Super><Shift>Left', '<Super><Shift>KP_Left', '<Super><Shift>h']",
+    ),
+    (
+        "tile-move-down-global",
+        "['<Primary><Super>Down', '<Primary><Super>KP_Down', '<Primary><Super>j', '<Super><Shift>Down', '<Super><Shift>KP_Down', '<Super><Shift>j']",
+    ),
+    (
+        "tile-move-up-global",
+        "['<Primary><Super>Up', '<Primary><Super>KP_Up', '<Primary><Super>k', '<Super><Shift>Up', '<Super><Shift>KP_Up', '<Super><Shift>k']",
+    ),
+    (
+        "tile-move-right-global",
+        "['<Primary><Super>Right', '<Primary><Super>KP_Right', '<Primary><Super>l', '<Super><Shift>Right', '<Super><Shift>KP_Right', '<Super><Shift>l']",
+    ),
+    (
         "pop-workspace-down",
-        "['<Super><Control>Down', '<Super><Control>j']",
+        "['<Super><Shift>Page_Down', '<Super><Shift><Alt>Down', '<Super><Shift><Alt>j']",
     ),
     (
         "pop-workspace-up",
-        "['<Super><Control>Up', '<Super><Control>k']",
+        "['<Super><Shift>Page_Up', '<Super><Shift><Alt>Up', '<Super><Shift><Alt>k']",
     ),
     (
         "pop-monitor-left",
-        "['<Super><Shift>Left', '<Super><Shift>h']",
+        "['<Super><Shift><Primary>Left', '<Super><Shift><Primary>KP_Left', '<Super><Shift><Primary>h']",
     ),
     (
         "pop-monitor-right",
-        "['<Super><Shift>Right', '<Super><Shift>l']",
+        "['<Super><Shift><Primary>Right', '<Super><Shift><Primary>KP_Right', '<Super><Shift><Primary>l']",
     ),
-    ("pop-monitor-up", "['<Super><Shift>Up', '<Super><Shift>k']"),
+    (
+        "pop-monitor-up",
+        "['<Super><Shift><Primary>Up', '<Super><Shift><Primary>KP_Up', '<Super><Shift><Primary>k']",
+    ),
     (
         "pop-monitor-down",
-        "['<Super><Shift>Down', '<Super><Shift>j']",
+        "['<Super><Shift><Primary>Down', '<Super><Shift><Primary>KP_Down', '<Super><Shift><Primary>j']",
     ),
 ];
 
@@ -110,7 +144,7 @@ fn gsettings_set(schema_dir: &Path, schema: &str, key: &str, value: &str) {
 pub fn configure_keybindings(ext_schema_dir: &Path) -> Result<(), String> {
     println!("  -> Configuring GNOME keybindings and tiling settings...");
     for &(schema, key) in WM_CONFLICTS {
-        gsettings_set(ext_schema_dir, schema, key, "['']");
+        gsettings_set(ext_schema_dir, schema, key, "[]");
     }
     for &(schema, key, val) in GSETTINGS_OVERRIDES {
         gsettings_set(ext_schema_dir, schema, key, val);
@@ -121,9 +155,12 @@ pub fn configure_keybindings(ext_schema_dir: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// Enables `kelp@ubermetroid.github.io` via `gnome-extensions enable`.
+/// Disables legacy `pop-shell@system76.com` if present and enables `kelp@ubermetroid.github.io`.
 pub fn enable_extension() {
     println!("  -> Enabling {EXTENSION_UUID}...");
+    let _ = Command::new("gnome-extensions")
+        .args(["disable", "pop-shell@system76.com"])
+        .status();
     let _ = Command::new("gnome-extensions")
         .args(["enable", EXTENSION_UUID])
         .status();

@@ -34,6 +34,10 @@ export class GLibExecutor {
         });
     }
 
+    send(event, run_fn) {
+        this.wake({ run: run_fn }, event);
+    }
+
     stop() {
         this.#events.splice(0);
         if (this.#event_loop !== null) {
@@ -42,6 +46,8 @@ export class GLibExecutor {
         }
     }
 }
+
+export { GLibExecutor as WakeupExecutor };
 
 export class OnceExecutor {
     #iterable;

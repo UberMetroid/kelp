@@ -11,7 +11,6 @@
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { DEFAULT_RULES } from './settings/float_rules.js';
@@ -79,7 +78,7 @@ export const OverviewDialog = GObject.registerClass(
             });
 
             this.list = new St.BoxLayout({
-                vertical: true,
+                orientation: Clutter.Orientation.VERTICAL,
                 style_class: 'pop-shell-exceptions-list',
             });
 
@@ -174,8 +173,16 @@ export class ExceptionDialog {
             () => {
                 const sig = global.stage.connect('button-press-event', () => {
                     const [x, y] = global.get_pointer();
-                    const actor = global.stage.get_actor_at_pos(Clutter.PickMode.ALL, x, y);
-                    const win = this.ext.focus_window();
+                    let cur = global.stage.get_actor_at_pos(Clutter.PickMode.ALL, x, y);
+                    let picked = null;
+                    for (let depth = 0; cur && depth < 16; depth += 1) {
+                        if (typeof cur.get_meta_window === 'function') {
+                            picked = this.ext.get_window(cur.get_meta_window());
+                            if (picked) break;
+                        }
+                        cur = cur.get_parent();
+                    }
+                    const win = picked ?? this.ext.focus_window();
                     this.close();
                     if (win) {
                         const wm_class = win.meta.get_wm_class();

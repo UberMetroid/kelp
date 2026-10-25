@@ -79,6 +79,11 @@
             <summary>Maximum width of tiled windows, in pixels (0 to disable)</summary>
         </key>
 
+        <key type="b" name="enable-shortcuts">
+            <default>true</default>
+            <summary>Enable all Kelp keyboard shortcuts</summary>
+        </key>
+
         <!-- Focus Shifting -->
         <key type="as" name="focus-left">
             <default><![CDATA[['<Super>Left','<Super>KP_Left','<Super>h']]]></default>
