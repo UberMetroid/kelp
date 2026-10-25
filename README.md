@@ -17,7 +17,7 @@ Left-clicking the top-bar icon (or pressing `Super + Y`) cycles through all 3 mo
 | Top-Bar Icon | Animal Mode | Layout Style | Left-Click / Scroll Action |
 | :---: | :--- | :--- | :--- |
 | <img src="extension/icons/kelp-octopus-symbolic.svg" width="32" height="32" alt="Octopus 2D Grid Icon" /> | **Octopus — 2D Grid** *(Default)* | Hyprland-style 2D Binary Space Partitioning (`OctopusTiler` + `Forest` in `engine/octopus/`) with tabbed stacks (`Super + S`). | Left-click switches to **Seahorse** |
-| <img src="extension/icons/kelp-seahorse-symbolic.svg" width="32" height="32" alt="Seahorse Scrolling Strip Icon" /> | **Seahorse — Scrolling Strip** | Niri/PaperWM-style horizontal scrolling strip of full-height columns (`SeahorseTiler` in `engine/seahorse/`), showing up to 2 side-by-side columns (`Super + O` for 100% full-width, `Super + Enter` -> `Shift + Left/Right` or mouse drag to resize column widths) with clickable `8px` screen-edge peek slivers when off-screen neighbor columns exist. | Left-click switches to **Otter** · Mouse wheel scrolls columns |
+| <img src="extension/icons/kelp-seahorse-symbolic.svg" width="32" height="32" alt="Seahorse Scrolling Strip Icon" /> | **Seahorse — Scrolling Strip** | Niri/PaperWM-style horizontal scrolling strip of full-height columns (`SeahorseTiler` in `engine/seahorse/`), progressively sizing from **1/1 full width** (1 window) → **1/2 each** (2 windows) → **1/3 each** (3+ windows, up to 3 columns visible at once; `Super + O` for 100% full-width, `Super + Enter` -> `Shift + Left/Right` or mouse drag to resize column widths) with clickable `8px` screen-edge peek slivers when off-screen neighbor columns exist. | Left-click switches to **Otter** · Mouse wheel scrolls columns |
 | <img src="extension/icons/kelp-otter-symbolic.svg" width="32" height="32" alt="Otter Floating Icon" /> | **Otter — Floating** | Standard GNOME / Windows free-floating mode (`engine/otter/otter_tiler.js`) with gently cascaded windows, monitor edge-tiling, and `Ctrl/Shift + Super + Left/Right/Up/Down` 50% edge-snap. | Left-click switches to **Octopus** |
 
 ---
@@ -28,14 +28,14 @@ Left-clicking the top-bar icon (or pressing `Super + Y`) cycles through all 3 mo
 - **Window Stacking (`Super + S`)**: Group tiled windows into tabbed stacks in Octopus mode, or toggle 100% full-width columns in Seahorse mode.
 - **Hyprland-Style Active Border**: High-contrast `2px` active window border (`rgb(255,0,0)`), `6px` inner/outer gaps, and window titlebars hidden by default.
 - **Top-Bar Quick Menu**: Right-click to pick a mode directly or toggle **Keyboard Shortcuts (On/Off)**, **Focus Follows Mouse (On/Off)**, **Smart Gaps**, **Show Active Hint**, and **Retile Workspace**.
-- **Built-In Float Rules**: Dialogs, Picture-in-Picture, Steam, `caligula`, `btm`, and `macchina` float automatically; add custom per-app or per-window exceptions in two clicks.
+- **Built-In Float Rules**: Dialogs, Picture-in-Picture, Desktop Icons NG (`ding@rastersoft.com`), Steam, `caligula`, `btm`, and `macchina` float automatically; add custom per-app or per-window exceptions in two clicks.
 - **Identical Everywhere**: Installing from [GNOME Extensions](https://extensions.gnome.org/) or GitHub Releases gives you the exact same out-of-the-box configuration.
 
 ---
 
 ## Install in 10 Seconds
 
-Download the latest release (`v1.7.0`) from [**GitHub Releases**](https://github.com/UberMetroid/kelp/releases/latest) and choose either method:
+Download the latest release (`v1.8.0`) from [**GitHub Releases**](https://github.com/UberMetroid/kelp/releases/latest) and choose either method:
 
 ### Option 1: Standard GNOME Extension `.zip` (No compiler needed)
 

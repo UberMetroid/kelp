@@ -31,6 +31,7 @@ pub const WM_CONFLICTS: &[(&str, &str)] = &[
 ];
 
 pub const GSETTINGS_OVERRIDES: &[(&str, &str, &str)] = &[
+    ("org.gnome.shell", "always-show-log-out", "true"),
     ("org.gnome.mutter", "edge-tiling", "false"),
     ("org.gnome.mutter", "workspaces-only-on-primary", "false"),
     (WM_KB, "close", "['<Super>q', '<Alt>F4']"),

@@ -27,6 +27,7 @@ export class ShellWindow {
         this.stack_Previously_hidden = false;
         this.smart_gapped = false;
         this.prev_rect = null;
+        this.target_rect = null;
         this.border = new WindowBorder(this);
         this.window_signals = [];
 
@@ -42,6 +43,8 @@ export class ShellWindow {
         connect('position-changed', () => this.window_changed());
         connect('workspace-changed', () => this.workspace_changed());
         connect('notify::wm-class', () => this.wm_class_changed());
+        connect('notify::window-type', () => this.wm_class_changed());
+        connect('notify::title', () => this.wm_class_changed());
         connect('notify::minimized', () => this.ext.on_minimize(this));
         connect('notify::fullscreen', () => this.update_border_layout());
     }
@@ -100,7 +103,7 @@ export class ShellWindow {
     }
 
     is_tilable(ext) {
-        if (ext.contains_tag(this.entity, 1)) return false;
+        if (ext.contains_tag(this.entity, 1) || this.meta.customJS_ding) return false;
         const wt = this.meta.get_window_type();
         if (wt !== Meta.WindowType.NORMAL) return false;
         if (this.meta.is_override_redirect()) return false;
@@ -110,6 +113,7 @@ export class ShellWindow {
         const wm_class = this.meta.get_wm_class();
         const wm_title = this.meta.get_title();
         if (wm_class === null && wm_title === null) return false;
+        if (typeof wm_title === 'string' && (wm_title.startsWith('Desktop Icons ') || wm_title.includes('@!') || wm_title.endsWith(' '))) return false;
         if (ext.conf.window_shall_float(wm_class, wm_title)) {
             return ext.contains_tag(this.entity, 3);
         }
@@ -132,12 +136,14 @@ export class ShellWindow {
         if (work_area) clone.clamp(work_area);
         const x = Math.round(clone.x), y = Math.round(clone.y);
         const w = Math.max(1, Math.round(clone.width)), h = Math.max(1, Math.round(clone.height));
+        this.target_rect = new Rectangle([x, y, w, h]);
         this.hide_border();
+        ext.size_signals_block(this);
 
         if (this.is_maximized()) this.unmaximize();
 
         const apply = () => {
-            if (!this.actor_exists()) return;
+            if (!this.actor_exists()) { ext.size_signals_unblock(this); return; }
             const actor = this.meta.get_compositor_private();
             if (actor && typeof actor.remove_all_transitions === 'function') {
                 actor.remove_all_transitions();
@@ -146,6 +152,7 @@ export class ShellWindow {
             ext.monitors.insert(this.entity, [this.meta.get_monitor(), this.workspace_id()]);
             if (on_complete) on_complete();
             this.show_border(ext);
+            ext.register_fn(() => ext.size_signals_unblock(this));
         };
 
         ext.register_fn(apply);
@@ -168,16 +175,20 @@ export class ShellWindow {
     hide_border() { if (this.border) this.border.hide(); }
 
     show_border(ext = this.ext) {
-        if (this.border && Ecs_entity_eq_opt(ext.focused_window_entity(), this.entity)) this.border.show(ext);
+        if (!this.border) return;
+        const f = ext.focus_window();
+        if (f === this || (!f && Ecs_entity_eq_opt(ext.focused_window_entity(), this.entity))) this.border.show(ext);
     }
 
     update_border_layout() {
         if (!this.border) return;
-        if (this.ext.focus_window() === this) this.border.show(this.ext);
+        const f = this.ext.focus_window();
+        if (f === this || (!f && Ecs_entity_eq_opt(this.ext.focused_window_entity(), this.entity))) this.border.show(this.ext);
         else this.border.hide();
     }
 
     window_changed() {
+        this.target_rect = null;
         const mon = this.meta.get_monitor();
         const prev_mon = this.ext.monitors.get(this.entity)?.[0];
         if (prev_mon !== undefined && mon !== prev_mon && !this.grab) {

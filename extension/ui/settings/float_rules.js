@@ -22,6 +22,8 @@ const MAX_RULE_COUNT = 512;
 export const DEFAULT_RULES = Object.freeze([
     { class: 'steam' }, { class: 'caligula', title: 'caligula' },
     { class: 'btm', title: 'btm' }, { class: 'macchina', title: 'macchina' },
+    { class: 'com.rastersoft.ding' }, { class: 'com.rastersoft.dingtest' },
+    { title: '^Desktop Icons.*$' }, { title: '@!' },
     { class: 'Authy Desktop' }, { class: 'Bitwarden' }, { class: 'Blueman-manager' },
     { class: 'Com.github.amezin.ddterm' }, { class: 'Com.github.donadigo.eddy' },
     { class: 'Conky' }, { title: 'Discord Updater' },

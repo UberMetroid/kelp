@@ -44,18 +44,22 @@ export class SeahorseTiler {
         this.arrange_strip(ext, strip);
     }
 
-    detach_window(ext, entity) {
+    detach_window(ext, entity, activate_next = false) {
         if (!entity) return;
-        const ekey = this._entity_key(entity);
+        const ekey = this._entity_key(entity), win = ext.windows.get(entity);
         this.attached.remove(entity); this.full_width.delete(ekey); this.ratios.delete(ekey);
-        const win = ext.windows.get(entity);
-        if (win) { win.ignore_detach = false; this._show_actor(win, ext); }
+        if (win) { win.ignore_detach = false; if (win.actor_exists?.() !== false) this._show_actor(win, ext); }
         for (const [key, strip] of this.strips.entries()) {
             const idx = strip.cols.findIndex((e) => Ecs.entity_eq(e, entity));
             if (idx === -1) continue;
             strip.cols.splice(idx, 1);
-            if (strip.cols.length === 0) { this.strips.delete(key); ext.sync_seahorse_peeks?.(strip.id, null); }
-            else { strip.active = Math.max(0, Math.min(strip.cols.length - 1, strip.active)); this._sync_scroll(strip); this.arrange_strip(ext, strip); }
+            if (strip.cols.length === 0) { this.strips.delete(key); ext.sync_seahorse_peeks?.(strip.id, null); continue; }
+            strip.active = idx < strip.active ? strip.active - 1 : Math.min(idx, strip.cols.length - 1);
+            if (idx < strip.scroll) strip.scroll = Math.max(0, strip.scroll - 1);
+            else if (idx === strip.scroll && idx < strip.cols.length) strip.active = idx;
+            this._sync_scroll(strip); this.arrange_strip(ext, strip);
+            const next = activate_next ? ext.windows.get(strip.cols[strip.active]) : null;
+            if (next && this._is_active_ws(next, ext)) ext.register_fn?.(() => next.activate(ext, true));
         }
     }
 
@@ -65,15 +69,16 @@ export class SeahorseTiler {
         strip.active = Math.max(0, Math.min(n - 1, strip.active));
         const active_ent = strip.cols[strip.active];
         if (active_ent && this.full_width.has(this._entity_key(active_ent))) { strip.scroll = strip.active; return; }
+        const max_vis = Math.min(n, 3);
         if (strip.active < strip.scroll) strip.scroll = strip.active;
-        else if (strip.active > strip.scroll + 1) strip.scroll = strip.active - 1;
-        strip.scroll = Math.max(0, Math.min(Math.max(0, n - 2), strip.scroll));
+        else if (strip.active >= strip.scroll + max_vis) strip.scroll = strip.active - max_vis + 1;
+        strip.scroll = Math.max(0, Math.min(Math.max(0, n - max_vis), strip.scroll));
     }
 
     arrange_strip(ext, strip) {
         strip.cols = strip.cols.filter((e) => {
             const w = ext.windows.get(e), wid = w ? ext.workspace_id(w) : null;
-            if (w && w.is_tilable(ext) && !w.meta.minimized && wid[0] === strip.id[0] && wid[1] === strip.id[1]) return true;
+            if (w && w.actor_exists?.() !== false && w.is_tilable(ext) && !w.meta.minimized && wid[0] === strip.id[0] && wid[1] === strip.id[1]) return true;
             this.attached.remove(e); this.full_width.delete(this._entity_key(e)); this.ratios.delete(this._entity_key(e));
             return false;
         });
@@ -84,9 +89,10 @@ export class SeahorseTiler {
         const smart = ext.settings.smart_gaps() && n === 1;
         const outer = smart ? 0 : ext.gap_outer, inner = ext.gap_inner;
         const active_ent = strip.cols[strip.active];
-        const single_view = n === 1 || Boolean(active_ent && this.full_width.has(this._entity_key(active_ent))) || Boolean(strip.cols[strip.scroll] && this.full_width.has(this._entity_key(strip.cols[strip.scroll])));
-        const vis0 = single_view ? strip.active : strip.scroll, vis1 = single_view ? strip.active : Math.min(n - 1, strip.scroll + 1);
-        const has_left = vis0 > 0, has_right = vis1 < n - 1;
+        const single_view = n === 1 || Boolean(active_ent && this.full_width.has(this._entity_key(active_ent)));
+        const vis_count = single_view ? 1 : Math.min(n, 3);
+        const vis0 = single_view ? strip.active : strip.scroll, vis_end = vis0 + vis_count - 1;
+        const has_left = vis0 > 0, has_right = vis_end < n - 1;
         const peek_l = has_left ? PEEK_WIDTH + inner : 0, peek_r = has_right ? PEEK_WIDTH + inner : 0;
         const x0 = area.x + outer + peek_l, y0 = area.y + outer;
         const avail_w = Math.max(64, area.width - outer * 2 - peek_l - peek_r), avail_h = Math.max(64, area.height - outer * 2);
@@ -95,28 +101,20 @@ export class SeahorseTiler {
             right: has_right ? new Rectangle([area.x + area.width - outer - PEEK_WIDTH, y0, PEEK_WIDTH, avail_h]) : null,
         });
 
-        if (single_view) {
-            strip.scroll = strip.active;
-            for (let i = 0; i < n; i += 1) {
-                const win = ext.windows.get(strip.cols[i]);
-                if (!win) continue;
-                win.smart_gapped = smart;
-                if (i === strip.active) { this._show_actor(win, ext); this._move_win(ext, win, new Rectangle([x0, y0, avail_w, avail_h])); }
-                else if (!this.overview_visible) this._hide_actor(win);
-            }
-            return;
-        }
-
-        const w0 = this._weight(strip.cols[vis0]), w1 = this._weight(strip.cols[vis1]);
-        const frac0 = Math.max(0.25, Math.min(0.75, w0 / (w0 + w1)));
-        const col0_w = Math.floor((avail_w - inner) * frac0), col1_w = avail_w - inner - col0_w;
+        if (single_view) strip.scroll = strip.active;
+        const cols_avail_w = Math.max(64, avail_w - inner * (vis_count - 1));
+        let sum_w = 0, cur_x = x0;
+        for (let i = vis0; i <= vis_end; i += 1) sum_w += this._weight(strip.cols[i]);
         for (let i = 0; i < n; i += 1) {
             const win = ext.windows.get(strip.cols[i]);
             if (!win) continue;
-            win.smart_gapped = false;
-            if (i === vis0) { this._show_actor(win, ext); this._move_win(ext, win, new Rectangle([x0, y0, col0_w, avail_h])); }
-            else if (i === vis1) { this._show_actor(win, ext); this._move_win(ext, win, new Rectangle([x0 + col0_w + inner, y0, col1_w, avail_h])); }
-            else if (!this.overview_visible) this._hide_actor(win);
+            win.smart_gapped = single_view && smart;
+            if (i >= vis0 && i <= vis_end) {
+                const frac = Math.max(0.15, Math.min(0.85, this._weight(strip.cols[i]) / Math.max(0.01, sum_w)));
+                const col_w = i === vis_end ? Math.max(32, x0 + avail_w - cur_x) : Math.max(32, Math.floor(cols_avail_w * frac));
+                this._show_actor(win, ext); this._move_win(ext, win, new Rectangle([cur_x, y0, col_w, avail_h]));
+                cur_x += col_w + inner;
+            } else if (!this.overview_visible) this._hide_actor(win);
         }
     }
 
@@ -136,27 +134,30 @@ export class SeahorseTiler {
         if (!win || !this.attached.contains(win.entity)) return;
         const strip = this._strip(ext.workspace_id(win));
         if (strip.cols.length <= 1 || this.full_width.has(this._entity_key(win.entity))) { this.arrange_strip(ext, strip); return; }
-        const area = ext.monitor_work_area(strip.id[0]);
-        const vis0 = strip.scroll, vis1 = Math.min(strip.cols.length - 1, strip.scroll + 1);
-        const peek_w = (vis0 > 0 ? PEEK_WIDTH + ext.gap_inner : 0) + (vis1 < strip.cols.length - 1 ? PEEK_WIDTH + ext.gap_inner : 0);
-        const frac = Math.max(0.25, Math.min(0.75, win.rect().width / Math.max(128, area.width - ext.gap_outer * 2 - peek_w - ext.gap_inner)));
-        const other_ent = Ecs.entity_eq(strip.cols[vis0], win.entity) ? strip.cols[vis1] : strip.cols[vis0];
-        const other_w = other_ent ? this._weight(other_ent) : 1.0;
-        this.ratios.set(this._entity_key(win.entity), Math.max(0.35, Math.min(2.85, (frac / (1 - frac)) * other_w)));
+        const area = ext.monitor_work_area(strip.id[0]), vis_count = Math.min(strip.cols.length, 3);
+        const vis0 = strip.scroll, vis_end = vis0 + vis_count - 1;
+        const peek_w = (vis0 > 0 ? PEEK_WIDTH + ext.gap_inner : 0) + (vis_end < strip.cols.length - 1 ? PEEK_WIDTH + ext.gap_inner : 0);
+        const cols_avail = Math.max(128, area.width - ext.gap_outer * 2 - peek_w - ext.gap_inner * (vis_count - 1));
+        const frac = Math.max(0.15, Math.min(0.8, win.rect().width / cols_avail));
+        let other_w = 0;
+        for (let i = vis0; i <= vis_end; i += 1) if (!Ecs.entity_eq(strip.cols[i], win.entity)) other_w += this._weight(strip.cols[i]);
+        this.ratios.set(this._entity_key(win.entity), Math.max(0.35, Math.min(2.85, (frac / (1 - frac)) * Math.max(0.35, other_w))));
         this.arrange_strip(ext, strip);
     }
 
     on_focused(ext, win) {
         if (!win || !this.attached.contains(win.entity)) return;
         const strip = this._strip(ext.workspace_id(win));
+        let cleaned = false;
+        for (const e of [...strip.cols]) if (ext.windows.get(e)?.actor_exists?.() === false) { this.detach_window(ext, e, true); cleaned = true; }
+        if (cleaned) return;
         const idx = strip.cols.findIndex((e) => Ecs.entity_eq(e, win.entity));
         if (idx === -1) { this.auto_tile(ext, win, false); return; }
         strip.active = idx; this._sync_scroll(strip); this.arrange_strip(ext, strip);
     }
 
     focus_step(ext, delta) {
-        const win = ext.focus_window();
-        const strip = this._strip(ext.workspace_id(win));
+        const win = ext.focus_window(), strip = this._strip(ext.workspace_id(win));
         if (strip.cols.length === 0) return false;
         if (win) { const cur = strip.cols.findIndex((e) => Ecs.entity_eq(e, win.entity)); if (cur !== -1) strip.active = cur; }
         const next_idx = Math.max(0, Math.min(strip.cols.length - 1, strip.active + delta));
@@ -171,8 +172,7 @@ export class SeahorseTiler {
         const win = target_win ?? ext.focus_window();
         if (!win || !this.attached.contains(win.entity)) return false;
         const strip = this._strip(ext.workspace_id(win));
-        const idx = strip.cols.findIndex((e) => Ecs.entity_eq(e, win.entity));
-        const target_idx = idx + delta;
+        const idx = strip.cols.findIndex((e) => Ecs.entity_eq(e, win.entity)), target_idx = idx + delta;
         if (idx === -1 || target_idx < 0 || target_idx >= strip.cols.length) return false;
         [strip.cols[idx], strip.cols[target_idx]] = [strip.cols[target_idx], strip.cols[idx]];
         strip.active = target_idx; this._sync_scroll(strip); this.arrange_strip(ext, strip);
@@ -184,8 +184,7 @@ export class SeahorseTiler {
         const target = win ?? ext.focus_window();
         if (!target || !this.attached.contains(target.entity)) return;
         const key = this._entity_key(target.entity);
-        if (this.full_width.has(key)) this.full_width.delete(key);
-        else this.full_width.add(key);
+        if (this.full_width.has(key)) this.full_width.delete(key); else this.full_width.add(key);
         this.arrange_strip(ext, this._strip(ext.workspace_id(target)));
     }
 
@@ -213,10 +212,11 @@ export class SeahorseTiler {
     on_drop(ext, win) {
         if (!win || !win.is_tilable(ext)) return;
         this.detach_window(ext, win.entity);
-        const strip = this._strip(ext.workspace_id(win));
-        const area = ext.monitor_work_area(strip.id[0]);
+        const strip = this._strip(ext.workspace_id(win)), area = ext.monitor_work_area(strip.id[0]);
         const cx = ext.cursor_status?.()?.[0]?.x ?? win.rect?.()?.x ?? area.x;
-        const insert_at = strip.cols.length === 0 ? 0 : Math.min(strip.cols.length, strip.scroll + (cx >= area.x + area.width / 2 ? 1 : 0));
+        const vis_count = Math.max(1, Math.min(strip.cols.length, 3));
+        const slot = Math.min(vis_count, Math.max(0, Math.floor(((cx - area.x) / Math.max(1, area.width)) * vis_count)));
+        const insert_at = strip.cols.length === 0 ? 0 : Math.min(strip.cols.length, strip.scroll + slot);
         strip.cols.splice(insert_at, 0, win.entity); strip.active = insert_at;
         this.attached.insert(win.entity, win.entity); this._sync_scroll(strip); this.arrange_strip(ext, strip);
     }

@@ -120,14 +120,15 @@ export class Ext extends Ecs.World {
         const idx = win.actor_destroy_sig ? this.signals.indexOf(win.actor_destroy_sig) : -1;
         if (idx !== -1) this.signals.splice(idx, 1);
         win.actor_destroy_sig = null;
-        if (this.auto_tiler) this.auto_tiler.detach_window(this, entity);
+        if (this.auto_tiler) this.auto_tiler.detach_window(this, entity, true);
         win.destroy();
         this.delete_entity(entity);
+        this.register_fn(() => this.show_border_on_focused());
     }
 
     on_minimize(win) {
         if (!this.auto_tiler) return;
-        if (win.meta.minimized) this.auto_tiler.detach_window(this, win.entity);
+        if (win.meta.minimized) this.auto_tiler.detach_window(this, win.entity, true);
         else if (win.is_tilable(this)) this.auto_tiler.auto_tile(this, win, false);
     }
 
@@ -184,40 +185,43 @@ export class Ext extends Ecs.World {
         if (this.mode === target && Boolean(this.auto_tiler) === (target !== 'otter')) { this.indicator?.sync_mode(target); return; }
         this._switching_mode = true;
         try {
+            const focused = this.focus_window(), ordered = this._ordered_tilable_windows();
             if (this.mode === 'otter') for (const [, win] of this.windows.iter()) win.floating_rect = win.rect();
             this._destroy_auto_tiler();
-            this.mode = target;
-            this.auto_tiler = this._create_tiler_for_mode(target);
-            this.settings.set_tiling_mode(target);
-            set_edge_tiling(this, target === 'otter');
-            this.indicator?.sync_mode(target);
-            this.keybindings.sync(this);
+            this.mode = target; this.auto_tiler = this._create_tiler_for_mode(target);
+            this.settings.set_tiling_mode(target); set_edge_tiling(this, target === 'otter');
+            this.indicator?.sync_mode(target); this.keybindings.sync(this);
             if (this.auto_tiler) {
-                for (const [, win] of this.windows.iter()) if (win.is_tilable(this)) this.auto_tiler.auto_tile(this, win, true);
+                for (const win of ordered) if (win.is_tilable(this)) this.auto_tiler.auto_tile(this, win, true);
+                if (focused && this.auto_tiler.is_seahorse) this.auto_tiler.on_focused(this, focused);
             } else cascade_otter_windows(this);
             this.show_border_on_focused();
-        } finally {
-            this._switching_mode = false;
+        } finally { this._switching_mode = false; }
+    }
+
+    _ordered_tilable_windows() {
+        if (this.auto_tiler?.is_seahorse) {
+            const out = [], seen = new Set();
+            for (const s of this.auto_tiler.strips.values()) for (const e of s.cols) { const w = this.windows.get(e); if (w) { out.push(w); seen.add(w); } }
+            for (const [, w] of this.windows.iter()) if (!seen.has(w)) out.push(w);
+            return out;
         }
+        return Array.from(this.windows.values()).sort((a, b) => (a.workspace_id() - b.workspace_id()) || (a.meta.get_monitor() - b.meta.get_monitor()) || (a.rect().x - b.rect().x) || (a.rect().y - b.rect().y));
     }
 
     move_global(dir) {
         if (this.auto_tiler?.is_seahorse) { this.auto_tiler.move_step(this, dir === 0 || dir === 1 ? -1 : 1); return; }
         if (!this.auto_tiler) { snap_otter_window(this, dir); return; }
         const ent = this.focus_window()?.entity;
-        if (dir === 0) this.tiler.move_left(this, ent);
-        else if (dir === 1) this.tiler.move_up(this, ent);
-        else if (dir === 2) this.tiler.move_right(this, ent);
-        else this.tiler.move_down(this, ent);
+        if (dir === 0) this.tiler.move_left(this, ent); else if (dir === 1) this.tiler.move_up(this, ent);
+        else if (dir === 2) this.tiler.move_right(this, ent); else this.tiler.move_down(this, ent);
     }
 
     retile_workspace() {
         if (!this.auto_tiler) { cascade_otter_windows(this); return; }
         if (this.auto_tiler.is_seahorse) { this.auto_tiler.retile_all(this); return; }
         const smart_gaps = this.settings.smart_gaps();
-        for (const fork of this.auto_tiler.forest.forks.values()) {
-            if (fork.is_toplevel) this.auto_tiler.update_toplevel(this, fork, fork.monitor, smart_gaps);
-        }
+        for (const fork of this.auto_tiler.forest.forks.values()) if (fork.is_toplevel) this.auto_tiler.update_toplevel(this, fork, fork.monitor, smart_gaps);
     }
 
     reload_config() {
@@ -235,17 +239,10 @@ export class Ext extends Ecs.World {
     exit_modes() { this.tiler.exit(this); this.exception_dialog.close(); if (this.overlay) this.overlay.visible = false; }
 
     destroy() {
-        this._destroyed = true;
-        this.exit_modes();
-        cancel_drag_signal(this);
-        this.events.stop();
-        this.tiler.disable();
-        this.keybindings.disable();
+        this._destroyed = true; this.exit_modes(); cancel_drag_signal(this);
+        this.events.stop(); this.tiler.disable(); this.keybindings.disable();
         for (const [obj, sig] of this.signals) { try { obj.disconnect(sig); } catch (_e) { /* finalized */ } }
-        this.signals = [];
-        this._destroy_auto_tiler();
-        this.clear_seahorse_peeks();
-        restore_edge_tiling(this);
+        this.signals = []; this._destroy_auto_tiler(); this.clear_seahorse_peeks(); restore_edge_tiling(this);
         for (const [ent, win] of this.windows.iter()) { win.destroy(); this.delete_entity(ent); }
         if (this.indicator) { this.indicator.destroy(); this.indicator = null; }
         if (this.overlay) { this.overlay.destroy(); this.overlay = null; }

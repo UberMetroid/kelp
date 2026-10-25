@@ -82,7 +82,13 @@ export function detach_from_forest(forest, ext, fork_entity, window) {
     }
     if (stack_detach) ext.windows.with(window, (w) => (w.stack = null));
     forest.on_detach(window);
-    if (reflow_fork && !stack_detach) reflow_fork[1].rebalance_orientation();
+    if (reflow_fork && !stack_detach) {
+        reflow_fork[1].rebalance_orientation();
+        if (!reflow_fork[1].right) {
+            reflow_fork[1].orientation_changed = false;
+            reflow_fork[1].set_ratio(reflow_fork[1].length() / 2);
+        }
+    }
     return reflow_fork;
 }
 
@@ -125,6 +131,9 @@ export function reassign_children_to_parent(forest, parent_entity, child_entity,
     if (c_fork) {
         p_fork.left = c_fork.left;
         p_fork.right = c_fork.right;
+        p_fork.rebalance_orientation();
+        p_fork.orientation_changed = false;
+        p_fork.set_ratio(p_fork.length() / 2);
         reassign_sibling(forest, p_fork.left, parent_entity);
         if (p_fork.right) reassign_sibling(forest, p_fork.right, parent_entity);
         forest.delete_entity(child_entity);

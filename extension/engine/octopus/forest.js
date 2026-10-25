@@ -50,19 +50,15 @@ export class Forest extends Ecs.World {
         for (const [entity, r] of this.requested) {
             const window = ext.windows.get(entity);
             if (!window) continue;
+            window.planned_rect = r.rect;
             let on_complete = () => { if (!window.actor_exists()) return; };
             if (ext.tiler.window && Ecs.entity_eq(ext.tiler.window, entity)) {
-                on_complete = () => {
-                    ext.set_overlay(window.rect());
-                    if (!window.actor_exists()) return;
-                };
+                on_complete = () => { ext.set_overlay(window.rect()); if (!window.actor_exists()) return; };
             }
             move_window(ext, window, r.rect, on_complete);
         }
         this.requested.clear();
-        for (const [stack] of this.stack_updates.splice(0)) {
-            ext.auto_tiler?.update_stack(ext, stack);
-        }
+        for (const [stack] of this.stack_updates.splice(0)) ext.auto_tiler?.update_stack(ext, stack);
     }
 
     attach_fork(ext, fork, window, is_left) {
@@ -201,7 +197,7 @@ export class Forest extends Ecs.World {
         const compare = (e) => {
             const win = ext.windows.get(e);
             if (win && win.is_tilable(ext)) {
-                const r = win.rect(), size = r.width * r.height;
+                const r = this.requested.get(e)?.rect ?? win.planned_rect ?? win.rect(), size = r.width * r.height;
                 if (size > largest_size) { largest_size = size; largest_window = win; }
             }
         };
@@ -252,5 +248,5 @@ function place_new_fork(place_by, fork) {
 function move_window(ext, window, rect, on_complete) {
     if (!(window.meta instanceof Meta.Window) || !window.meta.get_compositor_private()) return;
     ext.size_signals_block(window);
-    window.move(ext, rect, () => { on_complete(); ext.size_signals_unblock(window); });
+    window.move(ext, rect, () => { window.planned_rect = null; on_complete(); ext.size_signals_unblock(window); });
 }

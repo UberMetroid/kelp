@@ -10,6 +10,7 @@
 //   defensively when warping the pointer so Wayland cursor moves never throw if unavailable.
 
 import Clutter from 'gi://Clutter';
+import Meta from 'gi://Meta';
 import St from 'gi://St';
 import { FocusPosition } from '../engine/geom/focus.js';
 
@@ -42,6 +43,9 @@ export class WindowBorder {
         if (
             meta.minimized ||
             meta.is_fullscreen() ||
+            meta.customJS_ding ||
+            meta.get_window_type() !== Meta.WindowType.NORMAL ||
+            meta.get_title()?.startsWith('Desktop Icons ') ||
             (this.win.is_maximized() && ext.settings.smart_gaps())
         ) {
             this.hide();
@@ -57,7 +61,7 @@ export class WindowBorder {
         const width = ext.settings.active_hint_size() * scale;
         const radius = ext.settings.active_hint_border_radius() * scale;
         const color = ext.settings.hint_color_rgba();
-        const rect = this.win.rect();
+        const rect = this.win.target_rect ?? this.win.rect();
 
         this.border.style =
             `border-width: ${width}px; border-color: ${color}; border-radius: ${radius}px;`;

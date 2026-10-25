@@ -28,7 +28,7 @@ export class Fork {
         this.left = left;
         this.right = right;
         this.workspace = workspace;
-        this.length_left = orient === Rect.Orientation.HORIZONTAL ? this.area.width / 2 : this.area.height / 2;
+        this.length_left = Math.round((orient === Rect.Orientation.HORIZONTAL ? this.area.width : this.area.height) / 2);
         this.prev_length_left = this.length_left;
         this.entity = entity;
         this.orientation = orient;
@@ -133,6 +133,7 @@ export class Fork {
             this.orientation_changed = false;
             ratio = this.length_left / this.depth();
         }
+        if (area && this.is_toplevel) this.area = this.set_area(area.clone());
         if (ratio) {
             this.length_left = Math.round(ratio * this.length());
             if (manually_moved) this.prev_ratio = ratio;
@@ -147,12 +148,13 @@ export class Fork {
             const min_b = Math.min(256, Math.max(32, Math.floor(total / 4)));
             let length;
             if (this.length_left > half - 32 && this.length_left < half + 32) {
-                length = half;
+                length = Math.round(half);
             } else {
                 const diff = (startpos + this.length_left) % 32;
                 length = this.length_left - diff + (diff > 16 ? 32 : 0);
-                length = Math.max(min_b, Math.min(Math.max(min_b, total - min_b), length));
+                length = Math.round(Math.max(min_b, Math.min(Math.max(min_b, total - min_b), length)));
             }
+            this.length_left = length;
             region.array[l] = Math.max(1, length - ext.gap_inner_half);
             this.left.measure(tiler, ext, this.entity, region, record);
             region.array[p] = region.array[p] + length + ext.gap_inner_half;

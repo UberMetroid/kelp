@@ -29,6 +29,9 @@ pub const DEFAULT_CONFIG_JSON: &str = r#"{
     },
     {
       "class": "macchina"
+    },
+    {
+      "class": "com.rastersoft.ding"
     }
   ],
   "skiptaskbarhidden": [],
