@@ -217,11 +217,8 @@ export class SeahorseTiler {
         const area = ext.monitor_work_area(strip.id[0]);
         const cx = ext.cursor_status?.()?.[0]?.x ?? win.rect?.()?.x ?? area.x;
         const insert_at = strip.cols.length === 0 ? 0 : Math.min(strip.cols.length, strip.scroll + (cx >= area.x + area.width / 2 ? 1 : 0));
-        strip.cols.splice(insert_at, 0, win.entity);
-        strip.active = insert_at;
-        this.attached.insert(win.entity, win.entity);
-        this._sync_scroll(strip);
-        this.arrange_strip(ext, strip);
+        strip.cols.splice(insert_at, 0, win.entity); strip.active = insert_at;
+        this.attached.insert(win.entity, win.entity); this._sync_scroll(strip); this.arrange_strip(ext, strip);
     }
 
     reflow(ext, ent) {
@@ -233,24 +230,24 @@ export class SeahorseTiler {
     }
 
     retile_all(ext) { for (const strip of this.strips.values()) this.arrange_strip(ext, strip); }
+    sync_workspace_visibility(ext) {
+        for (const [, win] of ext.windows.iter()) if (!this._is_active_ws(win, ext)) this._hide_actor(win);
+        this.retile_all(ext);
+    }
     overview_show(ext, showing) {
         this.overview_visible = Boolean(showing);
-        if (showing) { ext.clear_seahorse_peeks?.(); for (const [, win] of ext.windows.iter()) this._show_actor(win, ext, true); }
-        else this.retile_all(ext);
+        if (showing) { ext.clear_seahorse_peeks?.(); for (const [, win] of ext.windows.iter()) this._show_actor(win, ext); }
+        else this.sync_workspace_visibility(ext);
     }
-    _show_actor(win, ext, force_ws_check = false) {
-        if (!win || win.meta?.minimized) return;
-        if ((!this.overview_visible || force_ws_check) && ext?.active_workspace) {
-            const mon = win.meta?.get_monitor?.() ?? 0, ws = win.workspace_id?.() ?? win.ws?.[1] ?? 0;
-            if (!ext.should_ignore_workspace?.(mon) && ws !== ext.active_workspace()) return;
-        }
-        win.meta?.get_compositor_private?.()?.show?.();
+    _is_active_ws(win, ext) {
+        return Boolean(win && !win.meta?.minimized && (!ext?.active_workspace || ext.should_ignore_workspace?.(win.meta?.get_monitor?.() ?? 0) || (win.workspace_id?.() ?? win.ws?.[1] ?? 0) === ext.active_workspace()));
+    }
+    _show_actor(win, ext, force_ws = false) {
+        if (win && !win.meta?.minimized && ((this.overview_visible && !force_ws) || this._is_active_ws(win, ext))) win.meta?.get_compositor_private?.()?.show?.();
     }
     _hide_actor(win) { if (!win?.meta?.minimized) win?.meta?.get_compositor_private?.()?.hide?.(); }
     destroy(ext) {
-        ext.clear_seahorse_peeks?.();
-        for (const [, win] of ext.windows.iter()) if (!win?.meta?.minimized) win?.meta?.get_compositor_private?.()?.show?.();
-        this.strips.clear(); this.full_width.clear(); this.ratios.clear(); this.attached.clear();
-        ext.show_border_on_focused();
+        ext.clear_seahorse_peeks?.(); for (const [, win] of ext.windows.iter()) this._show_actor(win, ext, true);
+        this.strips.clear(); this.full_width.clear(); this.ratios.clear(); this.attached.clear(); ext.show_border_on_focused();
     }
 }

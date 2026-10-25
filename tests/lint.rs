@@ -153,43 +153,28 @@ fn ego_lifecycle_and_mutter_18_19_invariants_hold() -> Result<(), String> {
     if EXTENSION_FILES.len() < 36 {
         return Err("EXTENSION_FILES invariant failed".to_string());
     }
+    #[rustfmt::skip]
     check_contains(
         "EGO lifecycle & Mutter 18/19 invariants",
         &combined,
         &[
             "export default class KelpExtension extends Extension",
-            "this.unload_theme()",
-            "this.ext.destroy()",
-            "this.exception_dialog.close()",
-            "fillPreferencesWindow(window)",
-            "Adw.PreferencesPage",
-            "c.hint_signal",
-            "disconnect(c.hint_signal)",
-            "notify::demands-attention",
-            "restore_edge_tiling",
-            "destroyOnClose: true",
-            "\"45\"",
-            "\"51\"",
-            "name=\"tiling-mode\"",
-            "name=\"enable-shortcuts\"",
-            "name=\"tile-move-left-global\"",
-            "name=\"kelp-monitor-left\"",
-            "name=\"kelp-workspace-up\"",
-            "'rgb(255,0,0)'",
-            "Octopus (2D Grid)",
-            "Seahorse (Scrolling Strip)",
-            "Otter (Floating)",
-            "Keyboard Shortcuts",
-            "Focus Follows Mouse",
-            "Retile Workspace",
-            "Smart Gaps",
-            "addToStatusArea('kelp'",
-            "this._clickGesture.set_enabled(false)",
-            "icons/kelp-octopus-symbolic.svg",
-            "icons/kelp-seahorse-symbolic.svg",
-            "icons/kelp-otter-symbolic.svg",
+            "this.unload_theme()", "this.ext.destroy()", "this.exception_dialog.close()",
+            "fillPreferencesWindow(window)", "Adw.PreferencesPage",
+            "c.hint_signal", "disconnect(c.hint_signal)", "notify::demands-attention",
+            "restore_edge_tiling", "destroyOnClose: true", "\"45\"", "\"51\"",
+            "name=\"tiling-mode\"", "name=\"enable-shortcuts\"",
+            "name=\"tile-move-left-global\"", "name=\"kelp-monitor-left\"", "name=\"kelp-workspace-up\"",
+            "'rgb(255,0,0)'", "Octopus (2D Grid)", "Seahorse (Scrolling Strip)", "Otter (Floating)",
+            "Keyboard Shortcuts", "Focus Follows Mouse", "Retile Workspace", "Smart Gaps",
+            "addToStatusArea('kelp'", "this._clickGesture.set_enabled(false)",
+            "button-press-event", "scroll-event", "touch-event",
+            "icons/kelp-octopus-symbolic.svg", "icons/kelp-seahorse-symbolic.svg", "icons/kelp-otter-symbolic.svg",
         ],
     )?;
+    if read("ui/panel_indicator.js")?.contains("vfunc_event") {
+        return Err("panel_indicator.js must not override or call vfunc_event".to_string());
+    }
     run_gjs_runtime_smoke_test(&ext_root)
 }
 
@@ -211,7 +196,7 @@ fn run_gjs_runtime_smoke_test(ext_root: &Path) -> Result<(), String> {
     let script = format!(
         "import Gio from 'gi://Gio'; import {{ ExtensionSettings, TILING_MODES }} from 'file://{ext}/ui/settings/gsettings.js'; import {{ Config, DEFAULT_FLOAT_RULES }} from 'file://{ext}/ui/settings/float_rules.js';\n\
          import {{ ExtEvent, GlobalEvent }} from 'file://{ext}/engine/ecs/events.js'; import {{ WakeupExecutor }} from 'file://{ext}/engine/ecs/executor.js'; import {{ Arena }} from 'file://{ext}/engine/ecs/arena.js'; import * as Ecs from 'file://{ext}/engine/ecs/world.js';\n\
-         import {{ Orientation, Rectangle }} from 'file://{ext}/engine/geom/rectangle.js'; import {{ Fork }} from 'file://{ext}/engine/octopus/fork.js'; import {{ Node }} from 'file://{ext}/engine/octopus/node.js'; import {{ cascade_otter_windows, snap_otter_window }} from 'file://{ext}/engine/otter/otter_tiler.js'; import {{ SeahorseTiler }} from 'file://{ext}/engine/seahorse/seahorse_tiler.js';\n\
+         import {{ Orientation, Rectangle }} from 'file://{ext}/engine/geom/rectangle.js'; import {{ Fork }} from 'file://{ext}/engine/octopus/fork.js'; import {{ Node }} from 'file://{ext}/engine/octopus/node.js'; import {{ cascade_otter_windows, is_full_work_area_rect, snap_otter_window }} from 'file://{ext}/engine/otter/otter_tiler.js'; import {{ SeahorseTiler }} from 'file://{ext}/engine/seahorse/seahorse_tiler.js';\n\
          const src = Gio.SettingsSchemaSource.new_from_directory('{schema}', Gio.SettingsSchemaSource.get_default(), false);\n\
          const s = new ExtensionSettings(new Gio.Settings({{ settings_schema: src.lookup('org.gnome.shell.extensions.kelp', true), backend: Gio.memory_settings_backend_new() }}));\n\
          if (s.tiling_mode() !== 'octopus' || TILING_MODES.length !== 3) throw new Error('mode default');\n\
@@ -235,8 +220,9 @@ fn run_gjs_runtime_smoke_test(ext_root: &Path) -> Result<(), String> {
          sh.toggle_orientation(fake_ext, w.windows.get(e1)); if (!w.windows.get(e1).shown || w.windows.get(e2).shown) throw new Error('seahorse full-width toggle');\n\
          sh.toggle_orientation(fake_ext, w.windows.get(e1)); f = w.windows.get(e2); sh.move_step(fake_ext, -1); if (sh._strip([0, 0]).cols[0] !== e2) throw new Error('seahorse move_step');\n\
          cur_x = 900; sh.on_drop(fake_ext, w.windows.get(e2)); if (sh._strip([0, 0]).cols[1] !== e2) throw new Error('seahorse on_drop');\n\
-         w.windows.get(e3).ws = [0, 1]; w.windows.get(e3).shown = false; sh.overview_show(fake_ext, true); if (w.windows.get(e3).shown) throw new Error('inactive ws shown in overview'); sh.overview_show(fake_ext, false);\n\
-         sh.destroy(fake_ext); if (!w.windows.get(e3).shown) throw new Error('seahorse destroy must restore hidden actor across workspaces'); cascade_otter_windows(fake_ext); snap_otter_window(fake_ext, 0); if (!w.windows.get(e1).floating_rect) throw new Error('otter cascade/snap'); new WakeupExecutor().stop();\n",
+         w.windows.get(e3).ws = [0, 1]; w.windows.get(e3).shown = false; sh.overview_show(fake_ext, true); if (!w.windows.get(e3).shown || !w.windows.get(e1).shown) throw new Error('all unminimized windows must be shown in overview for ClutterClone'); sh.overview_show(fake_ext, false); if (w.windows.get(e3).shown) throw new Error('inactive ws must be hidden on overview hide');\n\
+         sh.destroy(fake_ext); if (w.windows.get(e3).shown || !w.windows.get(e1).shown || !w.windows.get(e2).shown) throw new Error('seahorse destroy must only show active workspace windows');\n\
+         w.windows.get(e1).floating_rect = new Rectangle([0, 0, 1000, 500]); w.windows.get(e2).floating_rect = new Rectangle([2, 2, 996, 496]); cascade_otter_windows(fake_ext); if (!is_full_work_area_rect(new Rectangle([2, 2, 996, 496]), new Rectangle([0, 0, 1000, 500]), 2) || w.windows.get(e1).floating_rect.width >= 900 || w.windows.get(e1).floating_rect.x === w.windows.get(e2).floating_rect.x) throw new Error('otter cascade must replace full-screen rects and stagger siblings'); snap_otter_window(fake_ext, 0); new WakeupExecutor().stop();\n",
         ext = ext_root.display(),
         schema = dir.display()
     );

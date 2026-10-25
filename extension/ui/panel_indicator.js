@@ -87,19 +87,24 @@ const KelpButton = GObject.registerClass(
         _init(ext) {
             super._init(0.0, _('Kelp Auto-Tiler'), false);
             this.ext = ext;
-            if (this._clickGesture) {
-                this._clickGesture.set_enabled(false);
-                this.remove_action(this._clickGesture);
-            }
+            this._disable_click_gesture();
             this.icon_octopus = Gio.icon_new_for_string(`${ext.path}/icons/kelp-octopus-symbolic.svg`);
             this.icon_seahorse = Gio.icon_new_for_string(`${ext.path}/icons/kelp-seahorse-symbolic.svg`);
             this.icon_otter = Gio.icon_new_for_string(`${ext.path}/icons/kelp-otter-symbolic.svg`);
-            this.icon = new St.Icon({
-                gicon: this._icon_for_mode(ext.mode),
-                style_class: 'system-status-icon',
-            });
+            this.icon = new St.Icon({ gicon: this._icon_for_mode(ext.mode), style_class: 'system-status-icon' });
             this.add_child(this.icon);
+            this.connect('button-press-event', (_actor, event) => this._on_button_press(event));
+            this.connect('touch-event', (_actor, event) => this._on_touch_event(event));
+            this.connect('scroll-event', (_actor, event) => this._on_scroll_event(event));
         }
+
+        _disable_click_gesture() {
+            if (!this._clickGesture) return;
+            this._clickGesture.set_enabled(false);
+            if (this._clickGesture.get_actor?.() === this) this.remove_action(this._clickGesture);
+        }
+
+        setMenu(menu) { super.setMenu(menu); this._disable_click_gesture(); }
 
         _icon_for_mode(mode) {
             if (mode === 'seahorse') return this.icon_seahorse;
@@ -108,39 +113,41 @@ const KelpButton = GObject.registerClass(
 
         sync_icon(mode_or_bool) {
             if (!this.icon) return;
-            const mode =
-                typeof mode_or_bool === 'boolean'
-                    ? mode_or_bool ? 'octopus' : 'otter'
-                    : mode_or_bool;
+            const mode = typeof mode_or_bool === 'boolean' ? (mode_or_bool ? 'octopus' : 'otter') : mode_or_bool;
             this.icon.gicon = this._icon_for_mode(mode);
         }
 
-        vfunc_event(event) {
-            if (event.type() === Clutter.EventType.BUTTON_PRESS) {
-                if (event.get_button() === Clutter.BUTTON_PRIMARY) {
-                    this.menu.close(true);
-                    this.ext.cycle_mode();
-                    return Clutter.EVENT_STOP;
-                }
-                if (event.get_button() === Clutter.BUTTON_SECONDARY) {
-                    this.menu.toggle();
-                    return Clutter.EVENT_STOP;
-                }
-            } else if (event.type() === Clutter.EventType.TOUCH_BEGIN) {
+        _on_button_press(event) {
+            const btn = event.get_button();
+            if (btn === Clutter.BUTTON_PRIMARY) {
+                this.menu.close(true);
+                this.ext.cycle_mode();
+                return Clutter.EVENT_STOP;
+            }
+            if (btn === Clutter.BUTTON_SECONDARY) {
                 this.menu.toggle();
                 return Clutter.EVENT_STOP;
-            } else if (event.type() === Clutter.EventType.SCROLL && this.ext.auto_tiler?.is_seahorse) {
-                const dir = event.get_scroll_direction();
-                if (dir === Clutter.ScrollDirection.UP || dir === Clutter.ScrollDirection.LEFT) {
-                    this.ext.focus_left();
-                    return Clutter.EVENT_STOP;
-                }
-                if (dir === Clutter.ScrollDirection.DOWN || dir === Clutter.ScrollDirection.RIGHT) {
-                    this.ext.focus_right();
-                    return Clutter.EVENT_STOP;
-                }
             }
-            return super.vfunc_event(event);
+            return Clutter.EVENT_PROPAGATE;
+        }
+
+        _on_touch_event(event) {
+            if (event.type() === Clutter.EventType.TOUCH_BEGIN) { this.menu.toggle(); return Clutter.EVENT_STOP; }
+            return Clutter.EVENT_PROPAGATE;
+        }
+
+        _on_scroll_event(event) {
+            if (!this.ext.auto_tiler?.is_seahorse) return Clutter.EVENT_PROPAGATE;
+            const dir = event.get_scroll_direction();
+            if (dir === Clutter.ScrollDirection.UP || dir === Clutter.ScrollDirection.LEFT) {
+                this.ext.focus_left();
+                return Clutter.EVENT_STOP;
+            }
+            if (dir === Clutter.ScrollDirection.DOWN || dir === Clutter.ScrollDirection.RIGHT) {
+                this.ext.focus_right();
+                return Clutter.EVENT_STOP;
+            }
+            return Clutter.EVENT_PROPAGATE;
         }
     },
 );

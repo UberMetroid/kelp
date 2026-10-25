@@ -57,8 +57,15 @@ export class Stack {
             this.ext?.should_ignore_workspace?.(this.monitor) ||
             !this.ext?.active_workspace ||
             this.workspace === this.ext.active_workspace();
-        if (overview_visible || !on_active_ws) {
+        if (overview_visible) {
             this.widgets.tabs.hide();
+            for (const c of this.tabs) {
+                const win = this.ext.windows.get(c.entity);
+                if (win && !win.meta.minimized) win.meta.get_compositor_private()?.show();
+            }
+        } else if (!on_active_ws) {
+            this.widgets.tabs.hide();
+            for (const c of this.tabs) this.comp_show(c.entity, false);
         } else {
             this.widgets.tabs.show();
             this.restack_tabs();
@@ -234,11 +241,7 @@ export class Stack {
         }
         for (const c of this.tabs) {
             this.tab_disconnect(c);
-            const win = this.ext?.windows?.get(c.entity);
-            if (win && !win.meta?.minimized) {
-                win.meta?.get_compositor_private?.()?.show?.();
-                win.stack_Previously_hidden = false;
-            }
+            this.comp_show(c.entity, true);
         }
         this.tabs = [];
         if (this.widgets) {

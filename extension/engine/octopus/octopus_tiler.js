@@ -93,8 +93,9 @@ export class OctopusTiler {
         else this.attach_to_window(ext, result.value, win, { auto: 0 });
     }
 
-    overview_show(_ext, showing) {
-        for (const s of this.forest.stacks.values()) s.sync_visibility?.(Boolean(showing));
+    overview_show(ext, showing) {
+        if (!showing) { this.sync_workspace_visibility(ext); return; }
+        for (const s of this.forest.stacks.values()) s.sync_visibility?.(true);
     }
 
     sync_workspace_visibility(_ext) {

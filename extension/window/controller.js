@@ -103,11 +103,13 @@ export class Ext extends Ecs.World {
         const entity = this.create_entity();
         this.ids.insert(entity, window.get_stable_sequence());
         sw = new ShellWindow(entity, window, window.get_window_type(), this);
-        sw.floating_rect = sw.rect();
+        const tilable = sw.is_tilable(this);
+        sw.floating_rect = !this.auto_tiler || !tilable ? sw.rect() : null;
         this.windows.insert(entity, sw);
         this.monitors.insert(entity, [window.get_monitor(), sw.workspace_id()]);
-        this.signals.push([actor, actor.connect('destroy', () => this.on_destroy(entity))]);
-        if (this.auto_tiler && sw.is_tilable(this)) this.auto_tiler.auto_tile(this, sw, false);
+        sw.actor_destroy_sig = [actor, actor.connect('destroy', () => this.on_destroy(entity))];
+        this.signals.push(sw.actor_destroy_sig);
+        if (this.auto_tiler && tilable) this.auto_tiler.auto_tile(this, sw, false);
         return sw;
     }
 
@@ -115,6 +117,9 @@ export class Ext extends Ecs.World {
         if (this._destroyed) return;
         const win = this.windows.get(entity);
         if (!win) return;
+        const idx = win.actor_destroy_sig ? this.signals.indexOf(win.actor_destroy_sig) : -1;
+        if (idx !== -1) this.signals.splice(idx, 1);
+        win.actor_destroy_sig = null;
         if (this.auto_tiler) this.auto_tiler.detach_window(this, entity);
         win.destroy();
         this.delete_entity(entity);
@@ -176,15 +181,10 @@ export class Ext extends Ecs.World {
     set_mode(mode) {
         if (this._switching_mode) return;
         const target = TILING_MODES.includes(mode) ? mode : 'octopus';
-        if (this.mode === target && Boolean(this.auto_tiler) === (target !== 'otter')) {
-            this.indicator?.sync_mode(target);
-            return;
-        }
+        if (this.mode === target && Boolean(this.auto_tiler) === (target !== 'otter')) { this.indicator?.sync_mode(target); return; }
         this._switching_mode = true;
         try {
-            if (this.mode === 'otter') {
-                for (const [, win] of this.windows.iter()) win.floating_rect = win.rect();
-            }
+            if (this.mode === 'otter') for (const [, win] of this.windows.iter()) win.floating_rect = win.rect();
             this._destroy_auto_tiler();
             this.mode = target;
             this.auto_tiler = this._create_tiler_for_mode(target);
@@ -193,9 +193,7 @@ export class Ext extends Ecs.World {
             this.indicator?.sync_mode(target);
             this.keybindings.sync(this);
             if (this.auto_tiler) {
-                for (const [, win] of this.windows.iter()) {
-                    if (win.is_tilable(this)) this.auto_tiler.auto_tile(this, win, true);
-                }
+                for (const [, win] of this.windows.iter()) if (win.is_tilable(this)) this.auto_tiler.auto_tile(this, win, true);
             } else cascade_otter_windows(this);
             this.show_border_on_focused();
         } finally {

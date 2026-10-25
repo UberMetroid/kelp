@@ -19,6 +19,13 @@ export function is_on_active_workspace(win, ext) {
     return (win.workspace_id?.() ?? 0) === ext.active_workspace();
 }
 
+export function is_full_work_area_rect(rect, area, gap = 0) {
+    if (!rect || !area) return false;
+    const min_w = Math.max(1, area.width - gap * 2 - 24);
+    const min_h = Math.max(1, area.height - gap * 2 - 24);
+    return rect.width >= min_w && rect.height >= min_h;
+}
+
 export function cascade_otter_windows(ext) {
     let idx = 0;
     const seen = new Set();
@@ -27,14 +34,15 @@ export function cascade_otter_windows(ext) {
         if (!is_on_active_workspace(win, ext)) continue;
         win.meta?.get_compositor_private?.()?.show?.();
         const mon = win.meta?.get_monitor?.() ?? 0;
+        const area = ext.monitor_work_area(mon);
         const saved = win.floating_rect;
-        const sig = saved ? `${mon}:${saved.x}:${saved.y}:${saved.width}:${saved.height}` : null;
-        if (saved && !seen.has(sig)) {
+        const is_full = is_full_work_area_rect(saved, area, ext.gap_outer ?? 0);
+        const sig = saved && !is_full ? `${mon}:${saved.x}:${saved.y}:${saved.width}:${saved.height}` : null;
+        if (sig && !seen.has(sig)) {
             seen.add(sig);
             win.move(ext, saved.clone());
             continue;
         }
-        const area = ext.monitor_work_area(mon);
         const step = (idx % 6) * 28;
         const w = Math.max(360, Math.round(area.width * 0.68));
         const h = Math.max(260, Math.round(area.height * 0.72));

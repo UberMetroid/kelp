@@ -35,7 +35,7 @@ Left-clicking the top-bar icon (or pressing `Super + Y`) cycles through all 3 mo
 
 ## Install in 10 Seconds
 
-Download the latest release (`v1.6.0`) from [**GitHub Releases**](https://github.com/UberMetroid/kelp/releases/latest) and choose either method:
+Download the latest release (`v1.7.0`) from [**GitHub Releases**](https://github.com/UberMetroid/kelp/releases/latest) and choose either method:
 
 ### Option 1: Standard GNOME Extension `.zip` (No compiler needed)
 
