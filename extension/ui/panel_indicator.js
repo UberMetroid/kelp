@@ -228,10 +228,7 @@ export class Indicator {
 
         menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         const prefs_item = new PopupMenu.PopupMenuItem(_('Settings & About…'));
-        prefs_item.connect('activate', () => {
-            menu.close(true);
-            this.ext.extension?.openPreferences?.();
-        });
+        prefs_item.connect('activate', () => { menu.close(true); ext.extension?.openPreferences?.(); });
         menu.addMenuItem(prefs_item);
 
         this.sync_mode(ext.mode);

@@ -23,13 +23,17 @@ export class GLibExecutor {
             return;
         this.#event_loop = GLib.idle_add(GLib.PRIORITY_HIGH_IDLE, () => {
             let processed = 0;
-            while (this.#events.length > 0 && processed < MAX_EVENTS_PER_TICK) {
-                const pair = this.#events.shift();
-                processed += 1;
-                if (pair && pair[1])
-                    pair[0].run(pair[1]);
+            try {
+                while (this.#events.length > 0 && processed < MAX_EVENTS_PER_TICK) {
+                    const pair = this.#events.shift();
+                    processed += 1;
+                    if (pair && pair[1])
+                        pair[0].run(pair[1]);
+                }
+            } catch (_e) {
+                // Keep draining remaining queued events on next tick
             }
-            if (this.#events.length > 0)
+            if (this.#event_loop !== null && this.#events.length > 0)
                 return GLib.SOURCE_CONTINUE;
             this.#event_loop = null;
             return GLib.SOURCE_REMOVE;
@@ -43,8 +47,9 @@ export class GLibExecutor {
     stop() {
         this.#events.splice(0);
         if (this.#event_loop !== null) {
-            GLib.source_remove(this.#event_loop);
+            const id = this.#event_loop;
             this.#event_loop = null;
+            GLib.source_remove(id);
         }
     }
 }

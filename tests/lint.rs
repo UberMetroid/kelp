@@ -164,6 +164,8 @@ fn ego_lifecycle_and_mutter_18_19_invariants_hold() -> Result<(), String> {
             "this.unload_theme()", "this.ext.destroy()", "this.exception_dialog.close()",
             "fillPreferencesWindow(window)", "Adw.PreferencesPage", "close-request",
             "Settings & About…", "openPreferences", "Star on GitHub", "Donate / Sponsor",
+            "Help pay for daughter's college",
+            "https://contribute.trumpaccount.com/scarlel-7d883210/?secret=8YaZnHrYM3NjLmGAmx6H1wr",
             "c.hint_signal", "disconnect(c.hint_signal)", "notify::demands-attention",
             "restore_edge_tiling", "destroyOnClose: true", "\"45\"", "\"51\"",
             "name=\"tiling-mode\"", "name=\"enable-shortcuts\"", "name=\"active-hint-size\"",

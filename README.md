@@ -3,13 +3,14 @@
 [![CI & EGO Bundle Verification](https://github.com/UberMetroid/kelp/actions/workflows/ci.yml/badge.svg)](https://github.com/UberMetroid/kelp/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/UberMetroid/kelp)](https://github.com/UberMetroid/kelp/releases/latest)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](LICENSE)
+[![Sponsor: Help pay for daughter's college](https://img.shields.io/badge/Sponsor-Help%20pay%20for%20daughter's%20college-ff69b4?logo=githubsponsors&logoColor=white)](https://contribute.trumpaccount.com/scarlel-7d883210/?secret=8YaZnHrYM3NjLmGAmx6H1wr)
 [![Star on GitHub](https://img.shields.io/github/stars/UberMetroid/kelp?style=social)](https://github.com/UberMetroid/kelp)
 
 **Kelp** (`kelp@ubermetroid.github.io`) brings 3 instant window-tiling modes themed after kelp forest animals — **Octopus (2D Grid)**, **Seahorse (Scrolling Strip)**, and **Otter (Floating)** — plus window stacking, active focus borders, and a 4-tab Libadwaita Settings & About dialog to **GNOME 45–51 on Wayland**.
 
 Built from System76's Pop Shell — stripped of legacy X11 and launcher bloat, and updated for modern GNOME (`45` through `51`, including Ubuntu 24.04+, Fedora, Arch, and Debian).
 
-> ⭐ **Enjoying Kelp?** [**Star UberMetroid/kelp on GitHub**](https://github.com/UberMetroid/kelp) or [**Sponsor / Donate**](https://github.com/sponsors/UberMetroid) to support ongoing GNOME 45–51 maintenance!
+> 💖 **Support Kelp — [Help pay for daughter's college](https://contribute.trumpaccount.com/scarlel-7d883210/?secret=8YaZnHrYM3NjLmGAmx6H1wr)** · ⭐ [**Star UberMetroid/kelp on GitHub**](https://github.com/UberMetroid/kelp)
 
 ---
 
@@ -133,6 +134,15 @@ Because GNOME Shell extensions run inside your Wayland compositor process, Kelp 
 | **GNOME 50 / 51** | Fedora 44+, Arch Linux, GNOME Nightly | Supported |
 | **GNOME 48 / 49** | Fedora 42 / 43, Ubuntu 25.04 / 25.10, Debian Testing | Supported |
 | **GNOME 45 / 46 / 47** | Ubuntu 24.04 LTS, Debian 13, Fedora 39–41 | Supported |
+
+---
+
+## 💖 Sponsor / Support
+
+If Kelp saves you time every day, please consider supporting the project:
+
+- 💖 **Sponsor / Donate**: [**Help pay for daughter's college**](https://contribute.trumpaccount.com/scarlel-7d883210/?secret=8YaZnHrYM3NjLmGAmx6H1wr)
+- ⭐ **Star on GitHub**: [**github.com/UberMetroid/kelp**](https://github.com/UberMetroid/kelp)
 
 ---
 

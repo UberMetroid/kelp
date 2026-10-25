@@ -51,7 +51,7 @@ const SHORTCUT_GROUPS = Object.freeze([
         ],
     ],
     [
-        'Desktop Quick Launch (Super+T/B/F/Q/M/V)',
+        'Desktop Quick Launch (Super+Q/M/B/F/E/V)',
         'Ergonomic desktop shortcuts configured by the Kelp installer',
         [
             ['Close Focused Window', 'Super + Q  /  Alt + F4'],
@@ -71,12 +71,14 @@ function add_link_row(group, title, subtitle, button_label, url, fallback_url = 
         css_classes: ['pill'],
     });
     btn.connect('clicked', () => {
+        let ok = false;
         try {
-            Gio.AppInfo.launch_default_for_uri(url, null);
+            ok = Boolean(Gio.AppInfo.launch_default_for_uri(url, null));
         } catch (_e) {
-            if (fallback_url) {
-                try { Gio.AppInfo.launch_default_for_uri(fallback_url, null); } catch (_e2) { /* ignore */ }
-            }
+            ok = false;
+        }
+        if (!ok && fallback_url) {
+            try { Gio.AppInfo.launch_default_for_uri(fallback_url, null); } catch (_e2) { /* ignore */ }
         }
     });
     row.add_suffix(btn);
@@ -150,10 +152,10 @@ export function build_about_page() {
     );
     add_link_row(
         support_group,
-        '💖 Donate / Sponsor Development',
-        'Support ongoing maintenance, GNOME release testing, and new tiling features',
-        '💖 Donate / Sponsor',
-        'https://github.com/sponsors/UberMetroid',
+        "💖 Donate / Sponsor — Help pay for daughter's college",
+        'Contribute directly to her account & support ongoing Kelp GNOME 45–51 development',
+        "💖 Help pay for daughter's college",
+        'https://contribute.trumpaccount.com/scarlel-7d883210/?secret=8YaZnHrYM3NjLmGAmx6H1wr',
         'https://github.com/UberMetroid/kelp',
     );
     add_link_row(

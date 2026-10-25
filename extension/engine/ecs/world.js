@@ -175,7 +175,7 @@ export class World {
     }
 
     delete_entity(entity) {
-        if (!entity || this.free_slots.includes(entity[0])) return;
+        if (!entity || !entity_eq(this.entities_[entity[0]], entity) || this.free_slots.includes(entity[0])) return;
         this.tags(entity)?.clear();
         for (const storage of this.storages) {
             storage.remove(entity);
