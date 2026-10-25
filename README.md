@@ -26,7 +26,7 @@ Left-clicking the top-bar icon (or pressing `Super + Y`) cycles through all 3 mo
 
 - **3 Instant Layout Modes**: Switch seamlessly between **Octopus (2D Grid)**, **Seahorse (Scrolling Strip)**, and **Otter (Floating)** at any time.
 - **Window Stacking (`Super + S`)**: Group tiled windows into tabbed stacks in Octopus mode, or toggle 100% full-width columns in Seahorse mode.
-- **Hyprland-Style Active Border**: High-contrast `2px` active window border (`rgb(255,0,0)`), `2px` inner/outer gaps, and window titlebars hidden by default.
+- **Hyprland-Style Active Border**: High-contrast `2px` active window border (`rgb(255,0,0)`), `6px` inner/outer gaps, and window titlebars hidden by default.
 - **Top-Bar Quick Menu**: Right-click to pick a mode directly or toggle **Keyboard Shortcuts (On/Off)**, **Focus Follows Mouse (On/Off)**, **Smart Gaps**, **Show Active Hint**, and **Retile Workspace**.
 - **Built-In Float Rules**: Dialogs, Picture-in-Picture, Steam, `caligula`, `btm`, and `macchina` float automatically; add custom per-app or per-window exceptions in two clicks.
 - **Identical Everywhere**: Installing from [GNOME Extensions](https://extensions.gnome.org/) or GitHub Releases gives you the exact same out-of-the-box configuration.
@@ -35,7 +35,7 @@ Left-clicking the top-bar icon (or pressing `Super + Y`) cycles through all 3 mo
 
 ## Install in 10 Seconds
 
-Download the latest release from [**GitHub Releases**](https://github.com/UberMetroid/kelp/releases/latest) and choose either method:
+Download the latest release (`v1.5.0`) from [**GitHub Releases**](https://github.com/UberMetroid/kelp/releases/latest) and choose either method:
 
 ### Option 1: Standard GNOME Extension `.zip` (No compiler needed)
 
@@ -48,7 +48,7 @@ gnome-extensions enable kelp@ubermetroid.github.io
 
 ### Option 2: Standalone `kelp` CLI Installer
 
-The standalone `kelp` binary installs the extension, compiles the GSettings schemas, and automatically clears GNOME's conflicting default `Ctrl + Super + Left/Right` edge-tiling shortcuts so directional tile movement works immediately:
+The standalone `kelp` binary installs the extension, compiles the GSettings schemas, configures desktop launcher/window shortcuts (`Super + Q`, `Super + M`, `Super + B`, `Super + F`, `Super + E`, `Super + Escape`), and automatically clears GNOME's conflicting default `Ctrl + Super + Left/Right` edge-tiling shortcuts so directional tile movement works immediately:
 
 ```bash
 chmod +x kelp-linux-x86_64
@@ -71,6 +71,12 @@ kelp
 | `Super + Arrow` or `Super + H / J / K / L` | Focus window Left / Down / Up / Right (or scroll columns in **Seahorse** mode) |
 | `Ctrl + Super + Arrow` or `Ctrl + Super + H / J / K / L` | Move tiled window / swap column / edge-snap floating window (**Otter** mode) |
 | `Super + Shift + Arrow` or `Super + Shift + H / J / K / L` | Move tiled window / swap column / edge-snap floating window (**Otter** mode) |
+| `Super + Q` | Close focused window (`<Super>q`, `<Alt>F4`) |
+| `Super + M` | Toggle maximize on the focused window |
+| `Super + B` | Open default web browser |
+| `Super + F` | Open file manager |
+| `Super + E` | Open default email client |
+| `Super + Escape` | Lock screen / activate screensaver |
 | `Super + O` | Toggle split orientation (**Octopus**) or 50% / 100% column width (**Seahorse**) |
 | `Super + S` | Toggle tabbed stacking on the focused window |
 | `Super + G` | Toggle floating mode for the focused window |
@@ -94,10 +100,10 @@ Right-clicking the top-bar icon opens the quick settings menu:
 | **Focus Follows Mouse** | **Off** | Switch GNOME's window focus mode between Click-to-Focus (`click`) and Focus-Follows-Mouse (`sloppy`). |
 | **Retile Workspace** | Action | Immediately recalculate and snap all open windows on the active workspace into alignment. |
 | **Floating Window Exceptions** | Action | Open the picker to float specific windows or applications. |
-| **Show Active Hint** | **On** | Show or hide the colored border around the focused window. |
+| **Show Active Hint** | **On** | Show or hide the `2` px colored border around the focused window. |
 | **Smart Gaps** | **Off** | Hide outer screen gaps when only a single tiled window is open on a workspace. |
 | **Active Hint Border Radius** | **`2` px** | Adjust the corner radius of the active window border (`0–30 px`). |
-| **Gaps** | **`2` px** | Adjust inner and outer window gaps (`0–64 px`). |
+| **Gaps** | **`6` px** | Adjust inner and outer window gaps (`0–64 px`). |
 
 All settings are also available in the standard GNOME 45–51 Libadwaita Extensions **Preferences** window (`gnome-extensions prefs kelp@ubermetroid.github.io`).
 

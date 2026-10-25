@@ -47,6 +47,46 @@ pub const WM_CONFLICTS: &[(&str, &str)] = &[
 pub const GSETTINGS_OVERRIDES: &[(&str, &str, &str)] = &[
     ("org.gnome.mutter", "edge-tiling", "false"),
     ("org.gnome.mutter", "workspaces-only-on-primary", "false"),
+    (
+        "org.gnome.desktop.wm.keybindings",
+        "close",
+        "['<Super>q', '<Alt>F4']",
+    ),
+    (
+        "org.gnome.desktop.wm.keybindings",
+        "toggle-maximized",
+        "['<Super>m']",
+    ),
+    (
+        "org.gnome.settings-daemon.plugins.media-keys",
+        "www",
+        "['<Super>b']",
+    ),
+    (
+        "org.gnome.settings-daemon.plugins.media-keys",
+        "home",
+        "['<Super>f']",
+    ),
+    (
+        "org.gnome.settings-daemon.plugins.media-keys",
+        "email",
+        "['<Super>e']",
+    ),
+    (
+        "org.gnome.settings-daemon.plugins.media-keys",
+        "screensaver",
+        "['<Super>Escape']",
+    ),
+    (
+        "org.gnome.shell.keybindings",
+        "toggle-message-tray",
+        "['<Super>v']",
+    ),
+    (
+        "org.gnome.shell.keybindings",
+        "toggle-quick-settings",
+        "['<Super><Control>s']",
+    ),
     (SCHEMA_ID, "tile-by-default", "true"),
     (SCHEMA_ID, "tiling-mode", "'octopus'"),
     (SCHEMA_ID, "enable-shortcuts", "true"),
@@ -55,8 +95,8 @@ pub const GSETTINGS_OVERRIDES: &[(&str, &str, &str)] = &[
     (SCHEMA_ID, "hint-color-rgba", "'rgb(255,0,0)'"),
     (SCHEMA_ID, "smart-gaps", "false"),
     (SCHEMA_ID, "show-title", "false"),
-    (SCHEMA_ID, "gap-inner", "2"),
-    (SCHEMA_ID, "gap-outer", "2"),
+    (SCHEMA_ID, "gap-inner", "6"),
+    (SCHEMA_ID, "gap-outer", "6"),
     (SCHEMA_ID, "log-level", "0"),
     (SCHEMA_ID, "mouse-cursor-follows-active-window", "false"),
 ];

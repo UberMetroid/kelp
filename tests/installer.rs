@@ -27,7 +27,8 @@ use kelp::{
     compile_schemas, install_default_config, install_extension_files, install_keybinding_files,
     install_schema_files, pack_extension_bundle, parse_cli_args, validate_config_json,
     write_staging_tree, CliAction, DEFAULT_CONFIG_JSON, EXTENSION_FILES, EXTENSION_UUID,
-    ICON_FILES, KEYBINDING_FILES, LEGACY_FLAT_FILES, MAX_CONFIG_BYTES, SCHEMA_FILENAME,
+    GSETTINGS_OVERRIDES, ICON_FILES, KEYBINDING_FILES, LEGACY_FLAT_FILES, MAX_CONFIG_BYTES,
+    SCHEMA_FILENAME, SCHEMA_ID,
 };
 
 fn temp_test_dir(tag: &str) -> Result<PathBuf, String> {
@@ -192,5 +193,50 @@ fn staging_and_ego_bundle_pack_include_modular_subdirectories() -> Result<(), St
     }
 
     let _ = fs::remove_dir_all(&root);
+    Ok(())
+}
+
+#[test]
+fn gsettings_overrides_include_desktop_shortcuts_and_gap_defaults() -> Result<(), String> {
+    let required = [
+        (
+            "org.gnome.desktop.wm.keybindings",
+            "close",
+            "['<Super>q', '<Alt>F4']",
+        ),
+        (
+            "org.gnome.desktop.wm.keybindings",
+            "toggle-maximized",
+            "['<Super>m']",
+        ),
+        (
+            "org.gnome.settings-daemon.plugins.media-keys",
+            "www",
+            "['<Super>b']",
+        ),
+        (
+            "org.gnome.settings-daemon.plugins.media-keys",
+            "home",
+            "['<Super>f']",
+        ),
+        (
+            "org.gnome.settings-daemon.plugins.media-keys",
+            "email",
+            "['<Super>e']",
+        ),
+        (
+            "org.gnome.settings-daemon.plugins.media-keys",
+            "screensaver",
+            "['<Super>Escape']",
+        ),
+        (SCHEMA_ID, "active-hint-border-radius", "2"),
+        (SCHEMA_ID, "gap-inner", "6"),
+        (SCHEMA_ID, "gap-outer", "6"),
+    ];
+    for expected in required {
+        if !GSETTINGS_OVERRIDES.contains(&expected) {
+            return Err(format!("GSETTINGS_OVERRIDES missing {expected:?}"));
+        }
+    }
     Ok(())
 }
