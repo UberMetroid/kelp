@@ -105,11 +105,34 @@ const KelpButton = GObject.registerClass(
         _init(ext) {
             super._init(0.0, _('Kelp Auto-Tiler'), false);
             this.ext = ext;
+            this.icon_on = Gio.icon_new_for_string(`${ext.path}/icons/pop-shell-auto-on-symbolic.svg`);
+            this.icon_off = Gio.icon_new_for_string(`${ext.path}/icons/pop-shell-auto-off-symbolic.svg`);
             this.icon = new St.Icon({
-                gicon: Gio.icon_new_for_string(`${ext.path}/icons/pop-shell-auto-on-symbolic.svg`),
+                gicon: ext.auto_tiler !== null ? this.icon_on : this.icon_off,
                 style_class: 'system-status-icon',
             });
             this.add_child(this.icon);
+        }
+
+        sync_icon(is_tiling) {
+            if (this.icon) {
+                this.icon.gicon = is_tiling ? this.icon_on : this.icon_off;
+            }
+        }
+
+        vfunc_event(event) {
+            if (event.type() === Clutter.EventType.BUTTON_PRESS) {
+                if (event.get_button() === Clutter.BUTTON_PRIMARY) {
+                    this.menu.close(true);
+                    this.ext.toggle_tiling();
+                    return Clutter.EVENT_STOP;
+                }
+                if (event.get_button() === Clutter.BUTTON_SECONDARY) {
+                    this.menu.toggle();
+                    return Clutter.EVENT_STOP;
+                }
+            }
+            return super.vfunc_event(event);
         }
     },
 );
@@ -198,6 +221,11 @@ export class Indicator {
 
     get switch_workspace_mode() {
         return this.tiled;
+    }
+
+    sync_tiled(is_tiling) {
+        this.tiled.setToggleState(is_tiling);
+        this.button.sync_icon(is_tiling);
     }
 
     destroy() {

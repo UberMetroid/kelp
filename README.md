@@ -71,7 +71,8 @@ kelp
 
 ## Top-Bar Menu Controls
 
-Clicking the Kelp icon in the GNOME top bar gives you instant access to:
+- **Left-Click the Kelp Icon**: Immediately toggles **Tile Windows (On/Off)** and updates the top-bar icon state.
+- **Right-Click the Kelp Icon**: Opens the quick settings menu:
 
 | Control | Default | Description |
 | :--- | :--- | :--- |

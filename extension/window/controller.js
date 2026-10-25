@@ -193,7 +193,7 @@ export class Ext extends Ecs.World {
     auto_tile_on() {
         if (this.auto_tiler) return;
         this.settings.set_tile_by_default(true);
-        if (this.indicator) this.indicator.tiled.setToggleState(true);
+        if (this.indicator) this.indicator.sync_tiled(true);
         this.auto_tiler = this._create_auto_tiler();
         this.keybindings.sync(this);
         for (const [, win] of this.windows.iter()) {
@@ -203,7 +203,7 @@ export class Ext extends Ecs.World {
 
     auto_tile_off() {
         this.settings.set_tile_by_default(false);
-        if (this.indicator) this.indicator.tiled.setToggleState(false);
+        if (this.indicator) this.indicator.sync_tiled(false);
         if (this.auto_tiler) { this.auto_tiler.destroy(this); this.auto_tiler = null; }
         this.keybindings.sync(this);
     }
