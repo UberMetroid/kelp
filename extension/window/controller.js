@@ -178,11 +178,19 @@ export class Ext extends Ecs.World {
             this.mode = target; this.auto_tiler = this._create_tiler_for_mode(target);
             this.settings.set_tiling_mode(target); set_edge_tiling(this, target === 'otter');
             this.indicator?.sync_mode(target); this.keybindings.sync(this);
+            for (const [, win] of this.windows.iter()) {
+                if (win.meta?.minimized) continue;
+                if (is_on_active_workspace(win, this)) win.meta?.get_compositor_private?.()?.show?.();
+                else win.meta?.get_compositor_private?.()?.hide?.();
+            }
             if (this.auto_tiler) {
                 for (const win of ordered) if (win.is_tilable(this) && !win.meta?.minimized) this.auto_tiler.auto_tile(this, win, true);
+                this.auto_tiler.retile_all(this);
                 if (focused && !focused.meta?.minimized && this.auto_tiler.is_seahorse) this.auto_tiler.on_focused(this, focused);
             } else cascade_otter_windows(this, focused);
-            if (focused && !focused.meta?.minimized) this.register_fn(() => focused.activate(this, false));
+            if (focused && !focused.meta?.minimized && is_on_active_workspace(focused, this)) {
+                this.register_fn(() => focused.activate(this, false));
+            }
             this.show_border_on_focused();
         } finally { this._switching_mode = false; }
     }

@@ -18,7 +18,7 @@ const SHORTCUT_GROUPS = Object.freeze([
         'Switch between Kelp layout engines and control tiled or floating windows',
         [
             ['Cycle Tiling Mode (Octopus → Seahorse → Otter)', 'Super + Y'],
-            ['Focus Window (Left / Down / Up / Right)', 'Super + Arrows / H J K L'],
+            ['Focus Window (Left / Down / Up / Right)', 'Super + Arrows / H J K'],
             ['Move Window / Swap Column / Snap Otter Edge', 'Ctrl/Shift + Super + Arrows / H J K L'],
             ['Toggle Floating Exception on Window', 'Super + G'],
             ['Interactive Adjustment Mode (Move / Resize)', 'Super + Enter'],

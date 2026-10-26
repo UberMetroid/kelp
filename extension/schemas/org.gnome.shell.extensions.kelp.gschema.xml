@@ -112,7 +112,7 @@
         </key>
 
         <key type="as" name="focus-right">
-            <default><![CDATA[['<Super>Right','<Super>KP_Right','<Super>l']]]></default>
+            <default><![CDATA[['<Super>Right','<Super>KP_Right']]]></default>
             <summary>Focus right window</summary>
         </key>
 

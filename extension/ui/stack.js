@@ -125,7 +125,7 @@ export class Stack {
         const on_active_ws =
             this.ext?.should_ignore_workspace?.(this.monitor) ||
             !this.ext?.active_workspace ||
-            this.workspace === this.ext.active_workspace();
+            (win.workspace_id?.() ?? this.workspace) === this.ext.active_workspace();
         if (show && !win.meta.minimized && on_active_ws) {
             actor.show();
             win.stack_Previously_hidden = false;

@@ -59,6 +59,13 @@ export class ExtensionSettings {
             this[prop] = () => this.ext.get_uint(key);
             this[`set_${prop}`] = (v) => this.ext.set_uint(key, Math.max(0, Number(v) | 0));
         }
+
+        if (this.ext.settings_schema?.has_key('focus-right')) {
+            const fr = this.ext.get_strv('focus-right');
+            if (fr.includes('<Super>l')) {
+                this.ext.set_strv('focus-right', fr.filter((k) => k !== '<Super>l'));
+            }
+        }
     }
 
     tile_by_default() {

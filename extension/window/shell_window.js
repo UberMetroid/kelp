@@ -13,7 +13,7 @@ export class ShellWindow {
         this.known_workspace = this.workspace_id();
         this.grab = false;
         this.stack = null; this.stack_Previously_hidden = false; this.smart_gapped = false;
-        this.prev_rect = null; this.target_rect = null;
+        this.prev_rect = null; this.target_rect = null; this._move_seq = 0;
         this.border = new WindowBorder(this); this.window_signals = [];
         this.bind_window_events();
         this.update_border_layout();
@@ -111,12 +111,17 @@ export class ShellWindow {
         if (work_area) clone.clamp(work_area);
         const x = Math.round(clone.x), y = Math.round(clone.y);
         const w = Math.max(1, Math.round(clone.width)), h = Math.max(1, Math.round(clone.height));
+        const seq = (this._move_seq = (this._move_seq || 0) + 1);
         this.target_rect = new Rectangle([x, y, w, h]);
         this.hide_border();
         ext.size_signals_block(this);
         if (this.is_maximized()) this.unmaximize();
 
         const apply = () => {
+            if (seq !== this._move_seq) {
+                if (on_complete) on_complete();
+                return;
+            }
             if (!this.actor_exists() || this.meta.is_fullscreen()) {
                 ext.size_signals_unblock(this);
                 if (on_complete) on_complete();
@@ -130,7 +135,7 @@ export class ShellWindow {
                 if (on_complete) on_complete();
                 this.show_border(ext);
             } finally {
-                ext.register_fn(() => ext.size_signals_unblock(this));
+                ext.register_fn(() => { if (seq === this._move_seq) ext.size_signals_unblock(this); });
             }
         };
         ext.register_fn(apply);

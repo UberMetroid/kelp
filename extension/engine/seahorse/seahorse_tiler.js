@@ -102,7 +102,8 @@ export class SeahorseTiler {
             if (i >= vis0 && i <= vis_end) {
                 const frac = Math.max(0.35, Math.min(2.85, this._weight(strip.cols[i]))) / Math.max(0.01, sum_w);
                 const col_w = i === vis_end ? Math.max(32, x0 + avail_w - cur_x) : Math.max(32, Math.floor(cols_avail_w * frac));
-                this._show_actor(win, ext);
+                if (this._is_active_ws(win, ext)) this._show_actor(win, ext);
+                else if (!this.overview_visible) this._hide_actor(win);
                 if (!win.meta?.is_fullscreen?.()) this._move_win(ext, win, new Rectangle([cur_x, y0, col_w, avail_h]));
                 cur_x += col_w + inner;
             } else if (!this.overview_visible) this._hide_actor(win);
@@ -249,7 +250,7 @@ export class SeahorseTiler {
     }
     _hide_actor(win) { if (!win?.meta?.minimized) win?.meta?.get_compositor_private?.()?.hide?.(); }
     destroy(ext) {
-        ext.clear_seahorse_peeks?.(); for (const [, win] of ext.windows.iter()) this._show_actor(win, ext, true);
+        ext.clear_seahorse_peeks?.(); for (const [, win] of ext.windows.iter()) this._show_actor(win, ext, false);
         this.strips.clear(); this.full_width.clear(); this.ratios.clear(); this.attached.clear(); ext.show_border_on_focused();
     }
 }

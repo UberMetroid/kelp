@@ -71,7 +71,7 @@ gnome-extensions enable kelp@ubermetroid.github.io
 | Shortcut | Action |
 | :--- | :--- |
 | `Super + Y` | Cycle Kelp tiling mode (**Octopus -> Seahorse -> Otter**) |
-| `Super + Arrow` or `Super + H / J / K / L` | Focus window Left / Down / Up / Right (or scroll columns in **Seahorse** mode) |
+| `Super + Arrow` or `Super + H / J / K` | Focus window Left / Down / Up / Right (or scroll columns in **Seahorse** mode; `Super + L` stays GNOME Lock Screen) |
 | `Ctrl + Super + Arrow` or `Ctrl + Super + H / J / K / L` | Move tiled window / swap column / edge-snap floating window (**Otter** mode) |
 | `Super + Shift + Arrow` or `Super + Shift + H / J / K / L` | Move tiled window / swap column / edge-snap floating window (**Otter** mode) |
 | `Super + G` | Toggle floating mode for the focused window |

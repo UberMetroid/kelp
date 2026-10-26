@@ -55,8 +55,9 @@ export function attach_swap(auto_tiler, ext, a, b) {
     b_fn();
     a_win.stack = b_stack;
     b_win.stack = a_stack;
-    a_win.meta.get_compositor_private()?.show();
-    b_win.meta.get_compositor_private()?.show();
+    const act_ws = ext.active_workspace();
+    if (ext.should_ignore_workspace(a_win.meta.get_monitor()) || a_win.workspace_id() === act_ws) a_win.meta.get_compositor_private()?.show();
+    if (ext.should_ignore_workspace(b_win.meta.get_monitor()) || b_win.workspace_id() === act_ws) b_win.meta.get_compositor_private()?.show();
     auto_tiler.tile(ext, a_fork, a_fork.area);
     auto_tiler.tile(ext, b_fork, b_fork.area);
 }

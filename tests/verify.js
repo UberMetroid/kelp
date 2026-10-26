@@ -136,7 +136,8 @@ function verify_behavioral_suite() {
     Gio.File.new_for_path(GLib.build_filenamev([EXT_ROOT, 'schemas', schema_xml])).copy(dst_xml, Gio.FileCopyFlags.OVERWRITE, null, null);
     assert(Gio.Subprocess.new(['glib-compile-schemas', tmp_dir], Gio.SubprocessFlags.NONE).wait_check(null), 'glib-compile-schemas');
     const src = Gio.SettingsSchemaSource.new_from_directory(tmp_dir, Gio.SettingsSchemaSource.get_default(), false);
-    const s = new ExtensionSettings(new Gio.Settings({ settings_schema: src.lookup('org.gnome.shell.extensions.kelp', true), backend: Gio.memory_settings_backend_new() }));
+    const raw_gs = new Gio.Settings({ settings_schema: src.lookup('org.gnome.shell.extensions.kelp', true), backend: Gio.memory_settings_backend_new() });
+    raw_gs.set_strv('focus-right', ['<Super>Right', '<Super>KP_Right', '<Super>l']); const s = new ExtensionSettings(raw_gs);
     assert(s.tiling_mode() === 'octopus' && TILING_MODES.length === 3 && BORDER_PRESETS.length === 4, 'mode default');
     s.set_tiling_mode('seahorse'); assert(s.tiling_mode() === 'seahorse' && s.tile_by_default(), 'seahorse mode');
     s.set_tiling_mode('otter'); assert(s.tiling_mode() === 'otter' && !s.tile_by_default(), 'otter mode');
@@ -145,7 +146,8 @@ function verify_behavioral_suite() {
     const cfg_res = Config.from_json('{"__proto__":{"polluted":true},"float":[{"class":"test","__proto__":{"x":1}}]}');
     assert(cfg_res.kind === 1 && MAX_CONFIG_BYTES === 65_536 && Config.from_json('x'.repeat(MAX_CONFIG_BYTES + 1)).kind === 2 && !({}).polluted && cfg_res.value.float.length === 1, 'proto guard');
     assert(s.enable_shortcuts() && s.stacking_with_mouse() && typeof s.focus_follows_mouse() === 'boolean' &&
-        s.gap_inner() === 6 && s.gap_outer() === 6 && s.active_hint_border_radius() === 2 && s.active_hint_size() === 2, 'settings');
+        s.gap_inner() === 6 && s.gap_outer() === 6 && s.active_hint_border_radius() === 2 && s.active_hint_size() === 2 &&
+        !s.ext.get_strv('focus-right').includes('<Super>l') && !s.ext.get_default_value('focus-right').deepUnpack().includes('<Super>l'), 'settings');
     assert(DEFAULT_FLOAT_RULES.length >= 5 && new Config().window_shall_float('steam', 'Steam') && new Config().window_shall_float('com.rastersoft.ding', 'Desktop Icons 1'), 'float rules');
 
     const w = new Ecs.World(), e_old = w.create_entity();
@@ -212,14 +214,12 @@ function verify_behavioral_suite() {
     sh.destroy(fake_ext);
 
     g(e1).floating_rect = new Rectangle([0, 0, 1000, 500]); g(e2).floating_rect = new Rectangle([2, 2, 996, 496]);
-    w.delete_entity(e5); g(e4).meta.minimized = true; f = g(e2);
-    cascade_otter_windows(fake_ext, f);
+    w.delete_entity(e5); g(e4).meta.minimized = true; f = g(e2); g(e3).ws = [0, 2]; sh.auto_tile(fake_ext, g(e3), false); sh.destroy(fake_ext);
+    assert(!g(e3).shown, 'seahorse destroy does not show off-workspace actors'); g(e3).ws = [0, 0]; cascade_otter_windows(fake_ext, f);
     assert(is_full_work_area_rect(new Rectangle([2, 2, 996, 496]), new Rectangle([0, 0, 1000, 500]), 2) && f.rect().x > g(e1).rect().x, 'otter cascade focused on top');
     snap_otter_window(fake_ext, 0);
-    const att = w.register_storage();
-    const forest = new Forest().connect_on_attach((p, c) => att.insert(c, p)).connect_on_detach((c) => att.remove(c));
-    const ord = [g(e1), g(e2), g(e3), g(e4)].filter((win) => !win.meta.minimized);
-    ord.splice(ord.indexOf(f), 1); ord.unshift(f);
+    const att = w.register_storage(), forest = new Forest().connect_on_attach((p, c) => att.insert(c, p)).connect_on_detach((c) => att.remove(c));
+    const ord = [g(e1), g(e2), g(e3), g(e4)].filter((win) => !win.meta.minimized); ord.splice(ord.indexOf(f), 1); ord.unshift(f);
     const [tl_e, tl_fk] = forest.create_toplevel(ord[0].entity, new Rectangle([2, 2, 996, 496]), [0, 0]);
     assert(!('string_reps' in forest) && forest.toplevel.has('0:0') && Ecs.entity_eq(forest.find_toplevel([0, 0]), tl_e), 'forest O(1) toplevel key');
     forest.on_attach(tl_e, ord[0].entity); forest.tile(fake_ext, tl_fk, tl_fk.area);

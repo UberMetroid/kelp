@@ -19,36 +19,44 @@ export function is_full_work_area_rect(rect, area, gap = 0) {
 }
 
 export function cascade_otter_windows(ext, focused = ext.focus_window?.()) {
-    let idx = 0;
-    const seen = new Set(), wins = [];
+    const groups = new Map();
     for (const [, win] of ext.windows.iter()) {
-        if (win.is_tilable(ext) && !win.meta?.minimized && is_on_active_workspace(win, ext)) wins.push(win);
+        if (!win.is_tilable(ext) || win.meta?.minimized) continue;
+        const [mon, ws] = ext.workspace_id ? ext.workspace_id(win) : [win.meta?.get_monitor?.() ?? 0, win.workspace_id?.() ?? 0];
+        const key = `${mon}:${ws}`;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(win);
     }
-    if (focused && wins.indexOf(focused) !== -1 && wins.indexOf(focused) < wins.length - 1) {
-        wins.splice(wins.indexOf(focused), 1);
-        wins.push(focused);
-    }
-    for (const win of wins) {
-        win.meta?.get_compositor_private?.()?.show?.();
-        const mon = win.meta?.get_monitor?.() ?? 0;
-        const area = ext.monitor_work_area(mon);
-        const saved = win.floating_rect;
-        const is_full = is_full_work_area_rect(saved, area, ext.gap_outer ?? 0);
-        const sig = saved && !is_full ? `${mon}:${saved.x}:${saved.y}:${saved.width}:${saved.height}` : null;
-        if (sig && !seen.has(sig)) {
-            seen.add(sig);
-            win.move(ext, saved.clone());
-            continue;
+    for (const wins of groups.values()) {
+        if (focused && wins.indexOf(focused) !== -1 && wins.indexOf(focused) < wins.length - 1) {
+            wins.splice(wins.indexOf(focused), 1);
+            wins.push(focused);
         }
-        const step = (idx % 6) * 28;
-        const w = Math.max(360, Math.round(area.width * 0.68));
-        const h = Math.max(260, Math.round(area.height * 0.72));
-        const x = area.x + Math.round((area.width - w) / 4) + step;
-        const y = area.y + Math.round((area.height - h) / 4) + step;
-        const rect = new Rectangle([x, y, w, h]);
-        win.floating_rect = rect.clone();
-        win.move(ext, rect);
-        idx += 1;
+        let idx = 0;
+        const seen = new Set();
+        for (const win of wins) {
+            if (is_on_active_workspace(win, ext)) win.meta?.get_compositor_private?.()?.show?.();
+            else win.meta?.get_compositor_private?.()?.hide?.();
+            const mon = win.meta?.get_monitor?.() ?? 0;
+            const area = ext.monitor_work_area(mon);
+            const saved = win.floating_rect;
+            const is_full = is_full_work_area_rect(saved, area, ext.gap_outer ?? 0);
+            const sig = saved && !is_full ? `${mon}:${saved.x}:${saved.y}:${saved.width}:${saved.height}` : null;
+            if (sig && !seen.has(sig)) {
+                seen.add(sig);
+                win.move(ext, saved.clone());
+                continue;
+            }
+            const step = (idx % 6) * 28;
+            const w = Math.max(360, Math.round(area.width * 0.68));
+            const h = Math.max(260, Math.round(area.height * 0.72));
+            const x = area.x + Math.round((area.width - w) / 4) + step;
+            const y = area.y + Math.round((area.height - h) / 4) + step;
+            const rect = new Rectangle([x, y, w, h]);
+            win.floating_rect = rect.clone();
+            win.move(ext, rect);
+            idx += 1;
+        }
     }
 }
 
