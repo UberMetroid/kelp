@@ -35,7 +35,7 @@ export class SeahorseTiler {
         const ekey = this._entity_key(entity), win = ext.windows.get(entity);
         this.attached.remove(entity);
         if (!preserve_state) { this.full_width.delete(ekey); this.ratios.delete(ekey); }
-        if (win) { win.ignore_detach = false; if (this._is_alive(win)) this._show_actor(win, ext); }
+        if (win && this._is_alive(win)) this._show_actor(win, ext);
         for (const [key, strip] of this.strips.entries()) {
             const idx = strip.cols.findIndex((e) => Ecs.entity_eq(e, entity)), prev_active = strip.active;
             if (idx === -1) continue;
@@ -43,8 +43,7 @@ export class SeahorseTiler {
             if (strip.cols.length === 0) { this.strips.delete(key); ext.sync_seahorse_peeks?.(strip.id, null); continue; }
             if (idx < prev_active) strip.active = prev_active - 1;
             else if (idx === prev_active) strip.active = Math.min(idx, strip.cols.length - 1);
-            if (idx < strip.scroll) strip.scroll = Math.max(0, strip.scroll - 1);
-            else strip.scroll = Math.max(0, Math.min(Math.max(0, strip.cols.length - Math.min(strip.cols.length, 3)), strip.scroll));
+            strip.scroll = idx < strip.scroll ? Math.max(0, strip.scroll - 1) : Math.max(0, Math.min(Math.max(0, strip.cols.length - Math.min(strip.cols.length, 3)), strip.scroll));
             this._sync_scroll(strip); this.arrange_strip(ext, strip);
             const next = activate_next && idx === prev_active ? ext.windows.get(strip.cols[strip.active]) : null;
             if (next && this._is_active_ws(next, ext)) ext.register_fn?.(() => next.activate(ext, true));

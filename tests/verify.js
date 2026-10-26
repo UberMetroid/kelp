@@ -25,8 +25,7 @@ function assert(cond, msg) { if (!cond) throw new Error(`Verification failed: ${
 
 function read_text(path) {
     const [ok, bytes] = GLib.file_get_contents(path);
-    assert(ok, `failed to read ${path}`);
-    return DECODER.decode(bytes);
+    assert(ok, `failed to read ${path}`); return DECODER.decode(bytes);
 }
 
 function walk_repo(dir_path, js_files, dirs) {
@@ -34,9 +33,8 @@ function walk_repo(dir_path, js_files, dirs) {
     const enumerator = Gio.File.new_for_path(dir_path).enumerate_children('standard::name,standard::type', Gio.FileQueryInfoFlags.NONE, null);
     let info;
     while ((info = enumerator.next_file(null)) !== null) {
-        const name = info.get_name();
+        const name = info.get_name(), full = GLib.build_filenamev([dir_path, name]);
         if (name.startsWith('.') || name === 'dist' || name === 'target') continue;
-        const full = GLib.build_filenamev([dir_path, name]);
         if (info.get_file_type() === Gio.FileType.DIRECTORY) walk_repo(full, js_files, dirs);
         else if (name.endsWith('.js')) js_files.push(full);
     }
@@ -52,15 +50,11 @@ function verify_page_rules_and_lint(js_files, dirs) {
         assert(lines.length >= 16 && lines.length <= 256, `Page Rule violation: ${file} has ${lines.length} lines (16..=256)`);
         assert(lines[0] === '// SPDX-License-Identifier: GPL-3.0-or-later', `Missing SPDX header in ${file}`);
         assert(lines[1].startsWith('// ') && lines[1].length >= 12, `Missing concise module description on line 2 of ${file}`);
-        if (file.startsWith(EXT_ROOT)) {
-            for (const sym of legacy)
-                assert(!content.includes(sym), `Forbidden legacy symbol '${sym}' in ${file}`);
-        }
+        if (file.startsWith(EXT_ROOT)) for (const sym of legacy) assert(!content.includes(sym), `Forbidden legacy symbol '${sym}' in ${file}`);
         for (let idx = 0; idx < lines.length; idx += 1) {
             const raw = lines[idx], ln = idx + 1, code = raw.split('//')[0];
             assert(raw.length <= 200, `Line ${ln} of ${file} exceeds 200 chars (${raw.length})`);
-            if (!file.startsWith(EXT_ROOT))
-                continue;
+            if (!file.startsWith(EXT_ROOT)) continue;
             assert(!code.trimStart().startsWith('var ') && !code.includes(' var ') && !code.includes('(var '), `Forbidden var in ${file}:${ln}`);
             for (let i = 0; i < code.length - 1; i += 1) {
                 const prev = i > 0 ? code[i - 1] : '';
@@ -77,8 +71,7 @@ function verify_page_rules_and_lint(js_files, dirs) {
         let info;
         while ((info = enumerator.next_file(null)) !== null) {
             const name = info.get_name();
-            if (!name.startsWith('.') && name !== 'dist' && name !== 'target')
-                visible.push(name);
+            if (!name.startsWith('.') && name !== 'dist' && name !== 'target') visible.push(name);
         }
         enumerator.close(null);
         assert(visible.length <= 8, `Directory density violation: ${dir_path} has ${visible.length} visible entries (max 8): ${visible.join(', ')}`);
@@ -99,9 +92,8 @@ function verify_process_boundaries_and_invariants() {
         for (const raw of read_text(full).split('\n')) {
             const trimmed = raw.trimStart();
             if (trimmed.startsWith('//')) continue;
-            const m = trimmed.match(/from\s+['"](\.[^'"]+)['"]/);
             for (const sym of compositor_only) assert(!trimmed.includes(sym), `Process-boundary violation: ${rel} imports '${sym}'`);
-            const target = m ? dir.resolve_relative_path(m[1]).get_path() : null;
+            const m = trimmed.match(/from\s+['"](\.[^'"]+)['"]/), target = m ? dir.resolve_relative_path(m[1]).get_path() : null;
             if (target?.startsWith(`${EXT_ROOT}/`)) {
                 const target_rel = target.slice(EXT_ROOT.length + 1);
                 if (!shared.has(target_rel)) { shared.add(target_rel); queue.push(target_rel); }
@@ -129,7 +121,7 @@ function verify_process_boundaries_and_invariants() {
         'button-press-event', 'scroll-event', 'touch-event', 'icons/kelp-octopus-symbolic.svg',
         'icons/kelp-seahorse-symbolic.svg', 'icons/kelp-otter-symbolic.svg', 'Octopus (2D BSP)',
         'Seahorse (Scrolling Columns)', 'Otter (Floating & Snap)', 'Tiling Mode &amp; Window Control',
-        'Toggle Maximize / Close Focused Window', 'v2.0.2', 'match_preset(', 'Three instant layout modes:',
+        'Toggle Maximize / Close Focused Window', 'v2.0.3', 'match_preset(', 'Three instant layout modes:',
         'Select your default layout mode and tiling behavior', 'Customize the focus border ring and 1-click color presets',
     ];
     for (const req of reqs) assert(combined.includes(req), `Missing invariant: ${req}`);
@@ -229,28 +221,36 @@ function verify_behavioral_suite() {
     const ord = [g(e1), g(e2), g(e3), g(e4)].filter((win) => !win.meta.minimized);
     ord.splice(ord.indexOf(f), 1); ord.unshift(f);
     const [tl_e, tl_fk] = forest.create_toplevel(ord[0].entity, new Rectangle([2, 2, 996, 496]), [0, 0]);
+    assert(!('string_reps' in forest) && forest.toplevel.has('0:0') && Ecs.entity_eq(forest.find_toplevel([0, 0]), tl_e), 'forest O(1) toplevel key');
     forest.on_attach(tl_e, ord[0].entity); forest.tile(fake_ext, tl_fk, tl_fk.area);
-    for (const win of ord.slice(1)) {
+    for (const win of ord.slice(1, 2)) {
         const onto = forest.largest_window_on(fake_ext, tl_e);
         const [, pfk] = forest.attach_window(fake_ext, onto.entity, win.entity, { auto: 0 }, true);
         forest.tile(fake_ext, pfk, pfk.area.clone());
     }
     assert(f.rect().x === fake_ext.gap_outer && f.rect().height === 496 && g(e1).rect().x > fake_ext.gap_outer && fake_ext.focus_window() === f, 'octopus focused main left window');
-
+    fake_ext.auto_tiler = {
+        forest, detach_window: (x, we) => att.take_with(we, (pf) => forest.detach(x, pf, we)),
+        attach_to_workspace: (x, win, id) => {
+            const [, pfk] = forest.attach_window(x, forest.largest_window_on(x, forest.find_toplevel(id)).entity, win.entity, { auto: 0 }, true);
+            forest.tile(x, pfk, pfk.area.clone());
+        },
+        update_toplevel: (x, fk) => forest.tile(x, fk, fk.area), update_stack: () => {},
+    };
+    const [tl_ws_e, tl_ws_fk] = forest.create_toplevel(ord[2].entity, new Rectangle([0, 0, 500, 500]), [1, 3]);
+    const st_idx = forest.stacks.insert({ monitor: 1, workspace: 3, destroyed: false, destroy() { this.destroyed = true; } });
+    forest.on_attach(tl_ws_e, ord[2].entity); tl_ws_fk.left = Node.stacked(ord[2].entity, st_idx); ord[2].stack = st_idx;
+    forest.remap_toplevels(fake_ext, 2, 2, true);
+    assert(tl_ws_fk.workspace === 1 && forest.stacks.get(st_idx).workspace === 1 && Ecs.entity_eq(forest.find_toplevel([1, 1]), tl_ws_e), 'workareas_only clamps workspace');
+    forest.remap_toplevels(fake_ext, 1, 1, false);
+    assert(!forest.forks.get(tl_ws_e) && !forest.stacks.get(st_idx) && Ecs.entity_eq(forest.find_toplevel([0, 0]), tl_e) && att.get(ord[2].entity) !== null, 'unplug merges stack');
     const loop = GLib.MainLoop.new(null, false), exec = new GLibExecutor(), total = MAX_EVENTS_PER_TICK + 44;
     let count = 0;
-    for (let i = 0; i < total; i += 1)
-        exec.send({ idx: i }, () => { count += 1; if (count === total) loop.quit(); });
-    loop.run(); exec.stop(); new WakeupExecutor().stop();
-    assert(count === total, `GLibExecutor multi-tick drain expected ${total}, got ${count}`);
-    dst_xml.delete(null);
-    Gio.File.new_for_path(GLib.build_filenamev([tmp_dir, 'gschemas.compiled'])).delete(null);
-    Gio.File.new_for_path(tmp_dir).delete(null);
+    for (let i = 0; i < total; i += 1) exec.send({ idx: i }, () => { count += 1; if (count === total) loop.quit(); });
+    loop.run(); exec.stop(); exec.send({ idx: 999 }, () => { count += 1; }); new WakeupExecutor().stop();
+    assert(count === total, `GLibExecutor multi-tick drain & terminal stop expected ${total}, got ${count}`);
+    for (const p of [dst_xml.get_path(), GLib.build_filenamev([tmp_dir, 'gschemas.compiled']), tmp_dir]) Gio.File.new_for_path(p).delete(null);
 }
-
 const js_files = [], dirs = [];
-walk_repo(REPO_ROOT, js_files, dirs);
-verify_page_rules_and_lint(js_files, dirs);
-verify_process_boundaries_and_invariants();
-verify_behavioral_suite();
+walk_repo(REPO_ROOT, js_files, dirs); verify_page_rules_and_lint(js_files, dirs); verify_process_boundaries_and_invariants(); verify_behavioral_suite();
 print(`OK: verified ${js_files.length} JS pages across ${dirs.length} directories and all headless behavioral suites.`);

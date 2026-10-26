@@ -9,15 +9,7 @@ import { FocusPosition } from '../engine/geom/focus.js';
 export class WindowBorder {
     constructor(win) {
         this.win = win;
-        this.border = new St.Bin({
-            style_class: 'kelp-active-hint kelp-border-normal',
-            reactive: false,
-            can_focus: false,
-        });
-        if (global.window_group) {
-            global.window_group.add_child(this.border);
-        }
-        this.hide();
+        this.border = null;
     }
 
     hide() {
@@ -27,7 +19,7 @@ export class WindowBorder {
     }
 
     show(ext) {
-        if (!this.border || !ext.settings.active_hint()) {
+        if (!ext.settings.active_hint()) {
             this.hide();
             return;
         }
@@ -51,8 +43,18 @@ export class WindowBorder {
             this.hide();
             return;
         }
+        if (!this.border) {
+            this.border = new St.Bin({
+                style_class: 'kelp-active-hint kelp-border-normal',
+                reactive: false,
+                can_focus: false,
+            });
+        }
+        if (global.window_group && !this.border.get_parent()) {
+            global.window_group.add_child(this.border);
+        }
 
-        const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor || 1;
+        const scale = ext.dpi || St.ThemeContext.get_for_stage(global.stage).scale_factor || 1;
         const css_w = ext.settings.active_hint_size();
         const css_r = ext.settings.active_hint_border_radius();
         const width = css_w * scale;

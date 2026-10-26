@@ -3,6 +3,7 @@
 
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
+import { entity_eq } from '../engine/ecs/world.js';
 import { Rectangle } from '../engine/geom/rectangle.js';
 import { WindowBorder, place_cursor_on_rect } from './window_border.js';
 
@@ -10,7 +11,7 @@ export class ShellWindow {
     constructor(entity, window, _window_type, ext) {
         this.entity = entity; this.meta = window; this.ext = ext;
         this.known_workspace = this.workspace_id();
-        this.grab = false; this.ignore_detach = false; this.was_attached_to = null;
+        this.grab = false;
         this.stack = null; this.stack_Previously_hidden = false; this.smart_gapped = false;
         this.prev_rect = null; this.target_rect = null;
         this.border = new WindowBorder(this); this.window_signals = [];
@@ -156,13 +157,13 @@ export class ShellWindow {
     show_border(ext = this.ext) {
         if (!this.border) return;
         const f = ext.focus_window();
-        if (f === this || Ecs_entity_eq_opt(ext.focused_window_entity(), this.entity)) this.border.show(ext);
+        if (f === this || entity_eq(ext.focused_window_entity(), this.entity)) this.border.show(ext);
     }
 
     update_border_layout() {
         if (!this.border) return;
         const f = this.ext.focus_window();
-        if (f === this || Ecs_entity_eq_opt(this.ext.focused_window_entity(), this.entity)) {
+        if (f === this || entity_eq(this.ext.focused_window_entity(), this.entity)) {
             this.border.show(this.ext);
         } else {
             this.border.hide();
@@ -171,8 +172,8 @@ export class ShellWindow {
 
     window_changed() {
         const r = this.rect(), t = this.target_rect;
-        if (t && Math.abs(r.x - t.x) <= 2 && Math.abs(r.y - t.y) <= 2 &&
-            Math.abs(r.width - t.width) <= 2 && Math.abs(r.height - t.height) <= 2) {
+        if (t && Math.abs(r.x - t.x) <= 4 && Math.abs(r.y - t.y) <= 4 &&
+            Math.abs(r.width - t.width) <= 4 && Math.abs(r.height - t.height) <= 4) {
             this.target_rect = null;
             this.update_border_layout();
             return;
@@ -215,8 +216,4 @@ export class ShellWindow {
         this.window_signals = [];
         if (this.border) { this.border.destroy(); this.border = null; }
     }
-}
-
-function Ecs_entity_eq_opt(a, b) {
-    return Boolean(a && b && a[0] === b[0] && a[1] === b[1]);
 }

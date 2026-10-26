@@ -66,16 +66,7 @@ export function update_display_configuration(ext, workareas_only) {
     const n_monitors = display.get_n_monitors();
     if (n_monitors === 0) return;
     const n_ws = Math.max(1, global.workspace_manager?.get_n_workspaces?.() ?? 1);
-
-    const smart_gaps = ext.settings.smart_gaps();
-    for (const [fork_id] of ext.auto_tiler.forest.toplevel.values()) {
-        const fork = ext.auto_tiler.forest.forks.get(fork_id);
-        if (!fork) continue;
-        const mon = fork.monitor < n_monitors ? fork.monitor : 0;
-        if (!workareas_only) fork.monitor = mon;
-        if (fork.workspace >= n_ws) fork.workspace = n_ws - 1;
-        ext.auto_tiler.update_toplevel(ext, fork, mon, smart_gaps);
-    }
+    ext.auto_tiler.forest.remap_toplevels(ext, n_monitors, n_ws, workareas_only);
 }
 
 export function set_edge_tiling(ext, enable) {

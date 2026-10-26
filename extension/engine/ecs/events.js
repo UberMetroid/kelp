@@ -53,7 +53,6 @@ export const GlobalEvent = Object.freeze({
     OverviewHidden: 4,
     Callback: 5,
     WindowCreate: 6,
-    WindowMove: 7,
 });
 
 export const WindowEvent = Object.freeze({
@@ -67,7 +66,6 @@ export const WindowEvent = Object.freeze({
 export const ExtEvent = Object.freeze({
     Callback: (callback, name) => ({ tag: 1, kind: GlobalEvent.Callback, callback, name }),
     WindowCreate: (window) => ({ tag: 3, kind: GlobalEvent.WindowCreate, window }),
-    WindowMove: (func) => ({ tag: 5, kind: GlobalEvent.WindowMove, callback: func, func }),
     Global: (event) => ({ tag: 4, kind: event, event }),
 });
 

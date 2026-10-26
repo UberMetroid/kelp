@@ -9,8 +9,10 @@ export const MAX_EVENTS_PER_TICK = 256;
 export class GLibExecutor {
     #event_loop = null;
     #events = [];
+    #stopped = false;
 
     wake(system, event) {
+        if (this.#stopped) return;
         this.#events.push([system, event]);
         if (this.#event_loop !== null)
             return;
@@ -39,6 +41,7 @@ export class GLibExecutor {
     }
 
     stop() {
+        this.#stopped = true;
         this.#events.splice(0);
         if (this.#event_loop !== null) {
             const id = this.#event_loop;

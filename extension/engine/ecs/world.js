@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Generational Entity-Component-System (Storage, World, System) and entity state tags.
+// Generational Entity-Component-System (Storage, World) and entity state tags.
 
 export const Tiled = 0;
 export const Floating = 1;
@@ -81,14 +81,6 @@ export class Storage {
         this.store[id] = [gen, component];
     }
 
-    is_empty() {
-        for (const slot of this.store) {
-            if (slot)
-                return false;
-        }
-        return true;
-    }
-
     remove(entity) {
         const comp = this.get(entity);
         if (comp !== null) {
@@ -99,16 +91,6 @@ export class Storage {
 
     clear() {
         this.store.splice(0);
-    }
-
-    *drain() {
-        for (let idx = 0; idx < this.store.length; idx += 1) {
-            const slot = this.store[idx];
-            if (slot) {
-                this.store[idx] = null;
-                yield [entity_new(idx, slot[0]), slot[1]];
-            }
-        }
     }
 
     take_with(entity, func) {
@@ -144,13 +126,6 @@ export class World {
 
     tags(entity) {
         return this.tags_[entity[0]];
-    }
-
-    *entities() {
-        for (const entity of this.entities_.values()) {
-            if (this.free_slots.indexOf(entity[0]) === -1)
-                yield entity;
-        }
     }
 
     create_entity() {
@@ -200,23 +175,4 @@ export class World {
             swap_remove(this.storages, matched);
         }
     }
-}
-
-export class System extends World {
-    #executor;
-
-    constructor(executor) {
-        super();
-        this.#executor = executor;
-    }
-
-    get executor() {
-        return this.#executor;
-    }
-
-    register(event) {
-        this.#executor.wake(this, event);
-    }
-
-    run(_event) {}
 }

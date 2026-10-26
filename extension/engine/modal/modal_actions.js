@@ -155,12 +155,10 @@ export function move_auto(tiler, ext, focused, move_to, stack_from_left = true) 
             const stack_info = at.find_stack(move_to.entity);
             if (stack_info) {
                 const [stack_fork, branch] = stack_info;
-                focused.ignore_detach = true;
                 at.detach_window(ext, focused.entity);
                 at.forest.on_attach(stack_fork.entity, focused.entity);
                 at.update_stack(ext, branch.inner);
                 at.tile(ext, stack_fork, stack_fork.area);
-                focused.ignore_detach = true;
                 at.detach_window(ext, focused.entity);
                 at.attach_to_window(ext, move_to, focused, { auto: 0 }, stack_from_left);
                 watching = focused;
@@ -182,14 +180,12 @@ export function move_auto(tiler, ext, focused, move_to, stack_from_left = true) 
                     }
                 }
                 if (!watching) {
-                    focused.ignore_detach = true;
                     at.detach_window(ext, focused.entity);
                     at.attach_to_window(ext, move_to, focused, { src: focused.meta.get_frame_rect() }, false);
                     watching = focused;
                 }
             }
         } else {
-            focused.ignore_detach = true;
             at.detach_window(ext, focused.entity);
             at.attach_to_workspace(ext, focused, [move_to, ext.active_workspace()]);
             watching = focused;

@@ -37,7 +37,7 @@ export class Ext extends Ecs.World {
         this.settings = new ExtensionSettings(extension.getSettings());
         log.set_log_level(this.settings.log_level());
         this.conf = new Config(this.settings); this.conf.reload();
-        this.ids = this.register_storage(); this.monitors = this.register_storage(); this.windows = this.register_storage();
+        this.monitors = this.register_storage(); this.windows = this.register_storage();
         this.id_map = new Map(); this.signals = []; this.size_signals_blocked = new Set();
         this.prev_focused = [null, null]; this.drag_signal = null; this.grab_op = null;
         this.ignore_display_update = false; this.current_style = null;
@@ -51,7 +51,7 @@ export class Ext extends Ecs.World {
             set_edge_tiling(this, this.mode === 'otter'); this.keybindings = new Keybindings(this).sync(this);
             this.exception_dialog = new ExceptionDialog(this); this.indicator = new Indicator(this);
             attach_controller_signals(this);
-            for (const actor of global.get_window_actors()) { const win = actor.get_meta_window(); if (win) this.on_window_create(win); }
+            for (const actor of global.get_window_actors?.() ?? []) { const win = actor.get_meta_window(); if (win) this.on_window_create(win); }
         } catch (err) { this.destroy(); throw err; }
     }
 
@@ -77,7 +77,6 @@ export class Ext extends Ecs.World {
     run(event) {
         if (event.kind === GlobalEvent.Callback) event.callback();
         else if (event.kind === GlobalEvent.WindowCreate) this.on_window_create(event.window);
-        else if (event.kind === GlobalEvent.WindowMove && this.auto_tiler) event.func();
     }
 
     on_window_create(window) {
@@ -86,8 +85,9 @@ export class Ext extends Ecs.World {
         let sw = this.get_window(window);
         if (sw) return sw;
         const entity = this.create_entity(), seq = window.get_stable_sequence();
-        this.ids.insert(entity, seq); this.id_map.set(seq, entity);
+        this.id_map.set(seq, entity);
         sw = new ShellWindow(entity, window, window.get_window_type(), this);
+        sw.seq = seq;
         const tilable = sw.is_tilable(this);
         sw.floating_rect = !this.auto_tiler || !tilable ? sw.rect() : null;
         this.windows.insert(entity, sw);
@@ -102,8 +102,8 @@ export class Ext extends Ecs.World {
         const win = this.windows.get(entity);
         if (!win) return;
         this.size_signals_unblock(win);
-        const seq = this.ids.get(entity), idx = win.actor_destroy_sig ? this.signals.indexOf(win.actor_destroy_sig) : -1;
-        if (seq !== null) this.id_map.delete(seq);
+        const seq = win.seq, idx = win.actor_destroy_sig ? this.signals.indexOf(win.actor_destroy_sig) : -1;
+        if (seq !== undefined && seq !== null) this.id_map.delete(seq);
         if (idx !== -1) this.signals.splice(idx, 1);
         win.actor_destroy_sig = null;
         if (this.auto_tiler) this.auto_tiler.detach_window(this, entity, true);
@@ -122,16 +122,12 @@ export class Ext extends Ecs.World {
         if (win.meta.is_fullscreen()) return;
         if (!this.auto_tiler) { win.floating_rect = win.rect(); return; }
         if (this.size_signals_blocked.has(`${win.entity[0]}:${win.entity[1]}`) || win.grab) return;
-        if (this.auto_tiler.is_seahorse) { this.auto_tiler.reflow(this, win.entity); return; }
-        const fork_entity = this.auto_tiler.attached.get(win.entity);
-        const fork = fork_entity ? this.auto_tiler.forest.forks.get(fork_entity) : null;
-        if (fork) this.auto_tiler.tile(this, fork, fork.area);
+        this.auto_tiler.reflow(this, win.entity);
     }
 
     get_window(meta) {
         if (!meta) return null;
-        const wid = meta.get_stable_sequence();
-        const entity = this.id_map.get(wid) ?? this.ids.find((id) => id === wid).next().value;
+        const entity = this.id_map.get(meta.get_stable_sequence());
         return entity ? this.windows.get(entity) : null;
     }
 
@@ -219,12 +215,8 @@ export class Ext extends Ecs.World {
     }
 
     retile_workspace() {
-        if (!this.auto_tiler) { cascade_otter_windows(this); return; }
-        if (this.auto_tiler.is_seahorse) { this.auto_tiler.retile_all(this); return; }
-        const smart_gaps = this.settings.smart_gaps();
-        for (const fork of this.auto_tiler.forest.forks.values()) {
-            if (fork.is_toplevel) this.auto_tiler.update_toplevel(this, fork, fork.monitor, smart_gaps);
-        }
+        if (!this.auto_tiler) cascade_otter_windows(this);
+        else this.auto_tiler.retile_all(this);
     }
 
     reload_config() {
@@ -243,7 +235,7 @@ export class Ext extends Ecs.World {
 
     destroy() {
         this.exit_modes(); cancel_drag_signal(this);
-        this.events?.stop(); this.tiler?.disable(); this.keybindings?.disable();
+        this.events?.stop(); this.events = null; this.tiler?.disable(); this.keybindings?.disable();
         for (const [obj, sig] of this.signals) obj.disconnect(sig);
         this.signals = []; this._destroy_auto_tiler(); this.clear_seahorse_peeks(); restore_edge_tiling(this);
         for (const [ent, win] of this.windows.iter()) { win.destroy(); this.delete_entity(ent); }

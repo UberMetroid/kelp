@@ -124,7 +124,6 @@ export class OctopusTiler {
                 }
                 this.tile(ext, fork, fork.area);
             }
-            ext.windows.with(win, (info) => (info.ignore_detach = false));
         });
     }
 
@@ -151,12 +150,16 @@ export class OctopusTiler {
     place_or_stack(ext, win, attach_to, cursor) { return place_or_stack(this, ext, win, attach_to, cursor); }
 
     reflow(ext, win) {
-        const fork_entity = this.attached.get(win);
-        if (!fork_entity) return;
+        if (!this.attached.get(win)) return;
         ext.register_fn(() => {
-            const fork = this.forest.forks.get(fork_entity);
+            const fork_entity = this.attached.get(win), fork = fork_entity ? this.forest.forks.get(fork_entity) : null;
             if (fork) this.tile(ext, fork, fork.area);
         });
+    }
+
+    retile_all(ext) {
+        const smart_gaps = ext.settings.smart_gaps();
+        for (const fork of this.forest.forks.values()) if (fork.is_toplevel) this.update_toplevel(ext, fork, fork.monitor, smart_gaps);
     }
 
     tile(ext, fork, area) { this.forest.tile(ext, fork, area); }
@@ -195,20 +198,17 @@ export class OctopusTiler {
     }
 
     create_stack(ext, window) {
-        const entity = this.attached.get(window.entity);
-        const fork = entity ? this.forest.forks.get(entity) : null;
+        const entity = this.attached.get(window.entity), fork = entity ? this.forest.forks.get(entity) : null;
         if (!fork) return;
         if (fork.left.is_window(window.entity)) this.stack_left(ext, fork, window);
         else if (fork.right?.is_window(window.entity)) this.stack_right(ext, fork, window);
     }
 
     update_stack(ext, stack) {
-        if (!stack.rect) return;
-        const container = this.forest.stacks.get(stack.idx);
+        const container = stack.rect ? this.forest.stacks.get(stack.idx) : null;
         if (!container) return;
-        if (typeof container.sync_entities === 'function') {
-            container.sync_entities(stack.entities, stack.idx);
-        } else {
+        if (typeof container.sync_entities === 'function') container.sync_entities(stack.entities, stack.idx);
+        else {
             container.clear(false);
             for (const entity of stack.entities) {
                 const window = ext.windows.get(entity);

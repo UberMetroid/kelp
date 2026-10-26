@@ -169,16 +169,14 @@ export class Node {
                 record(this.inner.entity, parent, area.clone());
                 break;
             case NodeKind.STACK: {
-                const size = ext.dpi * 4;
+                const size = (ext.dpi || 1) * 4;
                 this.inner.rect = area.clone();
                 this.inner.rect.y += size * 6;
                 this.inner.rect.height -= size * 6;
                 for (const entity of this.inner.entities) {
                     record(entity, parent, this.inner.rect);
                 }
-                if (ext.auto_tiler) {
-                    ext.auto_tiler.forest.stack_updates.push([this.inner, parent]);
-                }
+                tiler.stack_updates?.push([this.inner, parent]);
                 break;
             }
         }

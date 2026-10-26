@@ -201,7 +201,7 @@ export function resize_fork_in_forest(forest, ext, child_e, crect, mov, shrunk) 
     }
     const src_node = forest.forks.get(child_e);
     if (!src_node) return;
-    let is_left = child.left.is_fork(child_e);
+    let is_left = false;
     let depth = 0;
     while (parent !== null && depth < MAX_PARENT_DEPTH) {
         depth += 1;

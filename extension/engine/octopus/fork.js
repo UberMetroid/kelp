@@ -14,6 +14,7 @@ export class Fork {
         this.minimum_ratio = 0.1;
         this.orientation_changed = false;
         this.is_toplevel = false;
+        this.toplevel_key = null;
         this.smart_gapped = false;
         this.n_toggled = 0;
         this.on_primary_display = globalThis.global?.display?.get_primary_monitor?.() === monitor;
@@ -109,6 +110,7 @@ export class Fork {
 
     set_toplevel(tiler, entity, string, id) {
         this.is_toplevel = true;
+        this.toplevel_key = string;
         tiler.toplevel.set(string, [entity, id]);
         return this;
     }
