@@ -16,15 +16,15 @@ export class GLibExecutor {
             return;
         this.#event_loop = GLib.idle_add(GLib.PRIORITY_HIGH_IDLE, () => {
             let processed = 0;
-            try {
-                while (this.#events.length > 0 && processed < MAX_EVENTS_PER_TICK) {
-                    const pair = this.#events.shift();
-                    processed += 1;
+            while (this.#events.length > 0 && processed < MAX_EVENTS_PER_TICK) {
+                const pair = this.#events.shift();
+                processed += 1;
+                try {
                     if (pair && pair[1])
                         pair[0].run(pair[1]);
+                } catch (e) {
+                    log.error(`GLibExecutor task failed: ${e}`);
                 }
-            } catch (e) {
-                log.error(`GLibExecutor task failed: ${e}`);
             }
             if (this.#event_loop !== null && this.#events.length > 0)
                 return GLib.SOURCE_CONTINUE;

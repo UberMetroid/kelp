@@ -39,8 +39,9 @@ function number_entry(label, value_or_options, callback) {
     const text = entry.clutter_text;
     text.set_max_length(3);
     entry.connect('key-release-event', (_actor, event) => {
-        const code = event.get_key_code();
-        if (code === 36 || code === 104) emit_change();
+        const sym = event.get_key_symbol?.();
+        const code = event.get_key_code?.();
+        if (sym === Clutter.KEY_Return || sym === Clutter.KEY_KP_Enter || code === 36 || code === 104) emit_change();
     });
     text.connect('key-focus-out', emit_change);
 

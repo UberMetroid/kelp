@@ -38,21 +38,21 @@ export class Ext extends Ecs.World {
         log.set_log_level(this.settings.log_level());
         this.conf = new Config(this.settings); this.conf.reload();
         this.ids = this.register_storage(); this.monitors = this.register_storage(); this.windows = this.register_storage();
-        this.signals = []; this.size_signals_blocked = new Set();
+        this.id_map = new Map(); this.signals = []; this.size_signals_blocked = new Set();
         this.prev_focused = [null, null]; this.drag_signal = null; this.grab_op = null;
         this.ignore_display_update = false; this.current_style = null;
         this.focus_selector = new FocusSelector(); this._switching_mode = false;
-        this.overlay = new St.BoxLayout({ style_class: 'kelp-overlay', visible: false });
-        if (global.window_group) global.window_group.add_child(this.overlay);
-        update_scale(this); load_theme(this);
-        this.events = new WakeupExecutor(); this.tiler = new ModalTiler(this);
-        this.mode = this.settings.tiling_mode();
-        this.auto_tiler = this._create_tiler_for_mode(this.mode);
-        set_edge_tiling(this, this.mode === 'otter');
-        this.keybindings = new Keybindings(this).sync(this);
-        this.exception_dialog = new ExceptionDialog(this); this.indicator = new Indicator(this);
-        attach_controller_signals(this);
-        for (const actor of global.get_window_actors()) { const win = actor.get_meta_window(); if (win) this.on_window_create(win); }
+        try {
+            this.overlay = new St.BoxLayout({ style_class: 'kelp-overlay', visible: false });
+            if (global.window_group) global.window_group.add_child(this.overlay);
+            update_scale(this); load_theme(this);
+            this.events = new WakeupExecutor(); this.tiler = new ModalTiler(this);
+            this.mode = this.settings.tiling_mode(); this.auto_tiler = this._create_tiler_for_mode(this.mode);
+            set_edge_tiling(this, this.mode === 'otter'); this.keybindings = new Keybindings(this).sync(this);
+            this.exception_dialog = new ExceptionDialog(this); this.indicator = new Indicator(this);
+            attach_controller_signals(this);
+            for (const actor of global.get_window_actors()) { const win = actor.get_meta_window(); if (win) this.on_window_create(win); }
+        } catch (err) { this.destroy(); throw err; }
     }
 
     _create_auto_tiler() {
@@ -85,8 +85,8 @@ export class Ext extends Ecs.World {
         if (!actor) return null;
         let sw = this.get_window(window);
         if (sw) return sw;
-        const entity = this.create_entity();
-        this.ids.insert(entity, window.get_stable_sequence());
+        const entity = this.create_entity(), seq = window.get_stable_sequence();
+        this.ids.insert(entity, seq); this.id_map.set(seq, entity);
         sw = new ShellWindow(entity, window, window.get_window_type(), this);
         const tilable = sw.is_tilable(this);
         sw.floating_rect = !this.auto_tiler || !tilable ? sw.rect() : null;
@@ -102,7 +102,8 @@ export class Ext extends Ecs.World {
         const win = this.windows.get(entity);
         if (!win) return;
         this.size_signals_unblock(win);
-        const idx = win.actor_destroy_sig ? this.signals.indexOf(win.actor_destroy_sig) : -1;
+        const seq = this.ids.get(entity), idx = win.actor_destroy_sig ? this.signals.indexOf(win.actor_destroy_sig) : -1;
+        if (seq !== null) this.id_map.delete(seq);
         if (idx !== -1) this.signals.splice(idx, 1);
         win.actor_destroy_sig = null;
         if (this.auto_tiler) this.auto_tiler.detach_window(this, entity, true);
@@ -130,7 +131,7 @@ export class Ext extends Ecs.World {
     get_window(meta) {
         if (!meta) return null;
         const wid = meta.get_stable_sequence();
-        const entity = this.ids.find((id) => id === wid).next().value;
+        const entity = this.id_map.get(wid) ?? this.ids.find((id) => id === wid).next().value;
         return entity ? this.windows.get(entity) : null;
     }
 
@@ -141,7 +142,6 @@ export class Ext extends Ecs.World {
             global.window_group.set_child_above_sibling(this.overlay, null);
         }
     }
-
     focus_window() { return this.get_window(global.display.get_focus_window()); }
     focused_window_entity() { return this.prev_focused[1]; }
     previously_focused(win) { return previously_focused(this, win); }
@@ -168,7 +168,6 @@ export class Ext extends Ecs.World {
     toggle_floating() { if (this.auto_tiler) this.auto_tiler.toggle_floating(this); }
     toggle_tiling() { this.cycle_mode(); }
     cycle_mode() { this.set_mode(TILING_MODES[(TILING_MODES.indexOf(this.mode) + 1) % TILING_MODES.length]); }
-
     set_mode(mode) {
         if (this._switching_mode) return;
         const target = TILING_MODES.includes(mode) ? mode : 'octopus';
@@ -240,14 +239,15 @@ export class Ext extends Ecs.World {
     unload_theme() { unload_theme(this); }
     sync_seahorse_peeks(id, rects) { sync_seahorse_peeks(this, id, rects); }
     clear_seahorse_peeks() { clear_seahorse_peeks(this); }
-    exit_modes() { this.tiler.exit(this); this.exception_dialog.close(); if (this.overlay) this.overlay.visible = false; }
+    exit_modes() { this.tiler?.exit(this); this.exception_dialog?.close(); if (this.overlay) this.overlay.visible = false; }
 
     destroy() {
         this.exit_modes(); cancel_drag_signal(this);
-        this.events.stop(); this.tiler.disable(); this.keybindings.disable();
+        this.events?.stop(); this.tiler?.disable(); this.keybindings?.disable();
         for (const [obj, sig] of this.signals) obj.disconnect(sig);
         this.signals = []; this._destroy_auto_tiler(); this.clear_seahorse_peeks(); restore_edge_tiling(this);
         for (const [ent, win] of this.windows.iter()) { win.destroy(); this.delete_entity(ent); }
+        this.id_map.clear();
         if (this.indicator) { this.indicator.destroy(); this.indicator = null; }
         if (this.overlay) { this.overlay.destroy(); this.overlay = null; }
         this.focus_selector = null; clear_regex_cache(); this.unload_theme();

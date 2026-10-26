@@ -60,6 +60,8 @@ export const DEFAULT_FLOAT_RULES = DEFAULT_RULES;
 
 const REGEX_CACHE = new Map();
 const MAX_PATTERN_LEN = 256;
+const MAX_TARGET_LEN = 512;
+const NESTED_QUANT_RX = /\([^()]*[+*][^()]*\)[+*?{]/;
 
 export function clear_regex_cache() {
     REGEX_CACHE.clear();
@@ -68,7 +70,9 @@ export function clear_regex_cache() {
 function safe_regex_match(pattern, target) {
     if (typeof pattern !== 'string' || typeof target !== 'string') return false;
     if (pattern.length === 0 || pattern.length > MAX_PATTERN_LEN) return false;
-    if (pattern.toLowerCase() === target.toLowerCase()) return true;
+    const bounded = target.length > MAX_TARGET_LEN ? target.slice(0, MAX_TARGET_LEN) : target;
+    if (pattern.toLowerCase() === bounded.toLowerCase()) return true;
+    if (NESTED_QUANT_RX.test(pattern)) return false;
     try {
         let rx = REGEX_CACHE.get(pattern);
         if (!rx) {
@@ -76,7 +80,7 @@ function safe_regex_match(pattern, target) {
             rx = new RegExp(pattern, 'i');
             REGEX_CACHE.set(pattern, rx);
         }
-        return rx.test(target);
+        return rx.test(bounded);
     } catch (_e) {
         return false;
     }

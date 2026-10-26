@@ -97,8 +97,10 @@ function verify_process_boundaries_and_invariants() {
     while (queue.length > 0) {
         const rel = queue.pop(), full = GLib.build_filenamev([EXT_ROOT, rel]), dir = Gio.File.new_for_path(full).get_parent();
         for (const raw of read_text(full).split('\n')) {
-            const code = raw.split('//')[0], m = code.match(/from\s+['"](\.[^'"]+)['"]/);
-            for (const sym of compositor_only) assert(!code.includes(sym), `Process-boundary violation: ${rel} imports '${sym}'`);
+            const trimmed = raw.trimStart();
+            if (trimmed.startsWith('//')) continue;
+            const m = trimmed.match(/from\s+['"](\.[^'"]+)['"]/);
+            for (const sym of compositor_only) assert(!trimmed.includes(sym), `Process-boundary violation: ${rel} imports '${sym}'`);
             const target = m ? dir.resolve_relative_path(m[1]).get_path() : null;
             if (target?.startsWith(`${EXT_ROOT}/`)) {
                 const target_rel = target.slice(EXT_ROOT.length + 1);
@@ -127,7 +129,7 @@ function verify_process_boundaries_and_invariants() {
         'button-press-event', 'scroll-event', 'touch-event', 'icons/kelp-octopus-symbolic.svg',
         'icons/kelp-seahorse-symbolic.svg', 'icons/kelp-otter-symbolic.svg', 'Octopus (2D BSP)',
         'Seahorse (Scrolling Columns)', 'Otter (Floating & Snap)', 'Tiling Mode &amp; Window Control',
-        'Toggle Maximize / Close Focused Window', 'v2.0.1', 'match_preset(', 'Three instant layout modes:',
+        'Toggle Maximize / Close Focused Window', 'v2.0.2', 'match_preset(', 'Three instant layout modes:',
         'Select your default layout mode and tiling behavior', 'Customize the focus border ring and 1-click color presets',
     ];
     for (const req of reqs) assert(combined.includes(req), `Missing invariant: ${req}`);

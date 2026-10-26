@@ -56,15 +56,20 @@ export class ModalTiler {
         return monitor_rect(monitor, Math.floor(monitor.width / ext.column_size), Math.floor(monitor.height / ext.row_size));
     }
 
-    change(overlay, rect, dx, dy, dw, dh) {
+    change(overlay, rect, dx, dy, dw, dh, snap = true) {
         const changed = new Rect.Rectangle([
             overlay.x + dx * rect.width, overlay.y + dy * rect.height,
             overlay.width + dw * rect.width, overlay.height + dh * rect.height,
         ]);
-        changed.x = Rect.round_increment(changed.x - rect.x, rect.width) + rect.x;
-        changed.y = Rect.round_increment(changed.y - rect.y, rect.height) + rect.y;
-        changed.width = Math.max(rect.width, Rect.round_increment(changed.width, rect.width));
-        changed.height = Math.max(rect.height, Rect.round_increment(changed.height, rect.height));
+        if (snap) {
+            changed.x = Rect.round_increment(changed.x - rect.x, rect.width) + rect.x;
+            changed.y = Rect.round_increment(changed.y - rect.y, rect.height) + rect.y;
+            changed.width = Math.max(rect.width, Rect.round_increment(changed.width, rect.width));
+            changed.height = Math.max(rect.height, Rect.round_increment(changed.height, rect.height));
+        } else {
+            changed.width = Math.max(rect.width, changed.width);
+            changed.height = Math.max(rect.height, changed.height);
+        }
         const monitors = tile_monitors(changed);
         if (monitors.length === 0) return this;
         let min_x = null, min_y = null, max_x = null, max_y = null;
@@ -76,8 +81,7 @@ export class ModalTiler {
         }
         if (
             min_x === null || min_y === null || max_x === null || max_y === null ||
-            changed.x < min_x || changed.x + changed.width > max_x ||
-            changed.y < min_y || changed.y + changed.height > max_y
+            changed.x < min_x || changed.x + changed.width > max_x || changed.y < min_y || changed.y + changed.height > max_y
         ) return this;
         Object.assign(overlay, { x: changed.x, y: changed.y, width: changed.width, height: changed.height });
         return this;
@@ -101,11 +105,7 @@ export class ModalTiler {
                 try {
                     if (ext.auto_tiler) {
                         const s = ext.auto_tiler.find_stack(focused.entity);
-                        if (s) {
-                            this.move_from_stack(ext, s, focused, direction);
-                            place_pointer();
-                            return;
-                        }
+                        if (s) { this.move_from_stack(ext, s, focused, direction); place_pointer(); return; }
                     }
                     if (move_to !== null && move_to !== undefined) move_auto(this, ext, focused, move_to, direction === Direction.Left);
                     place_pointer();
@@ -115,9 +115,8 @@ export class ModalTiler {
             });
         } else {
             this.swap_window = null;
-            this.rect_by_active_area(ext, (_monitor, rect) => {
-                this.change(ext.overlay, rect, x, y, w, h).change(ext.overlay, rect, 0, 0, 0, 0);
-            });
+            const snap = ext.settings?.snap_to_grid?.() ?? true;
+            this.rect_by_active_area(ext, (_m, r) => this.change(ext.overlay, r, x, y, w, h, snap).change(ext.overlay, r, 0, 0, 0, 0, snap));
         }
     }
 
@@ -162,7 +161,8 @@ export class ModalTiler {
             } else {
                 const [x, y, w, h] = direction === Direction.Down ? [0, 0, 0, 1] : direction === Direction.Left ? [0, 0, -1, 0] : direction === Direction.Up ? [0, 0, 0, -1] : [0, 0, 1, 0];
                 this.swap_window = null;
-                this.rect_by_active_area(ext, (_m, r) => this.change(ext.overlay, r, x, y, w, h).change(ext.overlay, r, 0, 0, 0, 0));
+                const snap = ext.settings?.snap_to_grid?.() ?? true;
+                this.rect_by_active_area(ext, (_m, r) => this.change(ext.overlay, r, x, y, w, h, snap).change(ext.overlay, r, 0, 0, 0, 0, snap));
             }
         } finally {
             this.resizing_window = false;
@@ -195,7 +195,8 @@ export class ModalTiler {
         ext.set_overlay(win.rect());
         ext.overlay.visible = true;
         if (!ext.auto_tiler || ext.contains_tag(win.entity, Ecs.Floating)) {
-            this.rect_by_active_area(ext, (_monitor, rect) => this.change(ext.overlay, rect, 0, 0, 0, 0));
+            const snap = ext.settings?.snap_to_grid?.() ?? true;
+            this.rect_by_active_area(ext, (_monitor, rect) => this.change(ext.overlay, rect, 0, 0, 0, 0, snap));
         }
         ext.keybindings.disable(ext.keybindings.window_focus).enable(this.keybindings);
     }

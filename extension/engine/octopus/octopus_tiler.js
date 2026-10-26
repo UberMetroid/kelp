@@ -13,6 +13,20 @@ import {
 
 export { cursor_placement };
 
+function clamp_toplevel_rect(ext, monitor, smart_gaps) {
+    const rect = ext.monitor_work_area(monitor);
+    if (!smart_gaps) {
+        rect.x += ext.gap_outer; rect.y += ext.gap_outer;
+        rect.width -= ext.gap_outer * 2; rect.height -= ext.gap_outer * 2;
+    }
+    const max_w = ext.settings?.max_window_width?.() ?? 0;
+    if (max_w > 0 && rect.width > max_w) {
+        rect.x += Math.floor((rect.width - max_w) / 2);
+        rect.width = max_w;
+    }
+    return rect;
+}
+
 export class OctopusTiler {
     constructor(forest, attached) {
         this.forest = forest;
@@ -22,12 +36,8 @@ export class OctopusTiler {
     attach_swap(ext, a, b) { attach_swap(this, ext, a, b); }
 
     update_toplevel(ext, fork, monitor, smart_gaps) {
-        const rect = ext.monitor_work_area(monitor);
         fork.smart_gapped = smart_gaps && fork.right === null;
-        if (!fork.smart_gapped) {
-            rect.x += ext.gap_outer; rect.y += ext.gap_outer;
-            rect.width -= ext.gap_outer * 2; rect.height -= ext.gap_outer * 2;
-        }
+        const rect = clamp_toplevel_rect(ext, monitor, fork.smart_gapped);
         if (fork.left.inner.kind === node.NodeKind.WINDOW) {
             const win = ext.windows.get(fork.left.inner.entity);
             if (win) win.smart_gapped = fork.smart_gapped;
@@ -38,11 +48,7 @@ export class OctopusTiler {
     }
 
     attach_to_monitor(ext, win, workspace_id, smart_gaps) {
-        const rect = ext.monitor_work_area(workspace_id[0]);
-        if (!smart_gaps) {
-            rect.x += ext.gap_outer; rect.y += ext.gap_outer;
-            rect.width -= ext.gap_outer * 2; rect.height -= ext.gap_outer * 2;
-        }
+        const rect = clamp_toplevel_rect(ext, workspace_id[0], smart_gaps);
         const [entity, fork] = this.forest.create_toplevel(win.entity, rect.clone(), workspace_id);
         this.forest.on_attach(entity, win.entity);
         fork.smart_gapped = smart_gaps;
@@ -61,10 +67,7 @@ export class OctopusTiler {
         }
         if (fork.is_toplevel && fork.smart_gapped && fork.right) {
             fork.smart_gapped = false;
-            const rect = ext.monitor_work_area(fork.monitor);
-            rect.x += ext.gap_outer; rect.y += ext.gap_outer;
-            rect.width -= ext.gap_outer * 2; rect.height -= ext.gap_outer * 2;
-            fork.set_area(rect.clone());
+            fork.set_area(clamp_toplevel_rect(ext, fork.monitor, false));
         }
         this.tile(ext, fork, fork.area.clone());
         return true;

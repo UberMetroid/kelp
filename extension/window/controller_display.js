@@ -9,12 +9,14 @@ import * as log from '../ui/settings/log.js';
 
 export { cascade_otter_windows, snap_otter_window };
 
-export function monitor_work_area(ext, monitor) {
-    const ws = global.workspace_manager.get_active_workspace();
+export function monitor_work_area(_ext, monitor) {
+    const n_mon = Math.max(1, global.display?.get_n_monitors?.() ?? 1);
+    const mon = Math.max(0, Math.min(n_mon - 1, Number(monitor) | 0));
+    const ws = global.workspace_manager?.get_active_workspace?.();
     const area = ws
-        ? ws.get_work_area_for_monitor(monitor)
-        : global.display.get_monitor_geometry(monitor);
-    return Rectangle.from_meta(area);
+        ? ws.get_work_area_for_monitor(mon)
+        : global.display?.get_monitor_geometry?.(mon);
+    return area ? Rectangle.from_meta(area) : new Rectangle([0, 0, 1920, 1080]);
 }
 
 export function update_scale(ext) {

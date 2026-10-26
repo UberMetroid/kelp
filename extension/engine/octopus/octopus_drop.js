@@ -47,11 +47,12 @@ export function attach_swap(auto_tiler, ext, a, b) {
         }
     }
     const a_fn = a_fork.replace_window(ext, a_win, b_win);
-    auto_tiler.forest.on_attach(a_ent, b);
     const b_fn = b_fork.replace_window(ext, b_win, a_win);
+    if (!a_fn || !b_fn) return;
+    auto_tiler.forest.on_attach(a_ent, b);
     auto_tiler.forest.on_attach(b_ent, a);
-    if (a_fn) a_fn();
-    if (b_fn) b_fn();
+    a_fn();
+    b_fn();
     a_win.stack = b_stack;
     b_win.stack = a_stack;
     a_win.meta.get_compositor_private()?.show();

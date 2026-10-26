@@ -187,15 +187,20 @@ export class ExceptionDialog {
                 const sig = global.stage.connect('button-press-event', () => {
                     const [x, y] = global.get_pointer();
                     let cur = global.stage.get_actor_at_pos(Clutter.PickMode.ALL, x, y);
-                    let picked = null;
+                    let picked = null, inside_dialog = false;
                     for (let depth = 0; cur && depth < 16; depth += 1) {
+                        if (this.dialog && (cur === this.dialog || cur === this.dialog.dialogLayout)) {
+                            inside_dialog = true;
+                            break;
+                        }
                         if (typeof cur.get_meta_window === 'function') {
                             picked = this.ext.get_window(cur.get_meta_window());
                             if (picked) break;
                         }
                         cur = cur.get_parent();
                     }
-                    const win = picked ?? this.pick_window_at(x, y) ?? this.ext.focus_window();
+                    if (inside_dialog) return Clutter.EVENT_PROPAGATE;
+                    const win = picked ?? this.pick_window_at(x, y);
                     this.close();
                     if (win) {
                         const wm_class = win.meta.get_wm_class();
