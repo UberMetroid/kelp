@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kelp — Hyprland-Style Auto-Tiling for GNOME 45–50 (Wayland)</title>
   <meta name="description" content="Automatic binary tree window tiling, tabbed window stacking, and active focus borders for GNOME 45–50 on Wayland.">
+  <link rel="icon" type="image/png" href="brand/favicon-64.png" />
   <style>
     :root {
       --bg: #0b0d10;
@@ -75,6 +76,14 @@
     .hero {
       padding: 72px 0 56px;
       text-align: center;
+    }
+    .hero-icon {
+      display: block;
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 20px;
+      border-radius: 26px;
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55), 0 0 24px rgba(46, 229, 157, 0.22);
     }
     .eyebrow {
       display: inline-block;
@@ -320,6 +329,7 @@
 
   <main class="container">
     <div class="hero">
+      <img class="hero-icon" src="brand/icon-512.png" width="120" height="120" alt="Kelp Icon" />
       <span class="eyebrow">Wayland-Native · Zero Subprocesses · Zero Dependencies</span>
       <h1>Three Layout Modes for GNOME 45–50</h1>
       <p class="subtitle">
