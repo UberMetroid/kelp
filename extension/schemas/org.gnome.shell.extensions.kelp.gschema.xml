@@ -281,6 +281,11 @@
             <summary>The current active-hint-color in RGBA</summary>
         </key>
 
+        <key type="s" name="float-rules">
+            <default>'{"float":[]}'</default>
+            <summary>JSON-encoded user floating window exception rules and disabled system rules</summary>
+        </key>
+
         <key type="u" name="log-level">
             <default>0</default>
             <summary>

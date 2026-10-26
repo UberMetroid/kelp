@@ -44,7 +44,7 @@ export class Keybindings {
     sync(ext) {
         if (ext.settings.enable_shortcuts()) {
             this.enable(this.global);
-            this.enable(this.window);
+            if (!ext.tiler?.window) this.enable(this.window);
         } else {
             this.disable(this.global);
             this.disable(this.window);

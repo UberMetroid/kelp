@@ -4,6 +4,7 @@
 import Meta from 'gi://Meta';
 import * as Ecs from '../engine/ecs/world.js';
 import { cursor_rect } from '../engine/geom/movement.js';
+import { NodeKind } from '../engine/octopus/node.js';
 
 export function active_workspace() {
     const wsm = global.workspace_manager;
@@ -189,7 +190,7 @@ export function on_focused(ext, win) {
                 : fork.right && fork.right.is_in_stack(win.entity)
                   ? fork.right
                   : null;
-            if (n && n.inner.kind === 3) {
+            if (n && n.inner.kind === NodeKind.STACK) {
                 ext.auto_tiler.forest.stacks.get(n.inner.idx)?.activate(win.entity);
             }
         }

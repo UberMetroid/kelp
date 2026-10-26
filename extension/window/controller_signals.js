@@ -7,6 +7,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { ExtEvent } from '../engine/ecs/events.js';
 import { GrabOp, is_keyboard_op, is_move_op, is_resize_op } from '../engine/geom/movement.js';
 import { Orientation } from '../engine/geom/rectangle.js';
+import { NodeKind } from '../engine/octopus/node.js';
 import { cursor_placement } from '../engine/octopus/octopus_tiler.js';
 import { set_log_level } from '../ui/settings/log.js';
 import {
@@ -32,7 +33,7 @@ export function on_grab_start(ext, meta_win, op) {
 
     if (
         Main.overview.visible || is_keyboard_op(op) || is_resize_op(op) ||
-        !is_move_op(op) || !ext.auto_tiler || ext.auto_tiler.is_seahorse || !win.is_tilable(ext)
+        !ext.auto_tiler || ext.auto_tiler.is_seahorse || !win.is_tilable(ext)
     ) {
         return;
     }
@@ -55,7 +56,7 @@ export function on_grab_start(ext, meta_win, op) {
         const fork = ext.auto_tiler.get_parent_fork(win.entity);
         if (!fork) return GLib.SOURCE_CONTINUE;
         const windowless = ext.auto_tiler.largest_on_workspace(ext, monitor, workspace) === null;
-        if (attach_to === null && fork.left.inner.kind === 2 && fork.right?.inner.kind === 2) {
+        if (attach_to === null && fork.left.inner.kind === NodeKind.WINDOW && fork.right?.inner.kind === NodeKind.WINDOW) {
             const attaching = fork.left.is_window(win.entity)
                 ? fork.right.inner.entity
                 : fork.left.inner.entity;

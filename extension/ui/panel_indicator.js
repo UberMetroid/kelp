@@ -9,6 +9,7 @@ import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.j
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import { settings_new_schema } from './settings/gsettings.js';
 
 function number_entry(label, value_or_options, callback) {
     const is_obj = typeof value_or_options === 'object' && value_or_options !== null;
@@ -155,7 +156,7 @@ export class Indicator {
     constructor(ext) {
         this.ext = ext;
         this.button = new KelpButton(ext);
-        this.wm_prefs = new Gio.Settings({ schema_id: 'org.gnome.desktop.wm.preferences' });
+        this.wm_prefs = ext.settings?.wm ?? settings_new_schema('org.gnome.desktop.wm.preferences');
         this._signals = [];
         this.mode_items = new Map();
 
@@ -172,17 +173,20 @@ export class Indicator {
             ext.settings.set_enable_shortcuts(v),
         );
 
-        const is_ffm = () => this.wm_prefs.get_string('focus-mode') !== 'click';
+        const is_ffm = () => this.wm_prefs ? this.wm_prefs.get_string('focus-mode') !== 'click' : false;
         this.focus_follows_mouse = toggle_item(_('Focus Follows Mouse'), is_ffm(), (state) => {
+            if (!this.wm_prefs) return;
             if (ext.saved_focus_mode === undefined) {
                 ext.saved_focus_mode = this.wm_prefs.get_string('focus-mode');
             }
             this.wm_prefs.set_string('focus-mode', state ? 'sloppy' : 'click');
         });
-        this._signals.push([
-            this.wm_prefs,
-            this.wm_prefs.connect('changed::focus-mode', () => this.focus_follows_mouse.setToggleState(is_ffm())),
-        ]);
+        if (this.wm_prefs) {
+            this._signals.push([
+                this.wm_prefs,
+                this.wm_prefs.connect('changed::focus-mode', () => this.focus_follows_mouse.setToggleState(is_ffm())),
+            ]);
+        }
 
         this.active_hint = toggle_item(_('Show Active Hint'), ext.settings.active_hint(), (v) =>
             ext.settings.set_active_hint(v),

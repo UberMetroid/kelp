@@ -66,7 +66,7 @@ export class Storage {
 
     get_or(entity, init) {
         let value = this.get(entity);
-        if (!value) {
+        if (value === null) {
             value = init();
             this.insert(entity, value);
         }
@@ -91,7 +91,7 @@ export class Storage {
 
     remove(entity) {
         const comp = this.get(entity);
-        if (comp) {
+        if (comp !== null) {
             this.store[entity[0]] = null;
         }
         return comp;
@@ -113,12 +113,12 @@ export class Storage {
 
     take_with(entity, func) {
         const component = this.remove(entity);
-        return component ? func(component) : null;
+        return component !== null ? func(component) : null;
     }
 
     with(entity, func) {
         const component = this.get(entity);
-        return component ? func(component) : null;
+        return component !== null ? func(component) : null;
     }
 }
 

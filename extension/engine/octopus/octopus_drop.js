@@ -186,7 +186,6 @@ export function place_or_stack(auto_tiler, ext, win, attach_to, cursor) {
         } else if (fork.is_toplevel && fork.right === null) {
             auto_tiler.detach_window(ext, win.entity);
             auto_tiler.attach_to_window(ext, attach_to, win, placement);
-            swap(placement.orientation, direction);
             return true;
         }
     } else if (matching_stack) {

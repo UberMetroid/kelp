@@ -203,10 +203,14 @@ export class OctopusTiler {
         if (!stack.rect) return;
         const container = this.forest.stacks.get(stack.idx);
         if (!container) return;
-        container.clear(false);
-        for (const entity of stack.entities) {
-            const window = ext.windows.get(entity);
-            if (window) { window.stack = stack.idx; container.add(window); }
+        if (typeof container.sync_entities === 'function') {
+            container.sync_entities(stack.entities, stack.idx);
+        } else {
+            container.clear(false);
+            for (const entity of stack.entities) {
+                const window = ext.windows.get(entity);
+                if (window) { window.stack = stack.idx; container.add(window); }
+            }
         }
         container.update_positions(stack.rect);
         container.auto_activate();

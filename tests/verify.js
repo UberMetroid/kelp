@@ -4,7 +4,7 @@
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import { ExtensionSettings, TILING_MODES } from '../extension/ui/settings/gsettings.js';
-import { Config, DEFAULT_FLOAT_RULES } from '../extension/ui/settings/float_rules.js';
+import { Config, DEFAULT_FLOAT_RULES, MAX_CONFIG_BYTES } from '../extension/ui/settings/float_rules.js';
 import { BORDER_PRESETS } from '../extension/ui/settings/prefs_pages.js';
 import { GLibExecutor, MAX_EVENTS_PER_TICK, WakeupExecutor } from '../extension/engine/ecs/executor.js';
 import { Arena } from '../extension/engine/ecs/arena.js';
@@ -16,16 +16,12 @@ import { Node } from '../extension/engine/octopus/node.js';
 import { cascade_otter_windows, is_full_work_area_rect, snap_otter_window } from '../extension/engine/otter/otter_tiler.js';
 import { SeahorseTiler } from '../extension/engine/seahorse/seahorse_tiler.js';
 
-const BANNED_STEMS = new Set([
-    'util', 'utils', 'lib', 'helper', 'helpers', 'common', 'misc', 'shared', 'base', 'core', 'types', 'mod',
-]);
+const BANNED_STEMS = new Set(['util', 'utils', 'lib', 'helper', 'helpers', 'common', 'misc', 'shared', 'base', 'core', 'types', 'mod']);
 const DECODER = new TextDecoder('utf-8');
 const REPO_ROOT = Gio.File.new_for_uri(import.meta.url).get_parent().get_parent().get_path();
 const EXT_ROOT = GLib.build_filenamev([REPO_ROOT, 'extension']);
 
-function assert(cond, msg) {
-    if (!cond) throw new Error(`Verification failed: ${msg}`);
-}
+function assert(cond, msg) { if (!cond) throw new Error(`Verification failed: ${msg}`); }
 
 function read_text(path) {
     const [ok, bytes] = GLib.file_get_contents(path);
@@ -94,17 +90,20 @@ function verify_page_rules_and_lint(js_files, dirs) {
 }
 
 function verify_process_boundaries_and_invariants() {
-    const shared = [
-        'prefs.js', 'engine/geom/focus.js', 'engine/geom/movement.js', 'engine/geom/rectangle.js',
+    const shared = new Set(['prefs.js', 'engine/geom/focus.js', 'engine/geom/movement.js', 'engine/geom/rectangle.js',
         'engine/octopus/forest.js', 'engine/otter/otter_tiler.js', 'engine/seahorse/seahorse_tiler.js',
-        'ui/settings/gsettings.js', 'ui/settings/color.js', 'ui/settings/log.js', 'ui/settings/prefs_pages.js',
-    ];
-    const compositor_only = ['gi://Meta', 'gi://Clutter', 'gi://St', 'gi://Shell', 'resource:///org/gnome/shell/'];
-    for (const rel of shared) {
-        for (const raw of read_text(GLib.build_filenamev([EXT_ROOT, rel])).split('\n')) {
-            const code = raw.split('//')[0];
-            for (const sym of compositor_only)
-                assert(!code.includes(sym), `Process-boundary violation: ${rel} imports '${sym}'`);
+        'ui/settings/gsettings.js', 'ui/settings/color.js', 'ui/settings/log.js', 'ui/settings/prefs_pages.js']);
+    const queue = Array.from(shared), compositor_only = ['gi://Meta', 'gi://Clutter', 'gi://St', 'gi://Shell', 'resource:///org/gnome/shell/'];
+    while (queue.length > 0) {
+        const rel = queue.pop(), full = GLib.build_filenamev([EXT_ROOT, rel]), dir = Gio.File.new_for_path(full).get_parent();
+        for (const raw of read_text(full).split('\n')) {
+            const code = raw.split('//')[0], m = code.match(/from\s+['"](\.[^'"]+)['"]/);
+            for (const sym of compositor_only) assert(!code.includes(sym), `Process-boundary violation: ${rel} imports '${sym}'`);
+            const target = m ? dir.resolve_relative_path(m[1]).get_path() : null;
+            if (target?.startsWith(`${EXT_ROOT}/`)) {
+                const target_rel = target.slice(EXT_ROOT.length + 1);
+                if (!shared.has(target_rel)) { shared.add(target_rel); queue.push(target_rel); }
+            }
         }
     }
     const check_files = [
@@ -128,7 +127,7 @@ function verify_process_boundaries_and_invariants() {
         'button-press-event', 'scroll-event', 'touch-event', 'icons/kelp-octopus-symbolic.svg',
         'icons/kelp-seahorse-symbolic.svg', 'icons/kelp-otter-symbolic.svg', 'Octopus (2D BSP)',
         'Seahorse (Scrolling Columns)', 'Otter (Floating & Snap)', 'Tiling Mode &amp; Window Control',
-        'Toggle Maximize / Close Focused Window', 'v2.0.0', 'match_preset(', 'Three instant layout modes:',
+        'Toggle Maximize / Close Focused Window', 'v2.0.1', 'match_preset(', 'Three instant layout modes:',
         'Select your default layout mode and tiling behavior', 'Customize the focus border ring and 1-click color presets',
     ];
     for (const req of reqs) assert(combined.includes(req), `Missing invariant: ${req}`);
@@ -149,8 +148,8 @@ function verify_behavioral_suite() {
     s.set_tiling_mode('otter'); assert(s.tiling_mode() === 'otter' && !s.tile_by_default(), 'otter mode');
     s.set_tile_by_default(true); assert(s.tiling_mode() === 'octopus', 'restore octopus');
     s.set_active_hint_size(5); assert(s.active_hint_size() === 5, 'active_hint_size'); s.set_active_hint_size(2);
-    const cfg_res = Config.from_json('{"__proto__":{"polluted":true},"float":[{"class":"test"}]}');
-    assert(cfg_res.kind === 1 && !({}).polluted && cfg_res.value.float.length === 1, 'config proto guard');
+    const cfg_res = Config.from_json('{"__proto__":{"polluted":true},"float":[{"class":"test","__proto__":{"x":1}}]}');
+    assert(cfg_res.kind === 1 && MAX_CONFIG_BYTES === 65_536 && Config.from_json('x'.repeat(MAX_CONFIG_BYTES + 1)).kind === 2 && !({}).polluted && cfg_res.value.float.length === 1, 'proto guard');
     assert(s.enable_shortcuts() && s.stacking_with_mouse() && typeof s.focus_follows_mouse() === 'boolean' &&
         s.gap_inner() === 6 && s.gap_outer() === 6 && s.active_hint_border_radius() === 2 && s.active_hint_size() === 2, 'settings');
     assert(DEFAULT_FLOAT_RULES.length >= 5 && new Config().window_shall_float('steam', 'Steam') && new Config().window_shall_float('com.rastersoft.ding', 'Desktop Icons 1'), 'float rules');

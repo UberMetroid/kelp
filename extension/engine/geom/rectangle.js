@@ -72,8 +72,8 @@ export class Rectangle {
     }
 
     clamp(other) {
-        this.width = Math.max(1, Math.min(this.width, other.width));
-        this.height = Math.max(1, Math.min(this.height, other.height));
+        this.width = Math.max(Math.min(1, other.width), Math.min(this.width, other.width));
+        this.height = Math.max(Math.min(1, other.height), Math.min(this.height, other.height));
         this.x = Math.max(other.x, Math.min(this.x, other.x + other.width - this.width));
         this.y = Math.max(other.y, Math.min(this.y, other.y + other.height - this.height));
     }

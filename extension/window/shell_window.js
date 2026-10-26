@@ -100,7 +100,11 @@ export class ShellWindow {
     }
 
     move(ext, rect, on_complete) {
-        if (!this.actor_exists() || this.meta.is_fullscreen()) return;
+        if (!this.actor_exists() || this.meta.is_fullscreen()) {
+            ext.size_signals_unblock(this);
+            if (on_complete) on_complete();
+            return;
+        }
         const clone = Rectangle.from_meta(rect);
         const work_area = ext.monitor_work_area(this.meta.get_monitor());
         if (work_area) clone.clamp(work_area);
@@ -114,6 +118,7 @@ export class ShellWindow {
         const apply = () => {
             if (!this.actor_exists() || this.meta.is_fullscreen()) {
                 ext.size_signals_unblock(this);
+                if (on_complete) on_complete();
                 return;
             }
             try {

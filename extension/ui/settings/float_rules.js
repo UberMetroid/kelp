@@ -4,6 +4,8 @@
 import { Ok, Err } from '../../engine/ecs/events.js';
 
 const MAX_RULE_COUNT = 512;
+export const MAX_CONFIG_BYTES = 65_536;
+const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
 export const DEFAULT_RULES = Object.freeze([
     { class: 'steam' }, { class: 'caligula', title: 'caligula' },
@@ -90,8 +92,22 @@ function rule_matches(rule, wm_class, wm_title) {
     return true;
 }
 
+function sanitize_rule(r) {
+    if (!r || typeof r !== 'object' || Array.isArray(r)) return null;
+    for (const k of Object.keys(r)) if (FORBIDDEN_KEYS.has(k)) return null;
+    const has_c = typeof r.class === 'string' && r.class.length > 0 && r.class.length <= MAX_PATTERN_LEN;
+    const has_t = typeof r.title === 'string' && r.title.length > 0 && r.title.length <= MAX_PATTERN_LEN;
+    if (!has_c && !has_t) return null;
+    const out = {};
+    if (has_c) out.class = r.class;
+    if (has_t) out.title = r.title;
+    if (typeof r.disabled === 'boolean') out.disabled = r.disabled;
+    return out;
+}
+
 export class Config {
-    constructor() {
+    constructor(settings = null) {
+        this.settings = settings;
         this.float = [];
         this.skiptaskbarhidden = [];
         this.log_on_focus = false;
@@ -100,17 +116,19 @@ export class Config {
     add_app_exception(wm_class) {
         if (!wm_class) return;
         for (const r of this.float) {
-            if (r.class === wm_class && r.title === undefined) return;
+            if (!r.disabled && r.class === wm_class && r.title === undefined) return;
         }
         this.float.push({ class: String(wm_class), disabled: false });
+        this.save();
     }
 
     add_window_exception(wm_class, wm_title) {
         if (!wm_class || !wm_title) return;
         for (const r of this.float) {
-            if (r.class === wm_class && r.title === wm_title) return;
+            if (!r.disabled && r.class === wm_class && r.title === wm_title) return;
         }
         this.float.push({ class: String(wm_class), title: String(wm_title), disabled: false });
+        this.save();
     }
 
     window_shall_float(wm_class, wm_title) {
@@ -135,19 +153,21 @@ export class Config {
     toggle_system_exception(wm_class, wm_title, disabled) {
         if (disabled) {
             for (const value of this.float.values()) {
-                if (value.class === wm_class && value.title === wm_title) {
-                    value.disabled = disabled;
+                if (value.disabled && value.class === wm_class && value.title === wm_title) {
                     return;
                 }
             }
-            this.float.push({ class: wm_class, title: wm_title, disabled });
+            this.float.push({ class: wm_class, title: wm_title, disabled: true });
+            this.save();
             return;
         }
-        this.float = this.float.filter((v) => !(v.class === wm_class && v.title === wm_title));
+        this.float = this.float.filter((v) => !(v.disabled && v.class === wm_class && v.title === wm_title));
+        this.save();
     }
 
     remove_user_exception(wm_class, wm_title) {
-        this.float = this.float.filter((v) => !(v.class === wm_class && v.title === wm_title));
+        this.float = this.float.filter((v) => !(!v.disabled && v.class === wm_class && v.title === wm_title));
+        this.save();
     }
 
     to_json() {
@@ -159,16 +179,17 @@ export class Config {
     }
 
     static from_json(json) {
+        if (typeof json !== 'string' || json.length > MAX_CONFIG_BYTES) {
+            return Err('config JSON exceeds MAX_CONFIG_BYTES or is not a string');
+        }
         try {
-            const parsed = JSON.parse(json);
+            const parsed = JSON.parse(json, (key, value) => (FORBIDDEN_KEYS.has(key) ? undefined : value));
             if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
                 return Err('config JSON root must be an object');
             }
             const c = new Config();
             c.float = Array.isArray(parsed.float)
-                ? parsed.float.slice(0, MAX_RULE_COUNT).filter(
-                      (r) => r && typeof r === 'object' && (typeof r.class === 'string' || typeof r.title === 'string'),
-                  )
+                ? parsed.float.slice(0, MAX_RULE_COUNT).map(sanitize_rule).filter(Boolean)
                 : [];
             c.skiptaskbarhidden = Array.isArray(parsed.skiptaskbarhidden)
                 ? parsed.skiptaskbarhidden.slice(0, MAX_RULE_COUNT).filter((s) => typeof s === 'string')
@@ -180,5 +201,19 @@ export class Config {
         }
     }
 
-    reload() {}
+    save() {
+        if (this.settings?.set_float_rules_json) {
+            this.settings.set_float_rules_json(this.to_json());
+        }
+    }
+
+    reload() {
+        if (!this.settings?.float_rules_json) return;
+        const res = Config.from_json(this.settings.float_rules_json());
+        if (res.kind === 1) {
+            this.float = res.value.float;
+            this.skiptaskbarhidden = res.value.skiptaskbarhidden;
+            this.log_on_focus = res.value.log_on_focus;
+        }
+    }
 }

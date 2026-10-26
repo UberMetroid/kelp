@@ -104,7 +104,7 @@ export const OverviewDialog = GObject.registerClass(
         populate_rules() {
             for (const rule of this.config.float) {
                 if (rule.disabled !== undefined && rule.disabled) continue;
-                const title = rule.title ? `${rule.class ?? '*'} (${rule.title})` : `${rule.class}`;
+                const title = rule.title ? `${rule.class ?? '*'} (${rule.title})` : `${rule.class ?? '*'}`;
                 const row = new St.BoxLayout({ x_expand: true });
                 const lbl = new St.Label({
                     text: title,
@@ -126,7 +126,7 @@ export const OverviewDialog = GObject.registerClass(
             }
 
             for (const rule of DEFAULT_RULES) {
-                const title = rule.title ? `${rule.class ?? '*'} (${rule.title})` : `${rule.class}`;
+                const title = rule.title ? `${rule.class ?? '*'} (${rule.title})` : `${rule.class ?? '*'}`;
                 const enabled = !this.config.rule_disabled(rule);
                 const sw = new PopupMenu.PopupSwitchMenuItem(title, enabled);
                 sw.connect('toggled', (_item, state) => {

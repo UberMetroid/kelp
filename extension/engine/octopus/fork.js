@@ -6,6 +6,7 @@ import * as Rect from '../geom/rectangle.js';
 import * as node from './node.js';
 
 const XPOS = 0, YPOS = 1, WIDTH = 2, HEIGHT = 3;
+const MAX_PARENT_DEPTH = 64;
 
 export class Fork {
     constructor(entity, left, right, area, workspace, monitor, orient) {
@@ -67,7 +68,7 @@ export class Fork {
                 const idx = node.stack_find(inner, a.entity);
                 if (idx === null) return;
                 closure = () => {
-                    node.stack_replace(ext, inner, b);
+                    node.stack_replace(ext, inner, b, idx);
                     inner.entities[idx] = b.entity;
                 };
             }
@@ -83,7 +84,7 @@ export class Fork {
             const idx = node.stack_find(inner_s, a.entity);
             if (idx !== null) {
                 closure = () => {
-                    node.stack_replace(ext, inner_s, b);
+                    node.stack_replace(ext, inner_s, b, idx);
                     inner_s.entities[idx] = b.entity;
                 };
             } else check_right();
@@ -114,7 +115,8 @@ export class Fork {
 
     // Recursively partitions `area` across `left` and `right` children, snapping the split
     // point to the midpoint (within ±32px) or a 32px grid boundary and deducting inner gaps.
-    measure(tiler, ext, area, record) {
+    measure(tiler, ext, area, record, depth = 0) {
+        if (depth >= MAX_PARENT_DEPTH) return;
         let ratio = null;
         const manually_moved = ext.grab_op !== null || ext.tiler.resizing_window;
         if (!this.is_toplevel) {
@@ -148,12 +150,12 @@ export class Fork {
             }
             this.length_left = length;
             region.array[l] = Math.max(1, length - ext.gap_inner_half);
-            this.left.measure(tiler, ext, this.entity, region, record);
+            this.left.measure(tiler, ext, this.entity, region, record, depth + 1);
             region.array[p] = region.array[p] + length + ext.gap_inner_half;
             region.array[l] = Math.max(1, total - length - ext.gap_inner_half);
-            this.right.measure(tiler, ext, this.entity, region, record);
+            this.right.measure(tiler, ext, this.entity, region, record, depth + 1);
         } else {
-            this.left.measure(tiler, ext, this.entity, this.area, record);
+            this.left.measure(tiler, ext, this.entity, this.area, record, depth + 1);
         }
     }
 

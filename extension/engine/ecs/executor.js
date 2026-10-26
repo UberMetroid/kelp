@@ -2,6 +2,7 @@
 // GLib main-loop event scheduler (GLibExecutor / WakeupExecutor) for batched layout events.
 
 import GLib from 'gi://GLib';
+import * as log from '../../ui/settings/log.js';
 
 export const MAX_EVENTS_PER_TICK = 256;
 
@@ -22,8 +23,8 @@ export class GLibExecutor {
                     if (pair && pair[1])
                         pair[0].run(pair[1]);
                 }
-            } catch (_e) {
-                // Keep draining remaining queued events on next tick
+            } catch (e) {
+                log.error(`GLibExecutor task failed: ${e}`);
             }
             if (this.#event_loop !== null && this.#events.length > 0)
                 return GLib.SOURCE_CONTINUE;

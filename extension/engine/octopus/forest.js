@@ -4,7 +4,6 @@
 import { Arena } from '../ecs/arena.js';
 import * as Ecs from '../ecs/world.js';
 import * as Rect from '../geom/rectangle.js';
-import * as geom from '../geom/rectangle.js';
 import { Movement } from '../geom/movement.js';
 import * as log from '../../ui/settings/log.js';
 import * as Node from './node.js';
@@ -189,7 +188,7 @@ export class Forest extends Ecs.World {
             const win = ext.windows.get(e);
             if (win && win.is_tilable(ext)) {
                 const r = this.requested.get(e)?.rect ?? win.planned_rect ?? win.rect(), size = r.width * r.height;
-                if (size >= largest_size - 64) { largest_size = Math.max(largest_size, size); largest_window = win; }
+                if (size >= largest_size) { largest_size = size; largest_window = win; }
             }
         };
         for (const node of this.iter(entity)) {
@@ -232,12 +231,15 @@ function place_new_fork(place_by, fork) {
         if (place_by.swap) fork.swap_branches();
     } else if ('src' in place_by) {
         const from = [place_by.src.x + place_by.src.width / 2, place_by.src.y + place_by.src.height / 2];
-        if (geom.shortest_side(from, l) < geom.shortest_side(from, r)) fork.swap_branches();
+        if (Rect.shortest_side(from, l) < Rect.shortest_side(from, r)) fork.swap_branches();
     }
 }
 
 function move_window(ext, window, rect, on_complete) {
-    if (!window?.actor_exists?.() || !window.meta?.get_compositor_private?.()) return;
+    if (!window?.actor_exists?.() || !window.meta?.get_compositor_private?.()) {
+        if (window) window.planned_rect = null;
+        return;
+    }
     ext.size_signals_block(window);
     window.move(ext, rect, () => { window.planned_rect = null; on_complete(); });
 }

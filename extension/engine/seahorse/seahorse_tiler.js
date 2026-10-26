@@ -64,13 +64,16 @@ export class SeahorseTiler {
     }
 
     arrange_strip(ext, strip) {
-        strip.cols = strip.cols.filter((e) => {
+        const next_cols = [];
+        for (const e of strip.cols) {
             const w = ext.windows.get(e), wid = w ? ext.workspace_id(w) : null;
-            if (w && wid && this._is_alive(w) && w.is_tilable(ext) && !w.meta.minimized && wid[0] === strip.id[0] && wid[1] === strip.id[1]) return true;
+            if (w && wid && this._is_alive(w) && w.is_tilable(ext) && !w.meta.minimized && wid[0] === strip.id[0] && wid[1] === strip.id[1]) { next_cols.push(e); continue; }
             if (w && this._is_alive(w)) this._show_actor(w, ext);
             this.attached.remove(e); this.full_width.delete(this._entity_key(e)); this.ratios.delete(this._entity_key(e));
-            return false;
-        });
+            if (next_cols.length <= strip.active && strip.active > 0) strip.active -= 1;
+            if (next_cols.length <= strip.scroll && strip.scroll > 0) strip.scroll -= 1;
+        }
+        strip.cols = next_cols;
         const n = strip.cols.length;
         if (n === 0) { this.strips.delete(`${strip.id[0]}:${strip.id[1]}`); ext.sync_seahorse_peeks?.(strip.id, null); return; }
         this._sync_scroll(strip);
@@ -205,7 +208,6 @@ export class SeahorseTiler {
     get_parent_fork(_window) { return null; }
     windows_are_siblings(_a, _b) { return null; }
     largest_on_workspace(_ext, _m, _w) { return null; }
-
     on_drop(ext, win) {
         if (!win || !win.is_tilable(ext)) return;
         this.detach_window(ext, win.entity, false, true);
@@ -234,10 +236,9 @@ export class SeahorseTiler {
     }
     overview_show(ext, showing) {
         this.overview_visible = Boolean(showing);
-        if (showing) {
-            ext.clear_seahorse_peeks?.();
-            for (const [, win] of ext.windows.iter()) if (this._is_active_ws(win, ext)) win.meta?.get_compositor_private?.()?.show?.();
-        } else this.sync_workspace_visibility(ext);
+        if (!showing) { this.sync_workspace_visibility(ext); return; }
+        ext.clear_seahorse_peeks?.();
+        for (const [, win] of ext.windows.iter()) if (this._is_active_ws(win, ext)) win.meta?.get_compositor_private?.()?.show?.();
     }
     _is_active_ws(win, ext) {
         if (!win || win.meta?.minimized) return false;

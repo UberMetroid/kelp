@@ -38,7 +38,7 @@ Left-clicking the top-bar icon (or pressing `Super + Y`) cycles through all 3 mo
 - **Hyprland-Style Active Border**: High-contrast `2px` active window border (`rgb(255,0,0)`), `6px` inner/outer gaps, 1-click color presets (*Gruvbox Amber*, *Kelp Emerald*, *Ocean Cyan*, *Coral Red*), and window titlebars hidden by default.
 - **4-Tab Libadwaita Settings & About Window**: Right-click the top-bar icon and click **Settings & About…** (or run `gnome-extensions prefs kelp@ubermetroid.github.io`) for dedicated **Tiling & Modes**, **Appearance & Borders**, **Shortcuts**, and **About & Support** pages.
 - **Top-Bar Quick Menu**: Right-click to pick a mode directly or toggle **Keyboard Shortcuts (On/Off)**, **Focus Follows Mouse (On/Off)**, **Smart Gaps**, **Show Active Hint**, **Retile Workspace**, and **Settings & About…**.
-- **Built-In Float Rules**: Dialogs, Picture-in-Picture, Desktop Icons NG (`ding@rastersoft.com`), Steam, `caligula`, `btm`, and `macchina` float automatically; add custom per-app or per-window exceptions in two clicks.
+- **Built-In & Persistent Float Rules**: Dialogs, Picture-in-Picture, Desktop Icons NG (`ding@rastersoft.com`), Steam, `caligula`, `btm`, and `macchina` float automatically; add custom per-app or per-window exceptions in two clicks with automatic GSettings persistence (`float-rules`) across restarts.
 - **Identical Everywhere**: Installing from [GNOME Extensions](https://extensions.gnome.org/extension/11479/kelp/) or GitHub Releases gives you the exact same out-of-the-box configuration.
 
 ---
@@ -55,7 +55,7 @@ Install with one click in your browser or through **Extension Manager**:
 
 ### Option 2 — Install from GitHub Release `.zip`
 
-Download `kelp@ubermetroid.github.io.shell-extension.zip` from [**GitHub Releases (`v2.0.0`)**](https://github.com/UberMetroid/kelp/releases/latest):
+Download `kelp@ubermetroid.github.io.shell-extension.zip` from [**GitHub Releases (`v2.0.1`)**](https://github.com/UberMetroid/kelp/releases/latest):
 
 ```bash
 gnome-extensions install --force kelp@ubermetroid.github.io.shell-extension.zip

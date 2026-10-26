@@ -42,9 +42,9 @@ export function stack_move_left(ext, forest, node, entity) {
     const stack = forest.stacks.get(node.idx);
     if (!stack)
         return false;
-    let idx = 0;
-    for (const cmp of node.entities) {
-        if (Ecs.entity_eq(cmp, entity)) {
+    const limit = Math.min(node.entities.length, MAX_STACK_ENTITIES);
+    for (let idx = 0; idx < limit; idx += 1) {
+        if (Ecs.entity_eq(node.entities[idx], entity)) {
             if (idx === 0) {
                 stack_detach(node, stack, 0);
                 return false;
@@ -54,7 +54,6 @@ export function stack_move_left(ext, forest, node, entity) {
             ext.auto_tiler?.update_stack(ext, node);
             return true;
         }
-        idx += 1;
     }
     return false;
 }
@@ -64,10 +63,10 @@ export function stack_move_right(ext, forest, node, entity) {
     if (!stack)
         return false;
     let moved = false;
-    let idx = 0;
-    const max = node.entities.length - 1;
-    for (const cmp of node.entities) {
-        if (Ecs.entity_eq(cmp, entity)) {
+    const limit = Math.min(node.entities.length, MAX_STACK_ENTITIES);
+    const max = limit - 1;
+    for (let idx = 0; idx < limit; idx += 1) {
+        if (Ecs.entity_eq(node.entities[idx], entity)) {
             if (idx === max) {
                 stack_detach(node, stack, idx);
                 moved = false;
@@ -79,18 +78,17 @@ export function stack_move_right(ext, forest, node, entity) {
             }
             break;
         }
-        idx += 1;
     }
     return moved;
 }
 
-export function stack_replace(ext, node, window) {
+export function stack_replace(ext, node, window, idx = null) {
     if (!ext.auto_tiler)
         return;
     const stack = ext.auto_tiler.forest.stacks.get(node.idx);
     if (!stack)
         return;
-    stack.replace(window);
+    stack.replace(window, idx);
 }
 
 export function stack_remove(forest, node, entity) {
@@ -158,12 +156,12 @@ export class Node {
         return this.inner.kind === NodeKind.WINDOW && Ecs.entity_eq(this.inner.entity, entity);
     }
 
-    measure(tiler, ext, parent, area, record) {
+    measure(tiler, ext, parent, area, record, depth = 0) {
         switch (this.inner.kind) {
             case NodeKind.FORK: {
                 const fork = tiler.forks.get(this.inner.entity);
                 if (fork) {
-                    fork.measure(tiler, ext, area, record);
+                    fork.measure(tiler, ext, area, record, depth);
                 }
                 break;
             }

@@ -169,8 +169,11 @@ export function move_auto(tiler, ext, focused, move_to, stack_from_left = true) 
                 const fork = parent ? at.forest.forks.get(parent) : null;
                 if (fork) {
                     if (!fork.right) { Log.error('move_auto: fork lacks right branch'); return; }
-                    if (fork.left.inner.kind === Node.NodeKind.STACK) {
+                    if (fork.left.is_in_stack(focused.entity)) {
                         Node.stack_remove(at.forest, fork.left.inner, focused.entity);
+                        focused.stack = null;
+                    } else if (fork.right.is_in_stack(focused.entity)) {
+                        Node.stack_remove(at.forest, fork.right.inner, focused.entity);
                         focused.stack = null;
                     } else {
                         fork.swap_branches();

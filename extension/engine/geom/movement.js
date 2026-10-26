@@ -65,7 +65,7 @@ export function is_keyboard_op(op) {
 }
 
 export function is_resize_op(op) {
-    return (op & 0xf000) !== 0 || (op & 0x0101) === 0x0101;
+    return (op & 0xf000) !== 0 || (op & 0x0300) === 0x0300;
 }
 
 export function is_move_op(op) {

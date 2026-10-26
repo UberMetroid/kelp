@@ -36,7 +36,7 @@ export class Ext extends Ecs.World {
         this.extension = extension; this.path = extension.path;
         this.settings = new ExtensionSettings(extension.getSettings());
         log.set_log_level(this.settings.log_level());
-        this.conf = new Config(); this.conf.reload();
+        this.conf = new Config(this.settings); this.conf.reload();
         this.ids = this.register_storage(); this.monitors = this.register_storage(); this.windows = this.register_storage();
         this.signals = []; this.size_signals_blocked = new Set();
         this.prev_focused = [null, null]; this.drag_signal = null; this.grab_op = null;

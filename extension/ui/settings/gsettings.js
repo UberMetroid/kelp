@@ -11,7 +11,7 @@ const WM_PREFERENCES_KEY = 'titlebar-uses-system-theme';
 const MUTTER_SCHEMA = 'org.gnome.mutter';
 const WORKSPACES_ONLY_ON_PRIMARY = 'workspaces-only-on-primary';
 
-function settings_new_schema(schema) {
+export function settings_new_schema(schema) {
     const source = Gio.SettingsSchemaSource.get_default();
     if (!source) return null;
     return source.lookup(schema, true) ? new Gio.Settings({ schema_id: schema }) : null;
@@ -135,11 +135,27 @@ export class ExtensionSettings {
     }
 
     titlebar_uses_system_theme() {
-        return this.wm ? this.wm.get_boolean(WM_PREFERENCES_KEY) : true;
+        return this.wm?.settings_schema?.has_key(WM_PREFERENCES_KEY)
+            ? this.wm.get_boolean(WM_PREFERENCES_KEY)
+            : true;
     }
 
     workspaces_only_on_primary() {
-        return this.mutter ? this.mutter.get_boolean(WORKSPACES_ONLY_ON_PRIMARY) : false;
+        return this.mutter?.settings_schema?.has_key(WORKSPACES_ONLY_ON_PRIMARY)
+            ? this.mutter.get_boolean(WORKSPACES_ONLY_ON_PRIMARY)
+            : false;
+    }
+
+    float_rules_json() {
+        return this.ext.settings_schema?.has_key('float-rules')
+            ? this.ext.get_string('float-rules')
+            : '{"float":[]}';
+    }
+
+    set_float_rules_json(json) {
+        if (this.ext.settings_schema?.has_key('float-rules')) {
+            this.ext.set_string('float-rules', String(json));
+        }
     }
 
     hint_color_rgba() {

@@ -26,22 +26,14 @@ export class Stack {
         this.active_style = active_tab_style(ext);
 
         this.widgets = {
-            tabs: new St.BoxLayout({
-                style_class: 'kelp-stack',
-                reactive: true,
-                x_expand: true,
-            }),
+            tabs: new St.BoxLayout({ style_class: 'kelp-stack', reactive: true, x_expand: true }),
         };
 
         const group = global.window_group;
-        if (group) {
-            group.add_child(this.widgets.tabs);
-        }
+        if (group) group.add_child(this.widgets.tabs);
 
         const display = global.display;
-        if (display) {
-            this.restack = display.connect('restacked', () => this.restack_tabs());
-        }
+        if (display) this.restack = display.connect('restacked', () => this.restack_tabs());
     }
 
     sync_visibility(overview_visible = false) {
@@ -219,22 +211,32 @@ export class Stack {
         this.reposition();
     }
 
-    replace(window) {
-        const c = this.tabs[this.active_id];
+    sync_entities(entities, stack_idx) {
+        for (const entity of entities) {
+            const win = this.ext.windows.get(entity);
+            if (win) win.stack = stack_idx;
+        }
+        if (this.tabs.length === entities.length && this.tabs.every((c, i) => Ecs.entity_eq(c.entity, entities[i]))) return;
+        this.clear(false);
+        for (const entity of entities) {
+            const win = this.ext.windows.get(entity);
+            if (win) this.add(win);
+        }
+    }
+
+    replace(window, idx = null) {
+        const slot = idx !== null && idx !== undefined ? idx : this.active_id;
+        const c = this.tabs[slot];
         if (!c) return;
         this.remove_tab_component(c);
         const entry = create_stack_tab(this, window, this.active_style);
-        this.tabs[this.active_id] = entry;
-        if (this.widgets) {
-            this.widgets.tabs.insert_child_at_index(entry.button, this.active_id);
-        }
+        this.tabs[slot] = entry;
+        if (this.widgets) this.widgets.tabs.insert_child_at_index(entry.button, slot);
         this.activate(window.entity);
     }
 
     clear(restore_actors = true) {
-        for (const c of this.tabs) {
-            this.remove_tab_component(c, restore_actors);
-        }
+        for (const c of this.tabs) this.remove_tab_component(c, restore_actors);
         this.tabs = [];
     }
 
@@ -243,14 +245,8 @@ export class Stack {
             global.display.disconnect(this.restack);
             this.restack = null;
         }
-        for (const c of this.tabs) {
-            this.tab_disconnect(c);
-            this.comp_show(c.entity, true);
-        }
+        for (const c of this.tabs) { this.tab_disconnect(c); this.comp_show(c.entity, true); }
         this.tabs = [];
-        if (this.widgets) {
-            this.widgets.tabs.destroy();
-            this.widgets = null;
-        }
+        if (this.widgets) { this.widgets.tabs.destroy(); this.widgets = null; }
     }
 }
