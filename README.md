@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="brand/icon-160.png" width="128" height="128" alt="Kelp Icon" />
+</p>
+
 # <img src="extension/icons/kelp-octopus-symbolic.svg" width="32" height="32" alt="Kelp Tiling Icon" /> Kelp
 
 [![CI & EGO Bundle Verification](https://github.com/UberMetroid/kelp/actions/workflows/ci.yml/badge.svg)](https://github.com/UberMetroid/kelp/actions/workflows/ci.yml)
@@ -9,7 +13,7 @@
 
 **Kelp** (`kelp@ubermetroid.github.io`) provides **three layout modes** — **Octopus (2D Grid)**, **Seahorse (Scrolling Strip)**, and **Otter (Floating)** — each with its own top-bar indicator icon (`kelp-octopus-symbolic.svg`, `kelp-seahorse-symbolic.svg`, `kelp-otter-symbolic.svg`), plus window stacking, active focus borders, and a 4-tab Libadwaita Settings & About dialog for **GNOME 45–50 on Wayland**.
 
-Built from System76's Pop Shell — stripped of legacy X11 and launcher bloat, and updated for modern GNOME (`45` through `50`, including Ubuntu 24.04+, Fedora, Arch, and Debian).
+Built from System76's Pop Shell — stripped of legacy X11 and launcher bloat, and updated for modern GNOME (`45` through `50`, including Ubuntu 24.04+, Fedora, Arch, and Debian). Official project artwork is archived in [`brand/`](brand/) (`icon-512.png`, `icon-256.png`, `icon-160.png`, `favicon-64.png`).
 
 > 🎓 **Support Kelp — [Tuition, Not Coffee — Help send my daughter to college](https://ubermetroid.github.io/tuition-not-coffee)** · 🧩 [**Get Kelp on GNOME Extensions**](https://extensions.gnome.org/extension/11479/kelp/) · ⭐ [**Star UberMetroid/kelp on GitHub**](https://github.com/UberMetroid/kelp)
 
