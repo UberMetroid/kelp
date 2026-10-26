@@ -229,16 +229,20 @@ function attach_settings_signals(ext, connect) {
     });
     connect(s, 'changed::active-hint', () => {
         ext.indicator?.active_hint?.setToggleState(ext.settings.active_hint());
-        ext.focus_window()?.update_border_layout();
+        ext.show_border_on_focused();
     });
     connect(s, 'changed::active-hint-border-radius', () => {
         ext.indicator?.border_radius?.set_text(String(ext.settings.active_hint_border_radius()));
-        ext.focus_window()?.update_border_layout();
+        ext.show_border_on_focused();
     });
-    for (const key of ['active-hint-size', 'hint-color-rgba']) {
-        if (s.settings_schema.has_key(key)) {
-            connect(s, `changed::${key}`, () => ext.focus_window()?.update_border_layout());
-        }
+    if (s.settings_schema.has_key('active-hint-size')) {
+        connect(s, 'changed::active-hint-size', () => {
+            ext.indicator?.border_size?.set_text(String(ext.settings.active_hint_size()));
+            ext.show_border_on_focused();
+        });
+    }
+    if (s.settings_schema.has_key('hint-color-rgba')) {
+        connect(s, 'changed::hint-color-rgba', () => ext.show_border_on_focused());
     }
     connect(s, 'changed::log-level', () => set_log_level(ext.settings.log_level()));
     if (ext.settings.int) {

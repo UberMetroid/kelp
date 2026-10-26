@@ -68,7 +68,7 @@ export class WindowBorder {
 
         const group = global.window_group;
         if (group && this.border.get_parent() === group && actor.get_parent() === group) {
-            group.set_child_below_sibling(this.border, actor);
+            group.set_child_above_sibling(this.border, actor);
         }
         this.border.show();
     }

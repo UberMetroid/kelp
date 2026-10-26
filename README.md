@@ -55,7 +55,7 @@ Install with one click in your browser or through **Extension Manager**:
 
 ### Option 2 — Install from GitHub Release `.zip`
 
-Download `kelp@ubermetroid.github.io.shell-extension.zip` from [**GitHub Releases (`v2.0.4`)**](https://github.com/UberMetroid/kelp/releases/latest):
+Download `kelp@ubermetroid.github.io.shell-extension.zip` from [**GitHub Releases (`v2.0.5`)**](https://github.com/UberMetroid/kelp/releases/latest):
 
 ```bash
 gnome-extensions install --force kelp@ubermetroid.github.io.shell-extension.zip
@@ -100,6 +100,7 @@ Right-clicking the top-bar icon opens the quick settings menu:
 | **Floating Window Exceptions** | Action | Open the picker to float specific windows or applications. |
 | **Show Active Hint** | **On** | Show or hide the `2` px colored border around the focused window. |
 | **Smart Gaps** | **Off** | Hide outer screen gaps when only a single tiled window is open on a workspace. |
+| **Active Hint Thickness** | **`2` px** | Adjust the thickness of the active window border (`1–16 px`). |
 | **Active Hint Border Radius** | **`2` px** | Adjust the corner radius of the active window border (`0–32 px`). |
 | **Gaps** | **`6` px** | Adjust inner and outer window gaps (`0–64 px`). |
 | **Settings & About…** | Action | Open the 4-tab Libadwaita Preferences window (**Tiling & Modes**, **Appearance & Borders**, **Shortcuts**, **About & Support**). |

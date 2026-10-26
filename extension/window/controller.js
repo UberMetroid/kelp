@@ -159,7 +159,10 @@ export class Ext extends Ecs.World {
     move_workspace(dir) { move_window_to_workspace(this, dir); }
     size_signals_block(win) { if (win) this.size_signals_blocked.add(`${win.entity[0]}:${win.entity[1]}`); }
     size_signals_unblock(win) { if (win) this.size_signals_blocked.delete(`${win.entity[0]}:${win.entity[1]}`); }
-    show_border_on_focused() { this.hide_all_borders(); this.focus_window()?.show_border(this); }
+    show_border_on_focused() {
+        this.hide_all_borders();
+        (this.focus_window() ?? (this.prev_focused[1] ? this.windows.get(this.prev_focused[1]) : null))?.show_border(this);
+    }
     hide_all_borders() { for (const [, win] of this.windows.iter()) win.hide_border(); }
     toggle_floating() { if (this.auto_tiler) this.auto_tiler.toggle_floating(this); }
     toggle_tiling() { this.cycle_mode(); }
@@ -167,9 +170,7 @@ export class Ext extends Ecs.World {
     set_mode(mode) {
         if (this._switching_mode) return;
         const target = TILING_MODES.includes(mode) ? mode : 'octopus';
-        if (this.mode === target && Boolean(this.auto_tiler) === (target !== 'otter')) {
-            this.indicator?.sync_mode(target); return;
-        }
+        if (this.mode === target && Boolean(this.auto_tiler) === (target !== 'otter')) { this.indicator?.sync_mode(target); return; }
         this._switching_mode = true;
         try {
             const focused = this.focus_window(), ordered = this._ordered_tilable_windows(target, focused);
@@ -179,18 +180,14 @@ export class Ext extends Ecs.World {
             this.settings.set_tiling_mode(target); set_edge_tiling(this, target === 'otter');
             this.indicator?.sync_mode(target); this.keybindings.sync(this);
             for (const [, win] of this.windows.iter()) {
-                if (win.meta?.minimized) continue;
-                if (is_on_active_workspace(win, this)) win.meta?.get_compositor_private?.()?.show?.();
-                else win.meta?.get_compositor_private?.()?.hide?.();
+                if (!win.meta?.minimized) win.meta?.get_compositor_private?.()?.[is_on_active_workspace(win, this) ? 'show' : 'hide']?.();
             }
             if (this.auto_tiler) {
                 for (const win of ordered) if (win.is_tilable(this) && !win.meta?.minimized) this.auto_tiler.auto_tile(this, win, true);
                 this.auto_tiler.retile_all(this);
                 if (focused && !focused.meta?.minimized && this.auto_tiler.is_seahorse) this.auto_tiler.on_focused(this, focused);
             } else cascade_otter_windows(this, focused);
-            if (focused && !focused.meta?.minimized && is_on_active_workspace(focused, this)) {
-                this.register_fn(() => focused.activate(this, false));
-            }
+            if (focused && !focused.meta?.minimized && is_on_active_workspace(focused, this)) this.register_fn(() => focused.activate(this, false));
             this.show_border_on_focused();
         } finally { this._switching_mode = false; }
     }

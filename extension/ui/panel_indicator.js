@@ -189,25 +189,19 @@ export class Indicator {
             ]);
         }
 
-        this.active_hint = toggle_item(_('Show Active Hint'), ext.settings.active_hint(), (v) =>
-            ext.settings.set_active_hint(v),
-        );
-        this.smart_gaps = toggle_item(_('Smart Gaps'), ext.settings.smart_gaps(), (v) =>
-            ext.settings.set_smart_gaps(v),
-        );
+        this.active_hint = toggle_item(_('Show Active Hint'), ext.settings.active_hint(), (v) => ext.settings.set_active_hint(v));
+        this.smart_gaps = toggle_item(_('Smart Gaps'), ext.settings.smart_gaps(), (v) => ext.settings.set_smart_gaps(v));
 
-        const [gap_item, gap_entry] = number_entry(
-            _('Gaps'),
-            { value: ext.settings.gap_inner(), min: 0, max: 64 },
-            (v) => { ext.settings.set_gap_inner(v); ext.settings.set_gap_outer(v); },
-        );
+        const [gap_item, gap_entry] = number_entry(_('Gaps'), { value: ext.settings.gap_inner(), min: 0, max: 64 },
+            (v) => { ext.settings.set_gap_inner(v); ext.settings.set_gap_outer(v); });
         this.entry_gaps = gap_entry;
 
-        const [border_item, border_entry] = number_entry(
-            _('Active Hint Border Radius'),
-            { value: ext.settings.active_hint_border_radius(), min: 0, max: 32 },
-            (v) => ext.settings.set_active_hint_border_radius(v),
-        );
+        const [size_item, size_entry] = number_entry(_('Active Hint Thickness'),
+            { value: ext.settings.active_hint_size(), min: 1, max: 16 }, (v) => ext.settings.set_active_hint_size(v));
+        this.border_size = size_entry;
+
+        const [border_item, border_entry] = number_entry(_('Active Hint Border Radius'),
+            { value: ext.settings.active_hint_border_radius(), min: 0, max: 32 }, (v) => ext.settings.set_active_hint_border_radius(v));
         this.border_radius = border_entry;
 
         menu.addMenuItem(this.shortcuts);
@@ -224,6 +218,7 @@ export class Indicator {
         menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         menu.addMenuItem(this.active_hint);
         menu.addMenuItem(this.smart_gaps);
+        menu.addMenuItem(size_item);
         menu.addMenuItem(border_item);
         menu.addMenuItem(gap_item);
 

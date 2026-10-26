@@ -121,7 +121,7 @@ function verify_process_boundaries_and_invariants() {
         'button-press-event', 'scroll-event', 'touch-event', 'icons/kelp-octopus-symbolic.svg',
         'icons/kelp-seahorse-symbolic.svg', 'icons/kelp-otter-symbolic.svg', 'Octopus (2D BSP)',
         'Seahorse (Scrolling Columns)', 'Otter (Floating & Snap)', 'Tiling Mode &amp; Window Control',
-        'Toggle Maximize / Close Focused Window', 'v2.0.4', 'match_preset(', 'Three instant layout modes:',
+        'Toggle Maximize / Close Focused Window', 'v2.0.5', 'match_preset(', 'Three instant layout modes:',
         'Select your default layout mode and tiling behavior', 'Customize the focus border ring and 1-click color presets',
     ];
     for (const req of reqs) assert(combined.includes(req), `Missing invariant: ${req}`);
