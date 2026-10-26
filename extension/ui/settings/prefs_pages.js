@@ -112,7 +112,7 @@ export function build_about_page() {
         subtitle: 'Zero-subprocess, zero-telemetry Wayland tiling extension for GNOME Shell',
     });
     ver_row.add_suffix(new Gtk.Label({
-        label: 'v2.0.3', valign: Gtk.Align.CENTER, css_classes: ['monospace'],
+        label: 'v2.0.4', valign: Gtk.Align.CENTER, css_classes: ['monospace'],
     }));
     header_group.add(ver_row);
 

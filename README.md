@@ -55,7 +55,7 @@ Install with one click in your browser or through **Extension Manager**:
 
 ### Option 2 — Install from GitHub Release `.zip`
 
-Download `kelp@ubermetroid.github.io.shell-extension.zip` from [**GitHub Releases (`v2.0.3`)**](https://github.com/UberMetroid/kelp/releases/latest):
+Download `kelp@ubermetroid.github.io.shell-extension.zip` from [**GitHub Releases (`v2.0.4`)**](https://github.com/UberMetroid/kelp/releases/latest):
 
 ```bash
 gnome-extensions install --force kelp@ubermetroid.github.io.shell-extension.zip
