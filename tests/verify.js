@@ -3,6 +3,7 @@
 
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
+import { SUITE_COLOR_TARGETS, sync_color_across_suite } from '../extension/ui/settings/color.js';
 import { ExtensionSettings, TILING_MODES } from '../extension/ui/settings/gsettings.js';
 import { Config, DEFAULT_FLOAT_RULES, MAX_CONFIG_BYTES } from '../extension/ui/settings/float_rules.js';
 import { BORDER_PRESETS } from '../extension/ui/settings/prefs_pages.js';
@@ -31,8 +32,7 @@ function read_text(path) {
 function walk_repo(dir_path, js_files, dirs) {
     dirs.push(dir_path);
     const enumerator = Gio.File.new_for_path(dir_path).enumerate_children('standard::name,standard::type', Gio.FileQueryInfoFlags.NONE, null);
-    let info;
-    while ((info = enumerator.next_file(null)) !== null) {
+    for (let info; (info = enumerator.next_file(null)) !== null;) {
         const name = info.get_name(), full = GLib.build_filenamev([dir_path, name]);
         if (name.startsWith('.') || name === 'dist' || name === 'target') continue;
         if (info.get_file_type() === Gio.FileType.DIRECTORY) walk_repo(full, js_files, dirs);
@@ -68,8 +68,7 @@ function verify_page_rules_and_lint(js_files, dirs) {
     for (const dir_path of dirs) {
         const enumerator = Gio.File.new_for_path(dir_path).enumerate_children('standard::name', Gio.FileQueryInfoFlags.NONE, null);
         const visible = [];
-        let info;
-        while ((info = enumerator.next_file(null)) !== null) {
+        for (let info; (info = enumerator.next_file(null)) !== null;) {
             const name = info.get_name();
             if (!name.startsWith('.') && name !== 'dist' && name !== 'target') visible.push(name);
         }
@@ -121,7 +120,8 @@ function verify_process_boundaries_and_invariants() {
         'button-press-event', 'scroll-event', 'touch-event', 'icons/kelp-octopus-symbolic.svg',
         'icons/kelp-seahorse-symbolic.svg', 'icons/kelp-otter-symbolic.svg', 'Octopus (2D BSP)',
         'Seahorse (Scrolling Columns)', 'Otter (Floating & Snap)', 'Tiling Mode &amp; Window Control',
-        'Toggle Maximize / Close Focused Window', 'v2.0.5', 'match_preset(', 'Three instant layout modes:',
+        'Toggle Maximize / Close Focused Window', 'v2.1.0', 'match_preset(', 'Three instant layout modes:',
+        '"name": "Studio 2201: Kelp (Auto-Tiler)"', 'Sync Color Across Suite', 'sync_color_across_suite',
         'Select your default layout mode and tiling behavior', 'Customize the focus border ring and 1-click color presets',
     ];
     for (const req of reqs) assert(combined.includes(req), `Missing invariant: ${req}`);
@@ -130,14 +130,20 @@ function verify_process_boundaries_and_invariants() {
 }
 
 function verify_behavioral_suite() {
-    const tmp_dir = GLib.dir_make_tmp('kelp-verify-XXXXXX');
-    const schema_xml = 'org.gnome.shell.extensions.kelp.gschema.xml';
+    const tmp_dir = GLib.dir_make_tmp('kelp-verify-XXXXXX'), schema_xml = 'org.gnome.shell.extensions.kelp.gschema.xml';
     const dst_xml = Gio.File.new_for_path(GLib.build_filenamev([tmp_dir, schema_xml]));
     Gio.File.new_for_path(GLib.build_filenamev([EXT_ROOT, 'schemas', schema_xml])).copy(dst_xml, Gio.FileCopyFlags.OVERWRITE, null, null);
     assert(Gio.Subprocess.new(['glib-compile-schemas', tmp_dir], Gio.SubprocessFlags.NONE).wait_check(null), 'glib-compile-schemas');
     const src = Gio.SettingsSchemaSource.new_from_directory(tmp_dir, Gio.SettingsSchemaSource.get_default(), false);
-    const raw_gs = new Gio.Settings({ settings_schema: src.lookup('org.gnome.shell.extensions.kelp', true), backend: Gio.memory_settings_backend_new() });
+    const mem_backend = Gio.memory_settings_backend_new();
+    const raw_gs = new Gio.Settings({ settings_schema: src.lookup('org.gnome.shell.extensions.kelp', true), backend: mem_backend });
     raw_gs.set_strv('focus-right', ['<Super>Right', '<Super>KP_Right', '<Super>l']); const s = new ExtensionSettings(raw_gs);
+    const suite_dir = GLib.build_filenamev([tmp_dir, 'kelp@ubermetroid.github.io', 'schemas']), suite_comp = GLib.build_filenamev([suite_dir, 'gschemas.compiled']);
+    GLib.mkdir_with_parents(suite_dir, 0o755);
+    Gio.File.new_for_path(GLib.build_filenamev([tmp_dir, 'gschemas.compiled'])).copy(Gio.File.new_for_path(suite_comp), Gio.FileCopyFlags.OVERWRITE, null, null);
+    assert(SUITE_COLOR_TARGETS.length === 5 && sync_color_across_suite('#6ad7e1', tmp_dir, mem_backend) === 1 && s.hint_color_rgba() === 'rgba(106, 215, 225, 1)', 'suite sync');
+    s.set_hint_color_rgba('rgb(255,0,0)');
+    for (const p of [suite_comp, suite_dir, GLib.build_filenamev([tmp_dir, 'kelp@ubermetroid.github.io'])]) Gio.File.new_for_path(p).delete(null);
     assert(s.tiling_mode() === 'octopus' && TILING_MODES.length === 3 && BORDER_PRESETS.length === 4, 'mode default');
     s.set_tiling_mode('seahorse'); assert(s.tiling_mode() === 'seahorse' && s.tile_by_default(), 'seahorse mode');
     s.set_tiling_mode('otter'); assert(s.tiling_mode() === 'otter' && !s.tile_by_default(), 'otter mode');
@@ -151,30 +157,23 @@ function verify_behavioral_suite() {
     assert(DEFAULT_FLOAT_RULES.length >= 5 && new Config().window_shall_float('steam', 'Steam') && new Config().window_shall_float('com.rastersoft.ding', 'Desktop Icons 1'), 'float rules');
 
     const w = new Ecs.World(), e_old = w.create_entity();
-    w.delete_entity(e_old); w.delete_entity(e_old);
-    assert(w.free === 1, 'ECS double-free guard');
-    const e_reused = w.create_entity();
-    assert(e_old !== e_reused && e_old[1] === 0 && e_reused[1] === 1, 'entity tuple immutability');
-    const ar = new Arena(), a0 = ar.insert('x'), a1 = ar.insert('y');
-    ar.remove(a1); ar.truncate(1);
+    w.delete_entity(e_old); w.delete_entity(e_old); assert(w.free === 1, 'ECS double-free guard');
+    const e_reused = w.create_entity(); assert(e_old !== e_reused && e_old[1] === 0 && e_reused[1] === 1, 'entity tuple immutability');
+    const ar = new Arena(), a0 = ar.insert('x'), a1 = ar.insert('y'); ar.remove(a1); ar.truncate(1);
     assert(ar.unused.length === 0 && ar.get(a0) === 'x', 'arena truncate');
-
     const fk = new Fork(e_reused, Node.window(e_reused), Node.window(e_old), new Rectangle([100, 200, 800, 600]), 0, 0, Orientation.HORIZONTAL);
     const r_right = fk.area_of_right({ gap_inner_half: 2, gap_inner: 4 });
     assert(r_right.x === 502 && r_right.width === 398 && r_right.y === 200, 'fork area_of_right math');
     const fk_small = new Fork(e_reused, Node.window(e_reused), Node.window(e_old), new Rectangle([15, 0, 128, 128]), 0, 0, Orientation.HORIZONTAL);
-    fk_small.set_ratio(96);
-    const recs = [];
+    fk_small.set_ratio(96); const recs = [];
     fk_small.measure({ forks: new Map() }, { grab_op: null, tiler: { resizing_window: false }, gap_inner_half: 0 }, fk_small.area, (_e, _p, r) => recs.push(r));
     assert(recs[1].width >= 32, 'fork snap right sibling degenerate');
 
     const sh = new SeahorseTiler(w.register_storage());
     const e1 = w.create_entity(), e2 = w.create_entity(), e3 = w.create_entity(), e4 = w.create_entity(), e5 = w.create_entity();
-    let blocked_moves = 0, last_peeks = null, f = null, cur_x = 100, active_ws = 0;
-    const tags = new Set();
+    let blocked_moves = 0, last_peeks = null, f = null, cur_x = 100, active_ws = 0; const tags = new Set();
     const mk = (ent) => ({
-        entity: ent, ws: [0, 0], rects: [], shown: true, actor_ok: true, dying: false,
-        actor_exists() { return this.actor_ok && !this.dying; },
+        entity: ent, ws: [0, 0], rects: [], shown: true, actor_ok: true, dying: false, actor_exists() { return this.actor_ok && !this.dying; },
         rect() { return this.rects[this.rects.length - 1] ?? new Rectangle([0, 0, 500, 500]); },
         meta: {
             minimized: false, in_destruction() { return w.windows.get(ent).dying; }, get_monitor: () => 0,

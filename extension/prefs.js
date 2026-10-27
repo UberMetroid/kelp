@@ -6,7 +6,7 @@ import Gdk from 'gi://Gdk';
 import Gtk from 'gi://Gtk';
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import { FocusPosition } from './engine/geom/focus.js';
-import { format_rgba, parse_rgba } from './ui/settings/color.js';
+import { format_rgba, parse_rgba, sync_color_across_suite } from './ui/settings/color.js';
 import { ExtensionSettings } from './ui/settings/gsettings.js';
 import { LOG_LEVELS } from './ui/settings/log.js';
 import { BORDER_PRESETS, build_about_page, build_shortcuts_page } from './ui/settings/prefs_pages.js';
@@ -163,6 +163,16 @@ function build_appearance_page(ext_settings, settings, signals) {
         },
     );
     border_group.add(preset_row);
+
+    const sync_row = new Adw.ActionRow({
+        title: 'Sync Color Across Suite',
+        subtitle: 'Apply this accent border color to all installed Studio 2201 extensions (Coral, Kelp, Reef, Seabed, Tide)',
+    });
+    const sync_btn = new Gtk.Button({ label: 'Sync Suite Color', valign: Gtk.Align.CENTER, css_classes: ['pill'] });
+    sync_btn.connect('clicked', () => sync_color_across_suite(settings.hint_color_rgba()));
+    sync_row.add_suffix(sync_btn);
+    sync_row.activatable_widget = sync_btn;
+    border_group.add(sync_row);
 
     const [size_row, size_spin] = make_spin_row('Border Width (px)',
         'Thickness of the active focus border (1–16 px)', settings.active_hint_size(), 1, 16, 1, (v) => settings.set_active_hint_size(v));
