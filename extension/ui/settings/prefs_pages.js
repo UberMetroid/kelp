@@ -112,7 +112,7 @@ export function build_about_page() {
         subtitle: 'Zero-subprocess, zero-telemetry Wayland tiling extension for GNOME Shell',
     });
     ver_row.add_suffix(new Gtk.Label({
-        label: 'v2.1.0', valign: Gtk.Align.CENTER, css_classes: ['monospace'],
+        label: 'v2.2.0', valign: Gtk.Align.CENTER, css_classes: ['monospace'],
     }));
     header_group.add(ver_row);
 
@@ -142,9 +142,9 @@ export function build_about_page() {
     add_link_row(
         support_group,
         'Star Kelp on GitHub',
-        'Star UberMetroid/kelp to help other GNOME &amp; Linux users discover Kelp',
+        'Star studio2201/kelp to help other GNOME &amp; Linux users discover Kelp',
         'Star on GitHub',
-        'https://github.com/UberMetroid/kelp',
+        'https://github.com/studio2201/kelp',
     );
     add_link_row(
         support_group,
@@ -152,21 +152,21 @@ export function build_about_page() {
         "Skip the coffee — 100% of sponsorships go toward my daughter's college &amp; future fund",
         'Tuition, Not Coffee',
         'https://ubermetroid.github.io/tuition-not-coffee',
-        'https://github.com/UberMetroid/kelp',
+        'https://github.com/studio2201/kelp',
     );
     add_link_row(
         support_group,
         'Project Website &amp; Documentation',
         'Explore the interactive mode guide, architecture overview, and shortcut reference',
         'Open Website',
-        'https://ubermetroid.github.io/kelp/',
+        'https://studio2201.github.io/kelp/',
     );
     add_link_row(
         support_group,
         'Report an Issue or Request a Feature',
         'Found a bug or window exception rule to add? Open an issue on GitHub',
         'Report Issue',
-        'https://github.com/UberMetroid/kelp/issues',
+        'https://github.com/studio2201/kelp/issues',
     );
 
     page.add(support_group);

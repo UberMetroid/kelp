@@ -1,11 +1,11 @@
 {
     "name": "Studio 2201: Kelp (Auto-Tiler)",
     "description": "Hardened, zero-subprocess Wayland binary-tree auto-tiling and window stacking extension for GNOME Shell, with Hyprland-style directional navigation and active window borders.\n\nDerived from System76 Pop Shell (GPL-3.0-or-later).",
-    "uuid": "kelp@ubermetroid.github.io",
-    "url": "https://github.com/UberMetroid/kelp",
+    "uuid": "kelp@studio2201.github.io",
+    "url": "https://github.com/studio2201/kelp",
     "settings-schema": "org.gnome.shell.extensions.kelp",
-    "gettext-domain": "kelp@ubermetroid.github.io",
-    "version-name": "2.1.0",
+    "gettext-domain": "kelp@studio2201.github.io",
+    "version-name": "2.2.0",
     "shell-version": [
         "45",
         "46",

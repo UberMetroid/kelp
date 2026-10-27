@@ -4,18 +4,18 @@
 
 # Kelp
 
-[![CI & EGO Bundle Verification](https://github.com/UberMetroid/kelp/actions/workflows/ci.yml/badge.svg)](https://github.com/UberMetroid/kelp/actions/workflows/ci.yml)
+[![CI & EGO Bundle Verification](https://github.com/studio2201/kelp/actions/workflows/ci.yml/badge.svg)](https://github.com/studio2201/kelp/actions/workflows/ci.yml)
 [![GNOME Extensions](https://img.shields.io/badge/GNOME%20Extensions-Kelp%20%2311479-4a86cf?logo=gnome&logoColor=white)](https://extensions.gnome.org/extension/11479/kelp/)
-[![Release](https://img.shields.io/github/v/release/UberMetroid/kelp)](https://github.com/UberMetroid/kelp/releases/latest)
+[![Release](https://img.shields.io/github/v/release/studio2201/kelp)](https://github.com/studio2201/kelp/releases/latest)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](LICENSE)
 [![Sponsor: Tuition, Not Coffee](https://img.shields.io/badge/Sponsor-Tuition%2C%20Not%20Coffee%20%F0%9F%8E%93-2ec27e)](https://ubermetroid.github.io/tuition-not-coffee)
-[![Star on GitHub](https://img.shields.io/github/stars/UberMetroid/kelp?style=social)](https://github.com/UberMetroid/kelp)
+[![Star on GitHub](https://img.shields.io/github/stars/studio2201/kelp?style=social)](https://github.com/studio2201/kelp)
 
-**Kelp** (`kelp@ubermetroid.github.io`) provides **three layout modes** — **Octopus (2D Grid)**, **Seahorse (Scrolling Strip)**, and **Otter (Floating)** — each with its own top-bar indicator icon (`kelp-octopus-symbolic.svg`, `kelp-seahorse-symbolic.svg`, `kelp-otter-symbolic.svg`), plus window stacking, active focus borders, and a 4-tab Libadwaita Settings & About dialog for **GNOME 45–50 on Wayland**.
+**Kelp** (`kelp@studio2201.github.io`) provides **three layout modes** — **Octopus (2D Grid)**, **Seahorse (Scrolling Strip)**, and **Otter (Floating)** — each with its own top-bar indicator icon (`kelp-octopus-symbolic.svg`, `kelp-seahorse-symbolic.svg`, `kelp-otter-symbolic.svg`), plus window stacking, active focus borders, and a 4-tab Libadwaita Settings & About dialog for **GNOME 45–50 on Wayland**.
 
 Built from System76's Pop Shell — stripped of legacy X11 and launcher bloat, and updated for modern GNOME (`45` through `50`, including Ubuntu 24.04+, Fedora, Arch, and Debian). Official project artwork is archived in [`brand/`](brand/) (`icon-512.png`, `icon-256.png`, `icon-160.png`, `favicon-64.png`).
 
-> 🎓 **Support Kelp — [Tuition, Not Coffee — Help send my daughter to college](https://ubermetroid.github.io/tuition-not-coffee)** · 🧩 [**Get Kelp on GNOME Extensions**](https://extensions.gnome.org/extension/11479/kelp/) · ⭐ [**Star UberMetroid/kelp on GitHub**](https://github.com/UberMetroid/kelp)
+> 🎓 **Support Kelp — [Tuition, Not Coffee — Help send my daughter to college](https://ubermetroid.github.io/tuition-not-coffee)** · 🧩 [**Get Kelp on GNOME Extensions**](https://extensions.gnome.org/extension/11479/kelp/) · ⭐ [**Star studio2201/kelp on GitHub**](https://github.com/studio2201/kelp)
 
 ---
 
@@ -36,7 +36,7 @@ Left-clicking the top-bar icon (or pressing `Super + Y`) cycles through all 3 mo
 - **3 Instant Layout Modes**: Switch seamlessly between **Octopus (2D Grid)**, **Seahorse (Scrolling Strip)**, and **Otter (Floating)** at any time.
 - **Window Stacking (`Super + S`)**: Group tiled windows into tabbed stacks in Octopus mode, or toggle 100% full-width columns in Seahorse mode.
 - **Hyprland-Style Active Border**: High-contrast `2px` active window border (`rgb(255,0,0)`), `6px` inner/outer gaps, 1-click color presets (*Gruvbox Amber*, *Kelp Emerald*, *Ocean Cyan*, *Coral Red*), **Sync Color Across Suite** (`Sync Suite Color` across all installed Studio 2201 extensions), and window titlebars hidden by default.
-- **4-Tab Libadwaita Settings & About Window**: Right-click the top-bar icon and click **Settings & About…** (or run `gnome-extensions prefs kelp@ubermetroid.github.io`) for dedicated **Tiling & Modes**, **Appearance & Borders**, **Shortcuts**, and **About & Support** pages.
+- **4-Tab Libadwaita Settings & About Window**: Right-click the top-bar icon and click **Settings & About…** (or run `gnome-extensions prefs kelp@studio2201.github.io`) for dedicated **Tiling & Modes**, **Appearance & Borders**, **Shortcuts**, and **About & Support** pages.
 - **Top-Bar Quick Menu**: Right-click to pick a mode directly or toggle **Keyboard Shortcuts (On/Off)**, **Focus Follows Mouse (On/Off)**, **Smart Gaps**, **Show Active Hint**, **Retile Workspace**, and **Settings & About…**.
 - **Built-In & Persistent Float Rules**: Dialogs, Picture-in-Picture, Desktop Icons NG (`ding@rastersoft.com`), Steam, `caligula`, `btm`, and `macchina` float automatically; add custom per-app or per-window exceptions in two clicks with automatic GSettings persistence (`float-rules`) across restarts.
 - **Identical Everywhere**: Installing from [GNOME Extensions](https://extensions.gnome.org/extension/11479/kelp/) or GitHub Releases gives you the exact same out-of-the-box configuration.
@@ -55,11 +55,11 @@ Install with one click in your browser or through **Extension Manager**:
 
 ### Option 2 — Install from GitHub Release `.zip`
 
-Download `kelp@ubermetroid.github.io.shell-extension.zip` from [**GitHub Releases (`v2.1.0`)**](https://github.com/UberMetroid/kelp/releases/latest):
+Download `kelp@studio2201.github.io.shell-extension.zip` from [**GitHub Releases (`v2.2.0`)**](https://github.com/studio2201/kelp/releases/latest):
 
 ```bash
-gnome-extensions install --force kelp@ubermetroid.github.io.shell-extension.zip
-gnome-extensions enable kelp@ubermetroid.github.io
+gnome-extensions install --force kelp@studio2201.github.io.shell-extension.zip
+gnome-extensions enable kelp@studio2201.github.io
 ```
 
 *(On Wayland, log out and log back in once if this is your first time installing the extension.)*
@@ -134,7 +134,7 @@ If Kelp saves you time every day, please consider supporting the project:
 
 - 🎓 **Sponsor / Donate**: [**Tuition, Not Coffee — Help send my daughter to college**](https://ubermetroid.github.io/tuition-not-coffee)
 - 🧩 **GNOME Extensions**: [**extensions.gnome.org/extension/11479/kelp/**](https://extensions.gnome.org/extension/11479/kelp/)
-- ⭐ **Star on GitHub**: [**github.com/UberMetroid/kelp**](https://github.com/UberMetroid/kelp)
+- ⭐ **Star on GitHub**: [**github.com/studio2201/kelp**](https://github.com/studio2201/kelp)
 
 ---
 

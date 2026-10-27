@@ -2,7 +2,7 @@
 
 ## 1. Global Engineering Philosophy
 
-Kelp (`kelp@ubermetroid.github.io`) is built on four uncompromising engineering pillars:
+Kelp (`kelp@studio2201.github.io`) is built on four uncompromising engineering pillars:
 
 1. **Linus Torvalds' "Good Taste"**: Eliminate special-case branching through clean data representation (generational ECS arenas, binary space partitioning trees, and immutable frozen enums).
 2. **UNIX Philosophy**: Each module ("page") does one thing well, composes cleanly via explicit imports, and avoids hidden global state.

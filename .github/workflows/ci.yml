@@ -42,19 +42,19 @@ jobs:
             --extra-source=icons \
             --extra-source=ui \
             --extra-source=window
-          unzip -l dist/kelp@ubermetroid.github.io.shell-extension.zip
+          unzip -l dist/kelp@studio2201.github.io.shell-extension.zip
 
       - name: Run shexli EGO static review analyzer (0 errors, 0 warnings)
         run: |
-          pipx run shexli dist/kelp@ubermetroid.github.io.shell-extension.zip
+          pipx run shexli dist/kelp@studio2201.github.io.shell-extension.zip
 
       - name: Official EGO Review Gate (Metadata, Zip Audit, & gnome-extensions install)
         run: |
           set -euo pipefail
-          ZIP="dist/kelp@ubermetroid.github.io.shell-extension.zip"
+          ZIP="dist/kelp@studio2201.github.io.shell-extension.zip"
 
           echo "==> 1. Validating metadata.json required EGO fields..."
-          jq -e '.uuid == "kelp@ubermetroid.github.io" and .name == "Studio 2201: Kelp (Auto-Tiler)" and (.["shell-version"] | length >= 1) and .["settings-schema"] == "org.gnome.shell.extensions.kelp"' extension/metadata.json >/dev/null
+          jq -e '.uuid == "kelp@studio2201.github.io" and .name == "Studio 2201: Kelp (Auto-Tiler)" and (.["shell-version"] | length >= 1) and .["settings-schema"] == "org.gnome.shell.extensions.kelp"' extension/metadata.json >/dev/null
 
           echo "==> 2. Auditing .shell-extension.zip for EGO forbidden files..."
           CONTENTS="$(unzip -Z1 "$ZIP")"
@@ -75,11 +75,11 @@ jobs:
 
           echo "==> 4. Testing installation via official gnome-extensions CLI..."
           gnome-extensions install --force "$ZIP"
-          test -f "$HOME/.local/share/gnome-shell/extensions/kelp@ubermetroid.github.io/extension.js"
-          test -f "$HOME/.local/share/gnome-shell/extensions/kelp@ubermetroid.github.io/metadata.json"
+          test -f "$HOME/.local/share/gnome-shell/extensions/kelp@studio2201.github.io/extension.js"
+          test -f "$HOME/.local/share/gnome-shell/extensions/kelp@studio2201.github.io/metadata.json"
 
       - name: Upload EGO extension zip artifact
         uses: actions/upload-artifact@v4
         with:
           name: kelp-shell-extension-zip
-          path: dist/kelp@ubermetroid.github.io.shell-extension.zip
+          path: dist/kelp@studio2201.github.io.shell-extension.zip
