@@ -120,7 +120,7 @@ function verify_process_boundaries_and_invariants() {
         'button-press-event', 'scroll-event', 'touch-event', 'icons/kelp-octopus-symbolic.svg',
         'icons/kelp-seahorse-symbolic.svg', 'icons/kelp-otter-symbolic.svg', 'Octopus (2D BSP)',
         'Seahorse (Scrolling Columns)', 'Otter (Floating & Snap)', 'Tiling Mode &amp; Window Control',
-        'Toggle Maximize / Close Focused Window', 'v2.3.0', 'match_preset(', 'Three instant layout modes:',
+        'Toggle Maximize / Close Focused Window', 'v2.3.1', 'match_preset(', 'Three instant layout modes:',
         '"name": "Studio 2201: Kelp (Auto-Tiler)"', 'Sync Color Across Suite', 'sync_color_across_suite',
         'Select your default layout mode and tiling behavior', 'Customize the focus border ring and 1-click color presets',
     ];
@@ -141,7 +141,7 @@ function verify_behavioral_suite() {
     const suite_dir = GLib.build_filenamev([tmp_dir, 'kelp@studio2201.github.io', 'schemas']), suite_comp = GLib.build_filenamev([suite_dir, 'gschemas.compiled']);
     GLib.mkdir_with_parents(suite_dir, 0o755);
     Gio.File.new_for_path(GLib.build_filenamev([tmp_dir, 'gschemas.compiled'])).copy(Gio.File.new_for_path(suite_comp), Gio.FileCopyFlags.OVERWRITE, null, null);
-    assert(SUITE_COLOR_TARGETS.length === 5 && sync_color_across_suite('#6ad7e1', tmp_dir, mem_backend) === 1 && s.hint_color_rgba() === 'rgba(106, 215, 225, 1)', 'suite sync');
+    assert(SUITE_COLOR_TARGETS.length === 6 && sync_color_across_suite('#6ad7e1', tmp_dir, mem_backend) === 1 && s.hint_color_rgba() === 'rgba(106, 215, 225, 1)', 'suite sync');
     s.set_hint_color_rgba('rgb(255,0,0)');
     for (const p of [suite_comp, suite_dir, GLib.build_filenamev([tmp_dir, 'kelp@studio2201.github.io'])]) Gio.File.new_for_path(p).delete(null);
     assert(s.tiling_mode() === 'octopus' && TILING_MODES.length === 3 && BORDER_PRESETS.length === 4, 'mode default');

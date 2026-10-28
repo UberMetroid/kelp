@@ -95,7 +95,7 @@ export function build_shortcuts_page() {
     return page;
 }
 
-export function build_about_page(version_name = 'v2.3.0') {
+export function build_about_page(version_name = 'v2.3.1') {
     const page = new Adw.PreferencesPage({
         title: 'About & Support',
         icon_name: 'help-about-symbolic',
@@ -111,7 +111,7 @@ export function build_about_page(version_name = 'v2.3.0') {
         title: 'Kelp Release Version',
         subtitle: 'Zero-subprocess, zero-telemetry Wayland tiling extension for GNOME Shell',
     });
-    const clean_ver = String(version_name || '2.3.0').replace(/^v/, '');
+    const clean_ver = String(version_name || '2.3.1').replace(/^v/, '');
     ver_row.add_suffix(new Gtk.Label({
         label: `v${clean_ver}`, valign: Gtk.Align.CENTER, css_classes: ['monospace'],
     }));
