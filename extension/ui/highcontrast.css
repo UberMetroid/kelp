@@ -1,3 +1,6 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+/* Kelp high-contrast compositor stylesheet for accessibility compliance. */
+
 .kelp-active-hint {
     border-style: solid;
     border-color: #ffffff;

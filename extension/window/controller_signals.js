@@ -11,7 +11,7 @@ import { NodeKind } from '../engine/octopus/node.js';
 import { cursor_placement } from '../engine/octopus/octopus_tiler.js';
 import { set_log_level } from '../ui/settings/log.js';
 import {
-    load_theme, set_gap_inner, set_gap_outer, update_display_configuration, update_scale,
+    load_theme, set_gap_inner, set_gap_outer, sync_accent_styles, update_display_configuration, update_scale,
 } from './controller_display.js';
 
 export function cancel_drag_signal(ext) {
@@ -197,9 +197,7 @@ function attach_settings_signals(ext, connect) {
     const s = ext.settings.ext;
     connect(s, 'changed::enable-shortcuts', () => {
         ext.keybindings.sync(ext);
-        if (ext.indicator?.shortcuts) {
-            ext.indicator.shortcuts.setToggleState(ext.settings.enable_shortcuts());
-        }
+        ext.indicator?.shortcuts?.setToggleState(ext.settings.enable_shortcuts());
     });
     if (s.settings_schema.has_key('tiling-mode')) {
         connect(s, 'changed::tiling-mode', () => ext.set_mode(ext.settings.tiling_mode()));
@@ -222,9 +220,7 @@ function attach_settings_signals(ext, connect) {
         ext.retile_workspace();
     });
     connect(s, 'changed::smart-gaps', () => {
-        if (ext.indicator?.smart_gaps) {
-            ext.indicator.smart_gaps.setToggleState(ext.settings.smart_gaps());
-        }
+        ext.indicator?.smart_gaps?.setToggleState(ext.settings.smart_gaps());
         ext.retile_workspace();
     });
     connect(s, 'changed::active-hint', () => {
@@ -235,14 +231,14 @@ function attach_settings_signals(ext, connect) {
         ext.indicator?.border_radius?.set_text(String(ext.settings.active_hint_border_radius()));
         ext.show_border_on_focused();
     });
-    if (s.settings_schema.has_key('active-hint-size')) {
+        if (s.settings_schema.has_key('active-hint-size')) {
         connect(s, 'changed::active-hint-size', () => {
             ext.indicator?.border_size?.set_text(String(ext.settings.active_hint_size()));
             ext.show_border_on_focused();
         });
     }
     if (s.settings_schema.has_key('hint-color-rgba')) {
-        connect(s, 'changed::hint-color-rgba', () => ext.show_border_on_focused());
+        connect(s, 'changed::hint-color-rgba', () => { sync_accent_styles(ext); ext.show_border_on_focused(); });
     }
     connect(s, 'changed::log-level', () => set_log_level(ext.settings.log_level()));
     if (ext.settings.int) {
@@ -250,5 +246,8 @@ function attach_settings_signals(ext, connect) {
         if (ext.settings.int.settings_schema.has_key('color-scheme')) {
             connect(ext.settings.int, 'changed::color-scheme', () => load_theme(ext));
         }
+    }
+    if (ext.settings.a11y?.settings_schema?.has_key('high-contrast')) {
+        connect(ext.settings.a11y, 'changed::high-contrast', () => load_theme(ext));
     }
 }

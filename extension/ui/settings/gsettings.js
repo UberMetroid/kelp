@@ -6,6 +6,8 @@ import { parse_rgba, format_rgba } from './color.js';
 
 const INTERFACE_SCHEMA = 'org.gnome.desktop.interface';
 const INTERFACE_KEY = 'gtk-theme';
+const A11Y_INTERFACE_SCHEMA = 'org.gnome.desktop.a11y.interface';
+const HIGH_CONTRAST_KEY = 'high-contrast';
 const WM_PREFERENCES_SCHEMA = 'org.gnome.desktop.wm.preferences';
 const WM_PREFERENCES_KEY = 'titlebar-uses-system-theme';
 const MUTTER_SCHEMA = 'org.gnome.mutter';
@@ -45,6 +47,7 @@ export class ExtensionSettings {
     constructor(ext_settings) {
         this.ext = ext_settings;
         this.int = settings_new_schema(INTERFACE_SCHEMA);
+        this.a11y = settings_new_schema(A11Y_INTERFACE_SCHEMA);
         this.wm = settings_new_schema(WM_PREFERENCES_SCHEMA);
         this.mutter = settings_new_schema(MUTTER_SCHEMA);
 
@@ -125,7 +128,11 @@ export class ExtensionSettings {
     }
 
     is_high_contrast() {
-        return this.int ? this.int.get_string(INTERFACE_KEY) === 'HighContrast' : false;
+        const a11y_hc = this.a11y?.settings_schema?.has_key(HIGH_CONTRAST_KEY)
+            ? this.a11y.get_boolean(HIGH_CONTRAST_KEY)
+            : false;
+        const gtk_hc = this.int ? this.int.get_string(INTERFACE_KEY).startsWith('HighContrast') : false;
+        return a11y_hc || gtk_hc;
     }
 
     is_dark() {
@@ -182,5 +189,24 @@ export class ExtensionSettings {
     set_gap_outer(gap) {
         const v = Math.max(0, Number(gap) | 0);
         this.ext.set_uint('gap-outer', v);
+    }
+
+    reset_defaults() {
+        this.set_tiling_mode('octopus');
+        this.set_enable_shortcuts(true);
+        this.set_smart_gaps(false);
+        this.set_snap_to_grid(false);
+        this.set_stacking_with_mouse(true);
+        this.set_show_skip_taskbar(true);
+        this.set_max_window_width(0);
+        this.set_mouse_cursor_follows_active_window(false);
+        this.set_mouse_cursor_focus_location(0);
+        this.set_log_level(0);
+        this.set_active_hint(true);
+        this.set_active_hint_size(2);
+        this.set_active_hint_border_radius(2);
+        this.set_gap_inner(6);
+        this.set_gap_outer(6);
+        this.set_hint_color_rgba('rgb(255,0,0)');
     }
 }

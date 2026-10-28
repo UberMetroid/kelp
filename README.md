@@ -55,7 +55,7 @@ Install with one click in your browser or through **Extension Manager**:
 
 ### Option 2 — Install from GitHub Release `.zip`
 
-Download `kelp@studio2201.github.io.shell-extension.zip` from [**GitHub Releases (`v2.2.0`)**](https://github.com/studio2201/kelp/releases/latest):
+Download `kelp@studio2201.github.io.shell-extension.zip` from [**GitHub Releases (`v2.3.0`)**](https://github.com/studio2201/kelp/releases/latest):
 
 ```bash
 gnome-extensions install --force kelp@studio2201.github.io.shell-extension.zip

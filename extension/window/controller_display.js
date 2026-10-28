@@ -5,9 +5,36 @@ import Gio from 'gi://Gio';
 import St from 'gi://St';
 import { Rectangle } from '../engine/geom/rectangle.js';
 import { cascade_otter_windows, snap_otter_window } from '../engine/otter/otter_tiler.js';
+import { parse_rgba } from '../ui/settings/color.js';
 import * as log from '../ui/settings/log.js';
 
 export { cascade_otter_windows, snap_otter_window };
+
+export function sync_accent_styles(ext) {
+    if (ext.settings?.is_high_contrast?.()) {
+        if (ext.overlay) ext.overlay.style = null;
+        if (ext.seahorse_peeks) {
+            for (const p of ext.seahorse_peeks.values()) {
+                if (p.left) p.left.style = null;
+                if (p.right) p.right.style = null;
+            }
+        }
+        return;
+    }
+    const c = parse_rgba(ext.settings?.hint_color_rgba?.() ?? 'rgb(255,0,0)');
+    if (ext.overlay) {
+        ext.overlay.style = `background-color: rgba(${c.red}, ${c.green}, ${c.blue}, 0.25); ` +
+            `border: 2px solid rgba(${c.red}, ${c.green}, ${c.blue}, 0.85);`;
+    }
+    if (ext.seahorse_peeks) {
+        const peek_css = `background-color: rgba(${c.red}, ${c.green}, ${c.blue}, 0.24); ` +
+            `border: 2px solid rgba(${c.red}, ${c.green}, ${c.blue}, 0.78);`;
+        for (const p of ext.seahorse_peeks.values()) {
+            if (p.left) p.left.style = peek_css;
+            if (p.right) p.right.style = peek_css;
+        }
+    }
+}
 
 export function monitor_work_area(_ext, monitor) {
     const n_mon = Math.max(1, global.display?.get_n_monitors?.() ?? 1);
@@ -142,6 +169,7 @@ export function sync_seahorse_peeks(ext, strip_id, rects) {
         pair[side].set_size(r.width, r.height);
         pair[side].show();
     }
+    sync_accent_styles(ext);
 }
 
 export function unload_theme(ext) {
@@ -171,6 +199,7 @@ export function load_theme(ext) {
             theme.load_stylesheet(file);
             ext.current_style = file;
         }
+        sync_accent_styles(ext);
     } catch (e) {
         log.error(`failed to load theme stylesheet: ${e}`);
     }
